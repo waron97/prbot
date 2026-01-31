@@ -1,0 +1,32 @@
+{
+  "name": "@waron97/prbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "prbot": "index.js"
+  },
+  "dependencies": {
+    "@waron97/prbot": "^1.0.0",
+    "commander": "^14.0.2",
+    "dotenv": "^17.2.3",
+    "eslint-plugin-es5": "^1.5.0",
+    "node-fetch": "^3.3.2",
+    "prettier": "^3.5.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/node": "^25.0.10",
+    "@typescript-eslint/parser": "^8.26.0",
+    "eslint": "^9.21.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module"
+}
