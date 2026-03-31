@@ -66,6 +66,19 @@ async function main(module_name) {
 
     // Remove the last two lines
     const lines = content.split("\n");
+
+    // Check for skipped records section appended after </odoo>
+    const odooCloseIndex = lines.findIndex((l) => l.trim() === "</odoo>");
+    if (odooCloseIndex !== -1 && odooCloseIndex < lines.length - 1) {
+      const footer = lines.slice(odooCloseIndex + 1).join("\n");
+      const skippedMatch = footer.match(/Skipped records:\s*(\d+)/);
+      if (skippedMatch && parseInt(skippedMatch[1]) > 0) {
+        throw new Error(
+          `[${file.name}] Export contains skipped records:\n${footer.trim()}`,
+        );
+      }
+    }
+
     if (lines.length > 2) {
       lines.splice(-2);
     }
