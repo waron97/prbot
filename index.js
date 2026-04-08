@@ -77,6 +77,12 @@ async function main(module_name) {
           `[${file.name}] Export contains skipped records:\n${footer.trim()}`,
         );
       }
+      const duplicatedMatch = footer.match(/Duplicated records:\s*(\d+)/);
+      if (duplicatedMatch && parseInt(duplicatedMatch[1]) > 0) {
+        throw new Error(
+          `[${file.name}] Export contains duplicated records:\n${footer.trim()}`,
+        );
+      }
     }
 
     if (lines.length > 2) {
