@@ -3,11 +3,56 @@
 import { configDotenv } from "dotenv";
 import fetch from "node-fetch";
 import fs from "fs/promises";
+import {
+  readdirSync,
+  readFileSync,
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+} from "fs";
 import path from "path";
 import { execFile } from "child_process";
 import { program } from "commander";
+import omelette from "omelette";
+import inquirer from "inquirer";
 
-configDotenv({ path: path.join(process.env.HOME, ".prbot") });
+const CONFIG_DIR = path.join(process.env.HOME || "", ".config", "prbot");
+const CONFIG_FILE = path.join(CONFIG_DIR, "config");
+const COMPLETION_SCRIPT = path.join(CONFIG_DIR, "completion.sh");
+
+const completion = omelette("prbot <command> <module>");
+completion.on("command", ({ reply }) => {
+  reply(["pr", "ver", "init"]);
+});
+
+completion.on("module", ({ before, reply }) => {
+  if (before === "init") {
+    reply([]);
+    return;
+  }
+  try {
+    const raw = readFileSync(CONFIG_FILE, "utf-8");
+    const match = raw.match(/^ADDONS_PATH=(.+)$/m);
+    if (!match) {
+      reply([]);
+      return;
+    }
+    const addonsPath = match[1].trim().replace(/^~/, process.env.HOME || "");
+    reply(readdirSync(path.join(addonsPath, "config")));
+  } catch {
+    reply([]);
+  }
+});
+
+completion.init();
+
+const isCompletionMode =
+  process.argv.includes("--compbash") || process.argv.includes("--compzsh");
+
+if (!isCompletionMode) {
+  configDotenv({ path: CONFIG_FILE });
+}
 
 async function getToken() {
   const url = process.env.KC_URL;
@@ -234,17 +279,13 @@ async function verbot(module_name, level) {
 }
 
 program
-  .command("pr")
-  .option("-m, --module <module>")
+  .command("pr <module>")
   .option("-b, --bump <level>")
-  .action((opts) => {
-    if (!opts.module) {
-      throw new Error("No module specified");
-    }
-    main(opts.module)
+  .action((module, opts) => {
+    main(module)
       .then(() => {
         if (opts.bump) {
-          return verbot(opts.module, opts.bump);
+          return verbot(module, opts.bump);
         }
       })
       .catch((err) => {
@@ -253,14 +294,100 @@ program
   });
 
 program
-  .command("ver")
-  .option("-m, --module <module>")
-  .option("-b, --bump <level>")
-  .action((opts) => {
-    if (!opts.module || !opts.bump) {
-      throw new Error("No module or level specified");
+  .command("init")
+  .description("Create config file and install shell completion")
+  .action(async () => {
+    if (!existsSync(CONFIG_DIR)) {
+      mkdirSync(CONFIG_DIR, { recursive: true });
     }
-    verbot(opts.module, opts.bump);
+
+    const existing = existsSync(CONFIG_FILE)
+      ? Object.fromEntries(
+          readFileSync(CONFIG_FILE, "utf-8")
+            .split("\n")
+            .flatMap((line) => {
+              const m = line.match(/^([A-Z_]+)=(.*)$/);
+              return m ? [[m[1], m[2]]] : [];
+            }),
+        )
+      : {};
+
+    const answers = await inquirer.prompt([
+      {
+        type: "input",
+        name: "ADDONS_PATH",
+        message: "Addons path:",
+        default: existing.ADDONS_PATH ?? "~/codebase/sorgenia/addons",
+      },
+      {
+        type: "input",
+        name: "KC_URL",
+        message: "Keycloak URL:",
+        default: existing.KC_URL ?? "",
+      },
+      {
+        type: "input",
+        name: "KC_USER",
+        message: "Keycloak user:",
+        default: existing.KC_USER ?? "",
+      },
+      {
+        type: "password",
+        name: "KC_PASSWORD",
+        message: "Keycloak password:",
+        default: existing.KC_PASSWORD ?? "",
+        mask: "*",
+      },
+      {
+        type: "input",
+        name: "KC_ID",
+        message: "Keycloak client ID:",
+        default: existing.KC_ID ?? "",
+      },
+      {
+        type: "input",
+        name: "KC_SECRET",
+        message: "Keycloak client secret:",
+        default: existing.KC_SECRET ?? "",
+      },
+      {
+        type: "input",
+        name: "RIP_URL",
+        message: "RIP URL:",
+        default: existing.RIP_URL ?? "",
+      },
+    ]);
+
+    writeFileSync(
+      CONFIG_FILE,
+      Object.entries(answers)
+        .map(([k, v]) => `${k}=${v}`)
+        .join("\n") + "\n",
+    );
+    console.log(`Config written to ${CONFIG_FILE}`);
+
+    writeFileSync(COMPLETION_SCRIPT, completion.generateCompletionCode());
+    console.log(`Completion script written to ${COMPLETION_SCRIPT}`);
+
+    const rcFile = path.join(process.env.HOME || "", ".bashrc");
+    const sourceLine = `source ${COMPLETION_SCRIPT}`;
+    const rcContent = existsSync(rcFile) ? readFileSync(rcFile, "utf-8") : "";
+    if (!rcContent.includes(sourceLine)) {
+      appendFileSync(rcFile, `\n# prbot completion\n${sourceLine}\n`);
+      console.log(`Registered completion in ${rcFile} — run: source ~/.bashrc`);
+    } else {
+      console.log("Completion already registered in ~/.bashrc");
+    }
+  });
+
+program
+  .command("ver <module>")
+  .option("-b, --bump <level>")
+  .action((module, opts) => {
+    if (!opts.bump) {
+      throw new Error("No bump level specified");
+    }
+    verbot(module, opts.bump);
   });
 
 program.parse();
