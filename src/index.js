@@ -10,14 +10,15 @@ import { main as prMain } from "./commands/pr.js";
 import { verbot } from "./commands/ver.js";
 import { init } from "./commands/init.js";
 import { changelog } from "./commands/changelog.js";
+import { autopr } from "./commands/autopr.js";
 
 const completion = omelette("prbot <command> <module>");
 completion.on("command", ({ reply }) => {
-  reply(["pr", "ver", "init", "changelog"]);
+  reply(["pr", "ver", "init", "changelog", "autopr"]);
 });
 
 completion.on("module", ({ before, reply }) => {
-  if (["init", "changelog"].includes(before)) {
+  if (["init", "changelog", "autopr"].includes(before)) {
     reply([]);
     return;
   }
@@ -76,13 +77,28 @@ program
     init(completion);
   });
 
+const collect = (val, prev) => [...(prev ?? []), val];
+
 program
   .command("changelog <pr>")
-  .option("-t, --trident <code...>", "Trident issue codes")
-  .option("-j, --jira <code...>", "JIRA issue codes")
+  .option("-t, --trident <code>", "Trident issue codes (repeatable)", collect)
+  .option("-j, --jira <code>", "JIRA issue codes (repeatable)", collect)
   .option("-m, --message <text>", "Changelog entry message")
   .action((prNumber, opts) => {
     changelog(prNumber, opts).catch((err) => {
+      throw err;
+    });
+  });
+
+program
+  .command("autopr")
+  .option("-t, --trident <id>", "Trident task IDs (repeatable)", collect)
+  .option("-j, --jira <code>", "JIRA issue codes (repeatable)", collect)
+  .option("-m, --message <text>", "Changelog entry message")
+  .option("-b, --branch <name>", "Branch name (default: autopr_<taskId>)")
+  .option("-n, --name <text>", "PR title (default: task name from Odoo)")
+  .action((opts) => {
+    autopr(opts).catch((err) => {
       throw err;
     });
   });

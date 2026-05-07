@@ -22,6 +22,18 @@ function buildRefString(tridents, jiras, prNumber) {
   return refs.length > 0 ? `(${refs.join(", ")})` : "";
 }
 
+function appendPrToLine(line, prNumber) {
+  const parenMatch = line.match(/\(([^)]*)\)\s*$/);
+  if (parenMatch) {
+    const inner = parenMatch[1];
+    const suffix = inner.includes("PR sorgenia_addons")
+      ? `, #${prNumber}ADO`
+      : `, PR sorgenia_addons #${prNumber}ADO`;
+    return line.replace(/\(([^)]*)\)\s*$/, `(${inner}${suffix})`);
+  }
+  return `${line.trimEnd()} (PR sorgenia_addons #${prNumber}ADO)`;
+}
+
 function findDuplicateLine(content, tridents, jiras) {
   const lines = content.split("\n");
 
@@ -102,6 +114,29 @@ async function changelog(prNumber, options) {
 
   const content = readFileSync(changelogPath, "utf-8");
 
+  const duplicate = findDuplicateLine(content, tridents, jiras);
+  let appendMode = false;
+  if (duplicate) {
+    console.log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
+    const { confirm } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "confirm",
+        message: "Append PR ref to existing entry?",
+        default: true,
+      },
+    ]);
+    appendMode = confirm;
+  }
+
+  if (appendMode) {
+    const lines = content.split("\n");
+    lines[duplicate.lineNumber] = appendPrToLine(lines[duplicate.lineNumber], prNumber);
+    await fs.writeFile(changelogPath, lines.join("\n"));
+    console.log("Updated existing line");
+    return;
+  }
+
   if (!message) {
     const answer = await inquirer.prompt([
       {
@@ -111,43 +146,6 @@ async function changelog(prNumber, options) {
       },
     ]);
     message = answer.message;
-  }
-
-  const duplicate = findDuplicateLine(content, tridents, jiras);
-  if (duplicate) {
-    console.log("Found existing line:");
-    console.log(duplicate.line);
-
-    const answer = await inquirer.prompt([
-      {
-        type: "list",
-        name: "action",
-        message: "What would you like to do?",
-        choices: ["Add PR to existing line", "Create new line"],
-      },
-    ]);
-
-    if (answer.action === "Add PR to existing line") {
-      const refString = buildRefString([], [], prNumber);
-      const lines = content.split("\n");
-      const line = lines[duplicate.lineNumber];
-
-      let updatedLine;
-      const closeParenIndex = line.lastIndexOf(")");
-      if (closeParenIndex !== -1) {
-        updatedLine =
-          line.slice(0, closeParenIndex) +
-          `, PR sorgenia_addons #${prNumber}ADO)` +
-          line.slice(closeParenIndex + 1);
-      } else {
-        updatedLine = line + ` (PR sorgenia_addons #${prNumber}ADO)`;
-      }
-
-      lines[duplicate.lineNumber] = updatedLine;
-      await fs.writeFile(changelogPath, lines.join("\n"));
-      console.log("Updated existing line");
-      return;
-    }
   }
 
   const sections = extractSections(content);
@@ -188,4 +186,4 @@ async function changelog(prNumber, options) {
   console.log("Changelog entry added");
 }
 
-export { changelog };
+export { changelog, extractSections, findSectionEndLine, detectIndentation, buildRefString, findDuplicateLine, appendPrToLine };

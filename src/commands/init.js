@@ -105,6 +105,18 @@ async function init(completion) {
       message: "DevOps repo:",
       default: existing.DEVOPS_REPO ?? "",
     },
+    {
+      type: "input",
+      name: "TRIDENT_DB",
+      message: "Trident DB name:",
+      default: existing.TRIDENT_DB ?? "",
+    },
+    {
+      type: "input",
+      name: "AUTOPR_TARGET_BRANCH",
+      message: "AutoPR target branch:",
+      default: existing.AUTOPR_TARGET_BRANCH ?? "15.0-dev",
+    },
   ]);
 
   writeFileSync(
