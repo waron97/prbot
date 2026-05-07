@@ -63,6 +63,48 @@ async function init(completion) {
       message: "RIP URL:",
       default: existing.RIP_URL ?? "",
     },
+    {
+      type: "input",
+      name: "TRIDENT_URL",
+      message: "Trident URL:",
+      default: existing.TRIDENT_URL ?? "",
+    },
+    {
+      type: "input",
+      name: "TRIDENT_UID",
+      message: "Trident UID:",
+      default: existing.TRIDENT_UID ?? "",
+    },
+    {
+      type: "input",
+      name: "TRIDENT_TOKEN",
+      message: "Trident token:",
+      default: existing.TRIDENT_TOKEN ?? "",
+    },
+    {
+      type: "input",
+      name: "DEVOPS_TOKEN",
+      message: "DevOps token:",
+      default: existing.DEVOPS_TOKEN ?? "",
+    },
+    {
+      type: "input",
+      name: "DEVOPS_ORG",
+      message: "DevOps org:",
+      default: existing.DEVOPS_ORG ?? "",
+    },
+    {
+      type: "input",
+      name: "DEVOPS_PROJECT",
+      message: "DevOps project:",
+      default: existing.DEVOPS_PROJECT ?? "",
+    },
+    {
+      type: "input",
+      name: "DEVOPS_REPO",
+      message: "DevOps repo:",
+      default: existing.DEVOPS_REPO ?? "",
+    },
   ]);
 
   writeFileSync(
