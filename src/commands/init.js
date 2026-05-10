@@ -41,8 +41,7 @@ async function init(completion) {
     {
       type: "password",
       name: "KC_PASSWORD",
-      message: "Keycloak password:",
-      default: existing.KC_PASSWORD ?? "",
+      message: `Keycloak password${existing.KC_PASSWORD ? " (leave blank to keep existing)" : ""}:`,
       mask: "*",
     },
     {
@@ -109,7 +108,7 @@ async function init(completion) {
       type: "input",
       name: "TRIDENT_DB",
       message: "Trident DB name:",
-      default: existing.TRIDENT_DB ?? "",
+      default: existing.TRIDENT_DB ?? "trident-agora",
     },
     {
       type: "input",
@@ -118,6 +117,10 @@ async function init(completion) {
       default: existing.AUTOPR_TARGET_BRANCH ?? "15.0-dev",
     },
   ]);
+
+  if (!answers.KC_PASSWORD && existing.KC_PASSWORD) {
+    answers.KC_PASSWORD = existing.KC_PASSWORD;
+  }
 
   writeFileSync(
     CONFIG_FILE,

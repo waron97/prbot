@@ -43,6 +43,7 @@ async function fetchTask(taskId) {
             "name",
             "x_subpackage_id",
             "x_workflow",
+            "x_cluster_id",
             "x_release_checklist",
           ],
         },
@@ -274,13 +275,16 @@ async function autopr(options) {
       const anchor = tasks.find(
         (t) =>
           (Array.isArray(t.x_subpackage_id) && t.x_subpackage_id[1]) ||
-          (Array.isArray(t.x_workflow) && t.x_workflow[1]),
+          (Array.isArray(t.x_workflow) && t.x_workflow[1]) ||
+          (Array.isArray(t.x_cluster_id) && t.x_cluster_id[1]),
       );
       if (anchor) {
         if (Array.isArray(anchor.x_subpackage_id) && anchor.x_subpackage_id[1])
           candidates.push(anchor.x_subpackage_id[1]);
         if (Array.isArray(anchor.x_workflow) && anchor.x_workflow[1])
           candidates.push(anchor.x_workflow[1]);
+        if (Array.isArray(anchor.x_cluster_id) && anchor.x_cluster_id[1])
+          candidates.push(anchor.x_cluster_id[1]);
       }
     }
 
