@@ -11,10 +11,11 @@ import { verbot } from "./commands/ver.js";
 import { init } from "./commands/init.js";
 import { changelog } from "./commands/changelog.js";
 import { autopr } from "./commands/autopr.js";
+import { commit } from "./commands/commit.js";
 
 const completion = omelette("prbot <command> <module>");
 completion.on("command", ({ reply }) => {
-  reply(["pr", "ver", "init", "changelog", "autopr"]);
+  reply(["pr", "ver", "init", "changelog", "autopr", "commit"]);
 });
 
 completion.on("module", ({ before, reply }) => {
@@ -99,6 +100,14 @@ program
   .option("-n, --name <text>", "PR title (default: task name from Odoo)")
   .action((opts) => {
     autopr(opts).catch((err) => {
+      throw err;
+    });
+  });
+
+program
+  .command("commit")
+  .action((opts) => {
+    commit(opts).catch((err) => {
       throw err;
     });
   });
