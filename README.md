@@ -24,23 +24,23 @@ source ~/.bashrc
 
 ### Config keys
 
-| Key | Description |
-|-----|-------------|
-| `ADDONS_PATH` | Path to local Odoo addons repo |
-| `KC_URL` | Keycloak token endpoint URL |
-| `KC_USER` | Keycloak username |
-| `KC_PASSWORD` | Keycloak password |
-| `KC_ID` | Keycloak client ID |
-| `KC_SECRET` | Keycloak client secret |
-| `RIP_URL` | RIP API base URL |
-| `TRIDENT_URL` | Trident (Odoo) instance URL |
-| `TRIDENT_UID` | Trident user ID |
-| `TRIDENT_TOKEN` | Trident API token |
-| `TRIDENT_DB` | Trident database name |
-| `DEVOPS_TOKEN` | Azure DevOps personal access token |
-| `DEVOPS_ORG` | Azure DevOps organization |
-| `DEVOPS_PROJECT` | Azure DevOps project |
-| `DEVOPS_REPO` | Azure DevOps repository name |
+| Key                    | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `ADDONS_PATH`          | Path to local Odoo addons repo                           |
+| `KC_URL`               | Keycloak token endpoint URL                              |
+| `KC_USER`              | Keycloak username                                        |
+| `KC_PASSWORD`          | Keycloak password                                        |
+| `KC_ID`                | Keycloak client ID                                       |
+| `KC_SECRET`            | Keycloak client secret                                   |
+| `RIP_URL`              | RIP API base URL                                         |
+| `TRIDENT_URL`          | Trident (Odoo) instance URL                              |
+| `TRIDENT_UID`          | Trident user ID                                          |
+| `TRIDENT_TOKEN`        | Trident API token                                        |
+| `TRIDENT_DB`           | Trident database name                                    |
+| `DEVOPS_TOKEN`         | Azure DevOps personal access token                       |
+| `DEVOPS_ORG`           | Azure DevOps organization                                |
+| `DEVOPS_PROJECT`       | Azure DevOps project                                     |
+| `DEVOPS_REPO`          | Azure DevOps repository name                             |
 | `AUTOPR_TARGET_BRANCH` | Target branch for auto-created PRs (default: `15.0-dev`) |
 
 ## Commands
@@ -55,8 +55,8 @@ prbot pr config_wf_contestazione
 
 Options:
 
-| Flag | Description |
-|------|-------------|
+| Flag                 | Description                                                               |
+| -------------------- | ------------------------------------------------------------------------- |
 | `-b, --bump <level>` | Also bump manifest version after commit. Level: `major`, `minor`, `patch` |
 
 ```bash
@@ -81,11 +81,11 @@ prbot changelog 42 -m "Fix invoice state race condition" -t 1234 -t 5678 -j TEST
 
 Options:
 
-| Flag | Description |
-|------|-------------|
+| Flag                   | Description                                   |
+| ---------------------- | --------------------------------------------- |
 | `-m, --message <text>` | Changelog entry message (prompted if omitted) |
-| `-t, --trident <code>` | Trident issue code (repeatable) |
-| `-j, --jira <code>` | JIRA issue code (repeatable) |
+| `-t, --trident <code>` | Trident issue code (repeatable)               |
+| `-j, --jira <code>`    | JIRA issue code (repeatable)                  |
 
 ### `prbot autopr`
 
@@ -107,13 +107,13 @@ prbot autopr -j JIRA-99 --branch my-branch
 
 Options:
 
-| Flag | Description |
-|------|-------------|
-| `-t, --trident <id>` | Trident task ID (repeatable) |
-| `-j, --jira <code>` | JIRA issue code (repeatable) |
-| `-m, --message <text>` | Changelog entry message (prompted if omitted) |
-| `-b, --branch <name>` | Branch name (default: `autopr_<first-task-id>` or `autopr_<first-jira>`) |
-| `-n, --name <text>` | PR title (default: Trident task name) |
+| Flag                   | Description                                                              |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `-t, --trident <id>`   | Trident task ID (repeatable)                                             |
+| `-j, --jira <code>`    | JIRA issue code (repeatable)                                             |
+| `-m, --message <text>` | Changelog entry message (prompted if omitted)                            |
+| `-b, --branch <name>`  | Branch name (default: `autopr_<first-task-id>` or `autopr_<first-jira>`) |
+| `-n, --name <text>`    | PR title (default: Trident task name)                                    |
 
 ### `prbot init`
 

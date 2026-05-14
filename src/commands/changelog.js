@@ -1,189 +1,193 @@
-import fs from "fs/promises";
-import { readFileSync } from "fs";
-import inquirer from "inquirer";
-import search from "@inquirer/search";
-import { resolveAddonsPath } from "../lib/addons.js";
+import { readFileSync } from 'fs';
+import fs from 'fs/promises';
+import search from '@inquirer/search';
+import inquirer from 'inquirer';
+import { resolveAddonsPath } from '../lib/addons.js';
 
 function buildRefString(tridents, jiras, prNumber) {
-  const refs = [];
-
-  if (tridents && tridents.length > 0) {
-    refs.push(`Trident ${tridents.map((t) => `#${t}`).join(", #")}`);
-  }
-
-  if (jiras && jiras.length > 0) {
-    refs.push(`JIRA ${jiras.join(", ")}`);
-  }
-
-  if (prNumber) {
-    refs.push(`PR sorgenia_addons #${prNumber}ADO`);
-  }
-
-  return refs.length > 0 ? `(${refs.join(", ")})` : "";
-}
-
-function appendPrToLine(line, prNumber) {
-  const parenMatch = line.match(/\(([^)]*)\)\s*$/);
-  if (parenMatch) {
-    const inner = parenMatch[1];
-    const suffix = inner.includes("PR sorgenia_addons")
-      ? `, #${prNumber}ADO`
-      : `, PR sorgenia_addons #${prNumber}ADO`;
-    return line.replace(/\(([^)]*)\)\s*$/, `(${inner}${suffix})`);
-  }
-  return `${line.trimEnd()} (PR sorgenia_addons #${prNumber}ADO)`;
-}
-
-function findDuplicateLine(content, tridents, jiras) {
-  const lines = content.split("\n");
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const refs = [];
 
     if (tridents && tridents.length > 0) {
-      for (const t of tridents) {
-        if (line.includes(`Trident #${t}`)) {
-          return { lineNumber: i, line };
-        }
-      }
+        refs.push(`Trident ${tridents.map((t) => `#${t}`).join(', #')}`);
     }
 
     if (jiras && jiras.length > 0) {
-      for (const j of jiras) {
-        if (line.includes(j)) {
-          return { lineNumber: i, line };
-        }
-      }
+        refs.push(`JIRA ${jiras.join(', ')}`);
     }
-  }
 
-  return null;
+    if (prNumber) {
+        refs.push(`PR sorgenia_addons #${prNumber}ADO`);
+    }
+
+    return refs.length > 0 ? `(${refs.join(', ')})` : '';
+}
+
+function appendPrToLine(line, prNumber) {
+    const parenMatch = line.match(/\(([^)]*)\)\s*$/);
+    if (parenMatch) {
+        const inner = parenMatch[1];
+        const suffix = inner.includes('PR sorgenia_addons')
+            ? `, #${prNumber}ADO`
+            : `, PR sorgenia_addons #${prNumber}ADO`;
+        return line.replace(/\(([^)]*)\)\s*$/, `(${inner}${suffix})`);
+    }
+    return `${line.trimEnd()} (PR sorgenia_addons #${prNumber}ADO)`;
+}
+
+function findDuplicateLine(content, tridents, jiras) {
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        if (tridents && tridents.length > 0) {
+            for (const t of tridents) {
+                if (line.includes(`Trident #${t}`)) {
+                    return { lineNumber: i, line };
+                }
+            }
+        }
+
+        if (jiras && jiras.length > 0) {
+            for (const j of jiras) {
+                if (line.includes(j)) {
+                    return { lineNumber: i, line };
+                }
+            }
+        }
+    }
+
+    return null;
 }
 
 function extractSections(content) {
-  const lines = content.split("\n");
-  const sections = [];
+    const lines = content.split('\n');
+    const sections = [];
 
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith("### ")) {
-      sections.push({
-        heading: lines[i],
-        startLine: i,
-      });
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].startsWith('### ')) {
+            sections.push({
+                heading: lines[i],
+                startLine: i,
+            });
+        }
     }
-  }
 
-  return sections;
+    return sections;
 }
 
 function findSectionEndLine(lines, sectionStartLine) {
-  const nextSectionLine = lines.findIndex(
-    (l, i) => i > sectionStartLine && l.startsWith("### "),
-  );
+    const nextSectionLine = lines.findIndex((l, i) => i > sectionStartLine && l.startsWith('### '));
 
-  if (nextSectionLine === -1) {
-    return lines.length - 1;
-  }
+    if (nextSectionLine === -1) {
+        return lines.length - 1;
+    }
 
-  let endLine = nextSectionLine - 1;
-  while (endLine > sectionStartLine && lines[endLine].trim() === "") {
-    endLine--;
-  }
+    let endLine = nextSectionLine - 1;
+    while (endLine > sectionStartLine && lines[endLine].trim() === '') {
+        endLine--;
+    }
 
-  return endLine;
+    return endLine;
 }
 
 function detectIndentation(lines, sectionStartLine, sectionEndLine) {
-  for (let i = sectionStartLine + 1; i <= sectionEndLine; i++) {
-    const line = lines[i];
-    const match = line.match(/^(\s*)-\s/);
-    if (match) {
-      return match[1];
+    for (let i = sectionStartLine + 1; i <= sectionEndLine; i++) {
+        const line = lines[i];
+        const match = line.match(/^(\s*)-\s/);
+        if (match) {
+            return match[1];
+        }
     }
-  }
-  return "  ";
+    return '  ';
 }
 
 async function changelog(prNumber, options) {
-  const tridents = options.trident || [];
-  const jiras = options.jira || [];
-  let message = options.message;
+    const tridents = options.trident || [];
+    const jiras = options.jira || [];
+    let message = options.message;
 
-  let ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
-  const changelogPath = `${ADDONS_PATH}/CHANGELOG.md`;
+    let ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
+    const changelogPath = `${ADDONS_PATH}/CHANGELOG.md`;
 
-  const content = readFileSync(changelogPath, "utf-8");
+    const content = readFileSync(changelogPath, 'utf-8');
 
-  const duplicate = findDuplicateLine(content, tridents, jiras);
-  let appendMode = false;
-  if (duplicate) {
-    console.log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
-    const { confirm } = await inquirer.prompt([
-      {
-        type: "confirm",
-        name: "confirm",
-        message: "Append PR ref to existing entry?",
-        default: true,
-      },
-    ]);
-    appendMode = confirm;
-  }
+    const duplicate = findDuplicateLine(content, tridents, jiras);
+    let appendMode = false;
+    if (duplicate) {
+        console.log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
+        const { confirm } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: 'Append PR ref to existing entry?',
+                default: true,
+            },
+        ]);
+        appendMode = confirm;
+    }
 
-  if (appendMode) {
-    const lines = content.split("\n");
-    lines[duplicate.lineNumber] = appendPrToLine(lines[duplicate.lineNumber], prNumber);
-    await fs.writeFile(changelogPath, lines.join("\n"));
-    console.log("Updated existing line");
-    return;
-  }
+    if (appendMode) {
+        const lines = content.split('\n');
+        lines[duplicate.lineNumber] = appendPrToLine(lines[duplicate.lineNumber], prNumber);
+        await fs.writeFile(changelogPath, lines.join('\n'));
+        console.log('Updated existing line');
+        return;
+    }
 
-  if (!message) {
-    const answer = await inquirer.prompt([
-      {
-        type: "input",
-        name: "message",
-        message: "Changelog entry message:",
-      },
-    ]);
-    message = answer.message;
-  }
+    if (!message) {
+        const answer = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'message',
+                message: 'Changelog entry message:',
+            },
+        ]);
+        message = answer.message;
+    }
 
-  const sections = extractSections(content);
-  const sectionChoices = sections.map((s) => ({
-    name: s.heading.replace(/^## /, ""),
-    value: s.heading,
-  }));
+    const sections = extractSections(content);
+    const sectionChoices = sections.map((s) => ({
+        name: s.heading.replace(/^## /, ''),
+        value: s.heading,
+    }));
 
-  const selectedSection = await search({
-    message: "Select section to add entry:",
-    source: async (input) => {
-      if (!input) {
-        return sectionChoices;
-      }
+    const selectedSection = await search({
+        message: 'Select section to add entry:',
+        source: async (input) => {
+            if (!input) {
+                return sectionChoices;
+            }
 
-      const filtered = sectionChoices.filter((choice) =>
-        choice.name.toLowerCase().includes(input.toLowerCase()),
-      );
+            const filtered = sectionChoices.filter((choice) =>
+                choice.name.toLowerCase().includes(input.toLowerCase())
+            );
 
-      return filtered;
-    },
-  });
+            return filtered;
+        },
+    });
 
-  const selectedSectionObj = sections.find(
-    (s) => s.heading === selectedSection,
-  );
+    const selectedSectionObj = sections.find((s) => s.heading === selectedSection);
 
-  const lines = content.split("\n");
-  const endLine = findSectionEndLine(lines, selectedSectionObj.startLine);
-  const indent = detectIndentation(lines, selectedSectionObj.startLine, endLine);
+    const lines = content.split('\n');
+    const endLine = findSectionEndLine(lines, selectedSectionObj.startLine);
+    const indent = detectIndentation(lines, selectedSectionObj.startLine, endLine);
 
-  const refString = buildRefString(tridents, jiras, prNumber);
-  const newEntry = `${indent}- ${message}${refString ? " " + refString : ""}`;
+    const refString = buildRefString(tridents, jiras, prNumber);
+    const newEntry = `${indent}- ${message}${refString ? ' ' + refString : ''}`;
 
-  lines.splice(endLine + 1, 0, newEntry);
+    lines.splice(endLine + 1, 0, newEntry);
 
-  await fs.writeFile(changelogPath, lines.join("\n"));
-  console.log("Changelog entry added");
+    await fs.writeFile(changelogPath, lines.join('\n'));
+    console.log('Changelog entry added');
 }
 
-export { changelog, extractSections, findSectionEndLine, detectIndentation, buildRefString, findDuplicateLine, appendPrToLine };
+export {
+    changelog,
+    extractSections,
+    findSectionEndLine,
+    detectIndentation,
+    buildRefString,
+    findDuplicateLine,
+    appendPrToLine,
+};
