@@ -7,7 +7,7 @@ import omelette from 'omelette';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
-import { exportPb, exportRip } from './commands/export.js';
+import { exportPb, exportRip, exportImperex } from './commands/export.js';
 import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
 import { verbot } from './commands/ver.js';
@@ -133,6 +133,15 @@ exportCmd
     .option('--no-commit')
     .action((opts) => {
         exportPb(opts).catch((err) => {
+            throw err;
+        });
+    });
+
+exportCmd
+    .command('imperex')
+    .option('--no-commit')
+    .action((opts) => {
+        exportImperex(opts).catch((err) => {
             throw err;
         });
     });
