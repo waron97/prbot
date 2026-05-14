@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readdirSync, readFileSync } from 'fs';
+import { execFile } from 'child_process';
 import path from 'path';
 import { program } from 'commander';
 import { configDotenv } from 'dotenv';
@@ -145,5 +146,17 @@ exportCmd
             throw err;
         });
     });
+
+program.command('update').action(() => {
+    console.log('Updating prbot...');
+    execFile('npm', ['i', '-g', '@waron97/prbot'], (error, stdout, stderr) => {
+        if (error) {
+            console.error(stderr || error.message);
+            process.exit(1);
+        }
+        console.log(stdout);
+        console.log('Done.');
+    });
+});
 
 program.parse();
