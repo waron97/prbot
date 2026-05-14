@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import { resolveAddonsPath } from '../lib/addons.js';
+import { fuzzyMatch } from '../lib/fuzzy.js';
 
 function buildRefString(tridents, jiras, prNumber) {
     const refs = [];
@@ -159,11 +160,7 @@ async function changelog(prNumber, options) {
                 return sectionChoices;
             }
 
-            const filtered = sectionChoices.filter((choice) =>
-                choice.name.toLowerCase().includes(input.toLowerCase())
-            );
-
-            return filtered;
+            return sectionChoices.filter((choice) => fuzzyMatch(choice.name, input));
         },
     });
 

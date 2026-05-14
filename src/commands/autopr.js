@@ -4,6 +4,7 @@ import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import fetch from 'node-fetch';
 import { resolveAddonsPath } from '../lib/addons.js';
+import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
 import {
     appendPrToLine,
@@ -176,7 +177,7 @@ async function selectSection(sections, candidates) {
         message: 'Select changelog section:',
         source: async (input) => {
             if (!input) return allChoices;
-            return allChoices.filter((c) => c.value.toLowerCase().includes(input.toLowerCase()));
+            return allChoices.filter((c) => fuzzyMatch(c.value, input));
         },
     });
     return sections.find((s) => s.heading === selected);

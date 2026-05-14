@@ -5,6 +5,7 @@ import search from '@inquirer/search';
 import { getToken } from '../lib/auth.js';
 import { execGit } from '../lib/git.js';
 import { resolveAddonsPath } from '../lib/addons.js';
+import { fuzzyMatch } from '../lib/fuzzy.js';
 
 async function getProcessList(token) {
     const url = `${process.env.IMPORTEXPORT_URL}/object/process_builder?addLanguageParam=true`;
@@ -112,8 +113,7 @@ async function exportPb(opts) {
         message: 'Select PB process to export:',
         source: async (input) => {
             if (!input) return choices;
-            const q = input.toLowerCase();
-            return choices.filter((c) => c.name.toLowerCase().includes(q));
+            return choices.filter((c) => fuzzyMatch(c.name, input));
         },
     });
 
