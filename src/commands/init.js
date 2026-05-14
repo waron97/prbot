@@ -116,6 +116,14 @@ async function init(completion) {
             message: 'AutoPR target branch:',
             default: existing.AUTOPR_TARGET_BRANCH ?? '15.0-dev',
         },
+        {
+            type: 'input',
+            name: 'IMPORTEXPORT_URL',
+            message: 'ImportExport URL:',
+            default:
+                existing.IMPORTEXPORT_URL ??
+                'https://sorgenia-test-02.symple.cloud/api/importexport/v1/',
+        },
     ]);
 
     if (!answers.KC_PASSWORD && existing.KC_PASSWORD) {

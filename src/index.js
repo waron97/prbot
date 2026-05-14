@@ -7,6 +7,7 @@ import omelette from 'omelette';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
+import { exportPb, exportRip } from './commands/export.js';
 import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
 import { verbot } from './commands/ver.js';
@@ -107,5 +108,33 @@ program.command('commit').action((opts) => {
         throw err;
     });
 });
+
+const exportCmd = program.command('export');
+
+exportCmd
+    .command('workflow <module>')
+    .option('-b, --bump <level>')
+    .action((module, opts) => {
+        prMain(module)
+            .then(() => {
+                if (opts.bump) {
+                    return verbot(module, opts.bump);
+                }
+            })
+            .catch((err) => {
+                throw err;
+            });
+    });
+
+exportCmd.command('rip').action(() => exportRip());
+
+exportCmd
+    .command('pb')
+    .option('--no-commit')
+    .action((opts) => {
+        exportPb(opts).catch((err) => {
+            throw err;
+        });
+    });
 
 program.parse();
