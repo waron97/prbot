@@ -42,6 +42,7 @@ source ~/.bashrc
 | `DEVOPS_PROJECT`       | Azure DevOps project                                     |
 | `DEVOPS_REPO`          | Azure DevOps repository name                             |
 | `AUTOPR_TARGET_BRANCH` | Target branch for auto-created PRs (default: `15.0-dev`) |
+| `IMPORTEXPORT_URL`     | ImportExport API base URL                                 |
 
 ## Commands
 
@@ -115,9 +116,69 @@ Options:
 | `-b, --branch <name>`  | Branch name (default: `autopr_<first-task-id>` or `autopr_<first-jira>`) |
 | `-n, --name <text>`    | PR title (default: Trident task name)                                    |
 
+### `prbot commit`
+
+Interactive commit builder. Prompts for operation type (`[IMP]`, `[FIX]`, etc.), what changed (workflow, module, wizard, symphony process), and a message. If nothing is staged, shows unstaged files and lets you select which to stage first. Previews the final commit message before confirming.
+
+```bash
+prbot commit
+```
+
+### `prbot export workflow <module>`
+
+Alias for `prbot pr <module>`. Fetches workflow XML and commits.
+
+```bash
+prbot export workflow config_wf_contestazione
+```
+
+Options:
+
+| Flag                 | Description                                                               |
+| -------------------- | ------------------------------------------------------------------------- |
+| `-b, --bump <level>` | Also bump manifest version after commit. Level: `major`, `minor`, `patch` |
+
+### `prbot export pb`
+
+Exports a Process Builder process from the ImportExport API and writes the ZIP to `ADDONS_PATH/.cloudbuild/pb/B2WA/processes/`. Updates the file in place if it already exists, otherwise writes to the `all/` subdirectory. Prompts to select the process via fuzzy search.
+
+```bash
+prbot export pb
+prbot export pb --no-commit
+```
+
+Options:
+
+| Flag          | Description              |
+| ------------- | ------------------------ |
+| `--no-commit` | Skip the git commit step |
+
+### `prbot export imperex`
+
+Exports a single Imperex record from Odoo via RIP and writes the resulting YAML into `ADDONS_PATH/sorgenia_imperex_metadata/migrations/0.0.0/imperex/<model>/`. Prompts first for the model (from local folder names), then for the record (fetched from API). Both prompts support fuzzy search.
+
+```bash
+prbot export imperex
+prbot export imperex --no-commit
+```
+
+Options:
+
+| Flag          | Description              |
+| ------------- | ------------------------ |
+| `--no-commit` | Skip the git commit step |
+
 ### `prbot init`
 
 Interactive setup: writes `~/.config/prbot/config` and installs shell completion.
+
+### `prbot update`
+
+Reinstalls the latest published version from npm.
+
+```bash
+prbot update
+```
 
 ## Tab completion
 
