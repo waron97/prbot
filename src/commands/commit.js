@@ -47,9 +47,7 @@ function validateSameModule(files) {
     const modules = files.map(getModuleFromFile);
     const currentModule = `[${modules[0]}]`;
 
-    const allSameModule = modules.every(
-        (module) => `[${module}]` === currentModule
-    );
+    const allSameModule = modules.every((module) => `[${module}]` === currentModule);
 
     if (!allSameModule) {
         console.log(chalk.red('Selected files are not of the same module'));
@@ -110,10 +108,11 @@ async function commit() {
             return;
         }
 
-        const { filesToCheck, filesToStage, currentModule: selectedModule } = await getFilesToCommit(
-            stagedChanges,
-            unstagedChanges
-        );
+        const {
+            filesToCheck,
+            filesToStage,
+            currentModule: selectedModule,
+        } = await getFilesToCommit(stagedChanges, unstagedChanges);
 
         if (filesToCheck.length === 0) {
             console.log(chalk.red('No files selected.'));
