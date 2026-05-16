@@ -118,7 +118,7 @@ Options:
 
 ### `prbot commit`
 
-Interactive commit builder. Prompts for operation type (`[IMP]`, `[FIX]`, etc.), what changed (workflow, module, wizard, symphony process), and a message. If nothing is staged, shows unstaged files and lets you select which to stage first. Previews the final commit message before confirming.
+Interactive commit builder. Prompts for operation type (`[IMP]`, `[FIX]`, etc.), and a message. The destinatin module will be automatically detected. If nothing is staged, shows unstaged files and lets you select which to stage first. Previews the final commit message before confirming.
 
 ```bash
 prbot commit
