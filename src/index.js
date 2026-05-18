@@ -8,32 +8,49 @@ import omelette from 'omelette';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
-import { exportPb, exportRip, exportImperex } from './commands/export.js';
+import { exportPb, exportRip, exportImperex, exportEmailTemplates } from './commands/export.js';
 import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
 import { verbot } from './commands/ver.js';
 import { CONFIG_FILE } from './config.js';
 
-const completion = omelette('prbot <command> <module>');
+const EXPORT_SUBCOMMANDS = ['workflow', 'email-templates', 'pb', 'imperex', 'rip'];
+
+function replyModules(reply) {
+    try {
+        const raw = readFileSync(CONFIG_FILE, 'utf-8');
+        const match = raw.match(/^ADDONS_PATH=(.+)$/m);
+        if (!match) { reply([]); return; }
+        const addonsPath = match[1].trim().replace(/^~/, process.env.HOME || '');
+        reply(readdirSync(path.join(addonsPath, 'config')));
+    } catch {
+        reply([]);
+    }
+}
+
+const completion = omelette('prbot <command> <subOrModule> <module>');
 completion.on('command', ({ reply }) => {
-    reply(['pr', 'ver', 'init', 'changelog', 'autopr', 'commit']);
+    reply(['pr', 'ver', 'init', 'changelog', 'autopr', 'commit', 'export']);
 });
 
-completion.on('module', ({ before, reply }) => {
+// 2nd token: export subcommands or module (for non-export commands)
+completion.on('subOrModule', ({ before, reply }) => {
+    if (before === 'export') {
+        reply(EXPORT_SUBCOMMANDS);
+        return;
+    }
     if (['init', 'changelog', 'autopr'].includes(before)) {
         reply([]);
         return;
     }
-    try {
-        const raw = readFileSync(CONFIG_FILE, 'utf-8');
-        const match = raw.match(/^ADDONS_PATH=(.+)$/m);
-        if (!match) {
-            reply([]);
-            return;
-        }
-        const addonsPath = match[1].trim().replace(/^~/, process.env.HOME || '');
-        reply(readdirSync(path.join(addonsPath, 'config')));
-    } catch {
+    replyModules(reply);
+});
+
+// 3rd token: module (only relevant for export subcommands that take one)
+completion.on('module', ({ before, reply }) => {
+    if (['workflow'].includes(before)) {
+        replyModules(reply);
+    } else {
         reply([]);
     }
 });
@@ -143,6 +160,15 @@ exportCmd
     .option('--no-commit')
     .action((opts) => {
         exportImperex(opts).catch((err) => {
+            throw err;
+        });
+    });
+
+exportCmd
+    .command('email-templates')
+    .option('--no-commit')
+    .action((opts) => {
+        exportEmailTemplates(opts).catch((err) => {
             throw err;
         });
     });
