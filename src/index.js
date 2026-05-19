@@ -1,67 +1,17 @@
 #!/usr/bin/env node
-import { readdirSync, readFileSync } from 'fs';
 import { execFile } from 'child_process';
-import path from 'path';
 import { program } from 'commander';
 import { configDotenv } from 'dotenv';
-import omelette from 'omelette';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
-import { exportPb, exportRip, exportImperex, exportEmailTemplates } from './commands/export.js';
+import { exportPb, exportRip, exportImperex, exportEmailTemplates, exportWorkflow } from './commands/export.js';
 import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
 import { verbot } from './commands/ver.js';
 import { CONFIG_FILE } from './config.js';
 
-const EXPORT_SUBCOMMANDS = ['workflow', 'email-templates', 'pb', 'imperex', 'rip'];
-
-function replyModules(reply) {
-    try {
-        const raw = readFileSync(CONFIG_FILE, 'utf-8');
-        const match = raw.match(/^ADDONS_PATH=(.+)$/m);
-        if (!match) { reply([]); return; }
-        const addonsPath = match[1].trim().replace(/^~/, process.env.HOME || '');
-        reply(readdirSync(path.join(addonsPath, 'config')));
-    } catch {
-        reply([]);
-    }
-}
-
-const completion = omelette('prbot <command> <subOrModule> <module>');
-completion.on('command', ({ reply }) => {
-    reply(['pr', 'ver', 'init', 'changelog', 'autopr', 'commit', 'export']);
-});
-
-// 2nd token: export subcommands or module (for non-export commands)
-completion.on('subOrModule', ({ before, reply }) => {
-    if (before === 'export') {
-        reply(EXPORT_SUBCOMMANDS);
-        return;
-    }
-    if (['init', 'changelog', 'autopr'].includes(before)) {
-        reply([]);
-        return;
-    }
-    replyModules(reply);
-});
-
-// 3rd token: module (only relevant for export subcommands that take one)
-completion.on('module', ({ before, reply }) => {
-    if (['workflow'].includes(before)) {
-        replyModules(reply);
-    } else {
-        reply([]);
-    }
-});
-
-completion.init();
-
-const isCompletionMode = process.argv.includes('--compbash') || process.argv.includes('--compzsh');
-
-if (!isCompletionMode) {
-    configDotenv({ path: CONFIG_FILE });
-}
+configDotenv({ path: CONFIG_FILE });
 
 program
     .command('pr <module>')
@@ -90,9 +40,9 @@ program
 
 program
     .command('init')
-    .description('Create config file and install shell completion')
+    .description('Create config file')
     .action(() => {
-        init(completion);
+        init();
     });
 
 const collect = (val, prev) => [...(prev ?? []), val];
@@ -130,18 +80,12 @@ program.command('commit').action((opts) => {
 const exportCmd = program.command('export');
 
 exportCmd
-    .command('workflow <module>')
-    .option('-b, --bump <level>')
-    .action((module, opts) => {
-        prMain(module)
-            .then(() => {
-                if (opts.bump) {
-                    return verbot(module, opts.bump);
-                }
-            })
-            .catch((err) => {
-                throw err;
-            });
+    .command('workflow')
+    .option('--no-commit')
+    .action((opts) => {
+        exportWorkflow(opts).catch((err) => {
+            throw err;
+        });
     });
 
 exportCmd.command('rip').action(() => exportRip());

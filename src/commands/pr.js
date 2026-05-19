@@ -20,7 +20,7 @@ async function getFiles(module_name, token) {
     return await response.json();
 }
 
-async function main(module_name) {
+async function runPr(module_name, opts = {}) {
     const token = await getToken();
     const files = await getFiles(module_name, token);
 
@@ -69,6 +69,8 @@ async function main(module_name) {
         console.log(`Processed: ${file.name} -> ${destPath}`);
     }
 
+    if (opts.commit === false) return;
+
     const workflowDir = path.join(ADDONS_PATH, 'config', module_name, 'data');
     const filesToAdd = [
         path.join(workflowDir, 'workflow_missing_relations.xml'),
@@ -95,4 +97,8 @@ async function main(module_name) {
     console.log(`Committed with message: ${commitMessage}`);
 }
 
-export { main };
+async function main(module_name) {
+    return runPr(module_name);
+}
+
+export { main, runPr };

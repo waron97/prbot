@@ -1,9 +1,8 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import path from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import inquirer from 'inquirer';
-import { COMPLETION_SCRIPT, CONFIG_DIR, CONFIG_FILE } from '../config.js';
+import { CONFIG_DIR, CONFIG_FILE } from '../config.js';
 
-async function init(completion) {
+async function init() {
     if (!existsSync(CONFIG_DIR)) {
         mkdirSync(CONFIG_DIR, { recursive: true });
     }
@@ -137,19 +136,6 @@ async function init(completion) {
             .join('\n') + '\n'
     );
     console.log(`Config written to ${CONFIG_FILE}`);
-
-    writeFileSync(COMPLETION_SCRIPT, completion.generateCompletionCode());
-    console.log(`Completion script written to ${COMPLETION_SCRIPT}`);
-
-    const rcFile = path.join(process.env.HOME || '', '.bashrc');
-    const sourceLine = `source ${COMPLETION_SCRIPT}`;
-    const rcContent = existsSync(rcFile) ? readFileSync(rcFile, 'utf-8') : '';
-    if (!rcContent.includes(sourceLine)) {
-        appendFileSync(rcFile, `\n# prbot completion\n${sourceLine}\n`);
-        console.log(`Registered completion in ${rcFile} — run: source ~/.bashrc`);
-    } else {
-        console.log('Completion already registered in ~/.bashrc');
-    }
 }
 
 export { init };
