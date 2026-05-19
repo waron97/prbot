@@ -1,9 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import search from '@inquirer/search';
+import { select } from '@inquirer/prompts';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { runPr } from './pr.js';
+import { verbot } from './ver.js';
 
 async function getModuleChoices() {
     const ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
@@ -25,6 +27,23 @@ async function exportWorkflow(opts) {
     });
 
     await runPr(module, opts);
+
+    let bumpLevel = opts.bump;
+    if (!bumpLevel) {
+        bumpLevel = await select({
+            message: 'Bump version?',
+            choices: [
+                { name: 'No bump', value: 'none' },
+                { name: 'Patch', value: 'patch' },
+                { name: 'Minor', value: 'minor' },
+                { name: 'Major', value: 'major' },
+            ],
+        });
+    }
+
+    if (bumpLevel && bumpLevel !== 'none') {
+        await verbot(module, bumpLevel);
+    }
 }
 
 export { exportWorkflow };

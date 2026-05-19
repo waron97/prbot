@@ -82,6 +82,7 @@ const exportCmd = program.command('export');
 exportCmd
     .command('workflow')
     .option('--no-commit')
+    .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
     .action((opts) => {
         exportWorkflow(opts).catch((err) => {
             throw err;

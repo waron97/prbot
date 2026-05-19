@@ -73,6 +73,10 @@ function buildPrDescription(taskIds, jiras) {
 async function createDevopsPR(branch, title, description) {
     const { DEVOPS_ORG, DEVOPS_PROJECT, DEVOPS_REPO, AUTOPR_TARGET_BRANCH } = process.env;
     const apiUrl = `https://dev.azure.com/${DEVOPS_ORG}/${DEVOPS_PROJECT}/_apis/git/repositories/${DEVOPS_REPO}/pullrequests?api-version=7.0`;
+    const reviewers = process.env.AUTOPR_REQUIRED_REVIEWER_ID
+        ? [{ id: process.env.AUTOPR_REQUIRED_REVIEWER_ID, isRequired: true }]
+        : [];
+
     const res = await fetch(apiUrl, {
         method: 'POST',
         headers: devopsHeaders(),
@@ -82,6 +86,7 @@ async function createDevopsPR(branch, title, description) {
             isDraft: true,
             sourceRefName: `refs/heads/${branch}`,
             targetRefName: `refs/heads/${AUTOPR_TARGET_BRANCH}`,
+            reviewers,
         }),
     });
     const data = await res.json();
