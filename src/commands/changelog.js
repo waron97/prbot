@@ -9,7 +9,7 @@ function buildRefString(tridents, jiras, prNumber) {
     const refs = [];
 
     if (tridents && tridents.length > 0) {
-        refs.push(`Trident ${tridents.map((t) => `#${t}`).join(', #')}`);
+        refs.push(`Trident ${tridents.map((t) => `#${t}`).join(', ')}`);
     }
 
     if (jiras && jiras.length > 0) {
