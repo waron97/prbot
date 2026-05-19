@@ -14,13 +14,7 @@ npm install -g .
 prbot init
 ```
 
-Prompts for all required config values, writes them to `~/.config/prbot/config`, installs shell tab completion, and patches `~/.bashrc`. Run once, re-run anytime to update config.
-
-After first run:
-
-```bash
-source ~/.bashrc
-```
+Prompts for all required config values and writes them to `~/.config/prbot/config`. Run once, re-run anytime to update config.
 
 ### Config keys
 
@@ -124,19 +118,20 @@ Interactive commit builder. Prompts for operation type (`[IMP]`, `[FIX]`, etc.),
 prbot commit
 ```
 
-### `prbot export workflow <module>`
+### `prbot export workflow`
 
-Alias for `prbot pr <module>`. Fetches workflow XML and commits.
+Fetches workflow XML for an interactively selected module from RIP and commits. Prompts to select the module (from `ADDONS_PATH/config/` directories) via fuzzy search.
 
 ```bash
-prbot export workflow config_wf_contestazione
+prbot export workflow
+prbot export workflow --no-commit
 ```
 
 Options:
 
-| Flag                 | Description                                                               |
-| -------------------- | ------------------------------------------------------------------------- |
-| `-b, --bump <level>` | Also bump manifest version after commit. Level: `major`, `minor`, `patch` |
+| Flag          | Description              |
+| ------------- | ------------------------ |
+| `--no-commit` | Skip the git commit step |
 
 ### `prbot export pb`
 
@@ -168,9 +163,24 @@ Options:
 | ------------- | ------------------------ |
 | `--no-commit` | Skip the git commit step |
 
+### `prbot export email-templates`
+
+Fetches email templates for an interactively selected workflow from RIP and writes them as `ADDONS_PATH/config/<module>/data/mail_templates.xml`. Prompts first for the module (from `ADDONS_PATH/config/` directories), then for the workflow. Both prompts support fuzzy search.
+
+```bash
+prbot export email-templates
+prbot export email-templates --no-commit
+```
+
+Options:
+
+| Flag          | Description              |
+| ------------- | ------------------------ |
+| `--no-commit` | Skip the git commit step |
+
 ### `prbot init`
 
-Interactive setup: writes `~/.config/prbot/config` and installs shell completion.
+Interactive setup: writes `~/.config/prbot/config`.
 
 ### `prbot update`
 
@@ -180,10 +190,3 @@ Reinstalls the latest published version from npm.
 prbot update
 ```
 
-## Tab completion
-
-After `prbot init` and sourcing `~/.bashrc`, `<module>` arguments autocomplete from directories in `ADDONS_PATH/config/`.
-
-```
-prbot pr config_wf_<TAB>   # lists all workflow modules
-```
