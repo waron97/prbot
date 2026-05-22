@@ -7,7 +7,8 @@
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "bin": {
-        "prbot": "src/index.js"
+        "prbot": "src/index.js",
+        "agrippa": "src/agrippa/index.js"
     },
     "dependencies": {
         "@inquirer/search": "^2.0.1",
@@ -18,7 +19,9 @@
         "inquirer-search-list": "^1.2.6",
         "node-fetch": "^3.3.2",
         "omelette": "^0.4.17",
-        "prettier": "^3.5.3"
+        "prettier": "^3.5.3",
+        "slugify": "^1.6.9",
+        "yaml": "^2.9.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.21.0",
