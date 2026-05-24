@@ -80,7 +80,7 @@ async function clone(opts) {
         }
 
         console.log(`Fetching phases for "${record.name}"...`);
-        const phases = await getPhasesByWorkflow(token, ripUrl, record.id);
+        const phases = await getPhasesByWorkflow(token, ripUrl, record.id, { fromCode: true });
 
         if (!phases.length) {
             console.log('No phases found.');
@@ -94,6 +94,8 @@ async function clone(opts) {
                 path: filePath,
                 id: phase.id,
                 object_type: 'phase',
+                workflow_id: record.id,
+                workflow_name: record.name,
                 checksum_at_pull: computeChecksum(phase.code),
                 name: `${record.name} / ${phase.name}`,
             });

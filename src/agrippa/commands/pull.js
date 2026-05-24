@@ -1,10 +1,10 @@
 import inquirer from 'inquirer';
 import { dirname } from 'path';
 import { readConfig, writeConfig, loadEffectiveEnv } from '../lib/config.js';
-import { getPhasesByIds, listMfas } from '../lib/api.js';
+import { getPhasesByIds, getPhasesByWorkflow, listMfas } from '../lib/api.js';
 import { getToken } from '../../lib/auth.js';
 import { computeChecksum } from '../lib/checksum.js';
-import { readCodeFile, writeCodeFile, fileExists } from '../lib/workspace.js';
+import { readCodeFile, writeCodeFile, fileExists, toSlug } from '../lib/workspace.js';
 
 async function pull() {
     const config = readConfig();
@@ -32,66 +32,108 @@ async function pull() {
         }
     }
 
-    if (!config.workspace.length) {
-        console.log('No tracked resources. Run `agrippa clone` first.');
-        return;
-    }
-
-    console.log('Fetching remote code...');
     const token = await getToken();
 
-    const remoteCodeMap = await fetchRemoteCode(token, ripUrl, config.workspace);
+    // ── pull existing tracked entries ─────────────────────────────────────────
+    if (config.workspace.length) {
+        console.log('Fetching remote code...');
+        const remoteCodeMap = await fetchRemoteCode(token, ripUrl, config.workspace);
 
-    // Classify each entry
-    const classified = config.workspace.map((entry) => {
-        const key = `${entry.object_type}:${entry.id}`;
-        const remoteCode = remoteCodeMap.get(key) ?? null;
-        const localCode = readCodeFile(entry.path);
+        const classified = config.workspace.map((entry) => {
+            const key = `${entry.object_type}:${entry.id}`;
+            const remoteCode = remoteCodeMap.get(key) ?? null;
+            const localCode = readCodeFile(entry.path);
 
-        const remoteChecksum = computeChecksum(remoteCode ?? '');
-        const localChecksum = computeChecksum(localCode ?? '');
-        const pullChecksum = entry.checksum_at_pull;
+            const remoteChecksum = computeChecksum(remoteCode ?? '');
+            const localChecksum = computeChecksum(localCode ?? '');
+            const pullChecksum = entry.checksum_at_pull;
 
-        let status;
-        if (pullChecksum === localChecksum && pullChecksum === remoteChecksum) {
-            status = 'unchanged';
-        } else if (pullChecksum === localChecksum) {
-            // local untouched since last pull, remote moved ahead
-            status = 'fast-forward';
+            let status;
+            if (pullChecksum === localChecksum && pullChecksum === remoteChecksum) {
+                status = 'unchanged';
+            } else if (pullChecksum === localChecksum) {
+                status = 'fast-forward';
+            } else {
+                status = 'conflict';
+            }
+
+            return { ...entry, remoteCode, status };
+        });
+
+        const changed = classified.filter((e) => e.status !== 'unchanged');
+
+        if (!changed.length) {
+            console.log('Everything is up to date.');
         } else {
-            // local was edited; remote may or may not have changed too
-            status = 'conflict';
+            const selected = await selectEntries(changed, 'pull (overwrites local files)');
+
+            if (!selected.length) {
+                console.log('Nothing selected. No changes made.');
+            } else {
+                for (const entry of selected) {
+                    writeCodeFile(entry.path, entry.remoteCode);
+                    const idx = config.workspace.findIndex(
+                        (e) => e.id === entry.id && e.object_type === entry.object_type,
+                    );
+                    if (idx !== -1) {
+                        config.workspace[idx].checksum_at_pull = computeChecksum(entry.remoteCode);
+                    }
+                }
+                writeConfig(config);
+                console.log(`\nPulled ${selected.length} record(s).`);
+            }
         }
-
-        return { ...entry, remoteCode, status };
-    });
-
-    const changed = classified.filter((e) => e.status !== 'unchanged');
-
-    if (!changed.length) {
-        console.log('Everything is up to date.');
-        return;
+    } else {
+        console.log('No tracked resources. Run `agrippa clone` first.');
     }
 
-    const selected = await selectEntries(changed, 'pull (overwrites local files)');
+    // ── discover new phases on tracked workflows ──────────────────────────────
+    await discoverNewPhases(token, ripUrl, config);
+}
 
-    if (!selected.length) {
-        console.log('Nothing selected. No changes made.');
-        return;
-    }
-
-    for (const entry of selected) {
-        writeCodeFile(entry.path, entry.remoteCode);
-        const idx = config.workspace.findIndex(
-            (e) => e.id === entry.id && e.object_type === entry.object_type,
-        );
-        if (idx !== -1) {
-            config.workspace[idx].checksum_at_pull = computeChecksum(entry.remoteCode);
+async function discoverNewPhases(token, ripUrl, config) {
+    // Build map of workflow_id → { workflow_name, basePath } from existing phase entries
+    const workflows = new Map();
+    for (const entry of config.workspace) {
+        if (entry.object_type === 'phase' && entry.workflow_id && !workflows.has(entry.workflow_id)) {
+            workflows.set(entry.workflow_id, {
+                name: entry.workflow_name,
+                basePath: dirname(entry.path),
+            });
         }
     }
 
-    writeConfig(config);
-    console.log(`\nPulled ${selected.length} record(s).`);
+    if (!workflows.size) return;
+
+    const trackedIds = new Set(
+        config.workspace.filter((e) => e.object_type === 'phase').map((e) => e.id),
+    );
+
+    let newCount = 0;
+    for (const [wfId, { name: wfName, basePath }] of workflows) {
+        const phases = await getPhasesByWorkflow(token, ripUrl, wfId, { fromCode: true });
+        for (const phase of phases) {
+            if (trackedIds.has(phase.id)) continue;
+            const filePath = `${basePath}/${toSlug(phase.name)}.py`;
+            writeCodeFile(filePath, phase.code);
+            config.workspace.push({
+                path: filePath,
+                id: phase.id,
+                object_type: 'phase',
+                workflow_id: wfId,
+                workflow_name: wfName,
+                checksum_at_pull: computeChecksum(phase.code),
+                name: `${wfName} / ${phase.name}`,
+            });
+            console.log(`  new phase: ${filePath}`);
+            newCount++;
+        }
+    }
+
+    if (newCount) {
+        writeConfig(config);
+        console.log(`Added ${newCount} new phase(s) from tracked workflows.`);
+    }
 }
 
 // ── shared helpers ────────────────────────────────────────────────────────────
