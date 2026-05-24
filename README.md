@@ -190,3 +190,82 @@ Reinstalls the latest published version from npm.
 prbot update
 ```
 
+---
+
+## agrippa
+
+Syncs Odoo workflow phase Python code and MFA records between the local filesystem and the RIP API. Tracks changes via checksums and detects conflicts before overwriting.
+
+Credentials are inherited from the global prbot config (`~/.config/prbot/config`). Override per-workspace in `agrippa.yaml`.
+
+### `agrippa init`
+
+Creates `agrippa.yaml` in the current directory. Always writes `pyproject.toml` with the standard ruff builtins. Optionally writes `pyrightconfig.json` and copies type stubs into `typings/`.
+
+```bash
+agrippa init
+```
+
+### `agrippa clone`
+
+Clones all `from_code` phases for a selected workflow, or a single MFA, into the workspace. Writes files to disk and registers them in `agrippa.yaml`.
+
+```bash
+agrippa clone
+agrippa clone --phase
+agrippa clone --mfa
+agrippa clone --phase --id 123 --path my-workflow/
+```
+
+Options:
+
+| Flag            | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| `--phase`       | Clone a phase (select a workflow)                        |
+| `--mfa`         | Clone an MFA record                                      |
+| `--id <id>`     | Skip selection, clone by ID                              |
+| `--path <path>` | Destination path (base dir for phases, file path for MFA)|
+
+### `agrippa pull`
+
+Fetches remote code for all tracked entries and shows what changed. Classifies each as `fast-forward` (safe overwrite) or `conflict` (local edits would be lost). Lets you select which to pull.
+
+After pulling, also checks tracked workflows for newly added `from_code` phases and auto-clones any not yet present locally.
+
+```bash
+agrippa pull
+```
+
+### `agrippa push`
+
+Pushes local file changes back to RIP. Backs up current remote code to `.backup/<timestamp>/` before overwriting. Same conflict detection as pull, with the concern inverted.
+
+```bash
+agrippa push
+```
+
+### `agrippa diff [path]`
+
+Shows a diff between local files and remote code. Optionally filter to a specific file path.
+
+```bash
+agrippa diff
+agrippa diff my-workflow/some-phase.py
+```
+
+### `agrippa init-phase`
+
+Selects a workflow and any phase, then pushes a default code scaffold to that phase on RIP. Sets `set_result_automatically` to `from_code`, generates result variable constants from the phase's allowed results, and creates the corresponding `result.code.configurator` records.
+
+```bash
+agrippa init-phase
+```
+
+### `agrippa repair`
+
+Removes entries from `agrippa.yaml` whose local files no longer exist on disk.
+
+```bash
+agrippa repair
+```
+
