@@ -20,13 +20,11 @@ function listWorkflows(token, ripUrl) {
     return makeRequest('GET', '/symple.workflow/*', token, ripUrl);
 }
 
-function getPhasesByWorkflow(token, ripUrl, workflowId) {
-    return makeRequest(
-        'GET',
-        `/symple.triplet.phase/*?_filter_=[('workflow_id', '=', ${workflowId})]`,
-        token,
-        ripUrl,
-    );
+function getPhasesByWorkflow(token, ripUrl, workflowId, { fromCode = false } = {}) {
+    const filter = fromCode
+        ? `[('workflow_id', '=', ${workflowId}), ('set_result_automatically', '=', 'from_code')]`
+        : `[('workflow_id', '=', ${workflowId})]`;
+    return makeRequest('GET', `/symple.triplet.phase/*?_filter_=${filter}`, token, ripUrl);
 }
 
 function getPhasesByIds(token, ripUrl, ids) {
@@ -50,4 +48,59 @@ function updateMfa(token, ripUrl, mfaId, code) {
     return makeRequest('POST', '/symple.workflow/update_mfa', token, ripUrl, { id: mfaId, code });
 }
 
-export { listWorkflows, getPhasesByWorkflow, getPhasesByIds, updatePhase, listMfas, updateMfa };
+async function getPhaseResults(token, ripUrl, phaseId) {
+    try {
+        return await makeRequest(
+            'GET',
+            `/symple.triplet.phase.result/*?_filter_=[('code_phase_id', '=', ${phaseId})]`,
+            token,
+            ripUrl,
+        );
+    } catch (err) {
+        if (err.message.includes('404')) return [];
+        throw err;
+    }
+}
+
+function initPhaseRemote(token, ripUrl, phaseId, code) {
+    return makeRequest('PUT', `/symple.triplet.phase/${phaseId}`, token, ripUrl, {
+        set_result_automatically: 'from_code',
+        code,
+    });
+}
+
+async function getPhaseConfigurators(token, ripUrl, phaseId) {
+    try {
+        return await makeRequest(
+            'GET',
+            `/result.code.configurator/*?_filter_=[('code_phase_id', '=', ${phaseId})]`,
+            token,
+            ripUrl,
+        );
+    } catch (err) {
+        if (err.message.includes('404')) return [];
+        throw err;
+    }
+}
+
+function deleteConfigurator(token, ripUrl, id) {
+    return makeRequest('DELETE', `/result.code.configurator/${id}`, token, ripUrl);
+}
+
+function createConfigurator(token, ripUrl, data) {
+    return makeRequest('POST', `/result.code.configurator`, token, ripUrl, data);
+}
+
+export {
+    listWorkflows,
+    getPhasesByWorkflow,
+    getPhasesByIds,
+    updatePhase,
+    listMfas,
+    updateMfa,
+    getPhaseResults,
+    initPhaseRemote,
+    getPhaseConfigurators,
+    deleteConfigurator,
+    createConfigurator,
+};

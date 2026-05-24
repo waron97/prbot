@@ -6,6 +6,8 @@ import { clone } from './commands/clone.js';
 import { pull } from './commands/pull.js';
 import { push } from './commands/push.js';
 import { diff } from './commands/diff.js';
+import { initPhase } from './commands/initPhase.js';
+import { repair } from './commands/repair.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../../package.json');
@@ -45,5 +47,15 @@ program
     .command('diff [path]')
     .description('Show differences between local files and remote code')
     .action((path) => diff(path).catch((err) => { console.error(`Error: ${err.message}`); process.exit(1); }));
+
+program
+    .command('init-phase')
+    .description('Initialize a phase with default code template and result vars')
+    .action(() => initPhase().catch((err) => { console.error(`Error: ${err.message}`); process.exit(1); }));
+
+program
+    .command('repair')
+    .description('Remove stale workspace entries where local file no longer exists')
+    .action(() => repair().catch((err) => { console.error(`Error: ${err.message}`); process.exit(1); }));
 
 program.parse();
