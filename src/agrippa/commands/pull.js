@@ -162,55 +162,25 @@ async function fetchRemoteCode(token, ripUrl, workspace) {
 }
 
 async function selectEntries(changed, verb, mode = 'pull') {
-    // Group by parent folder for folder-level pre-selection
-    const folderMap = new Map();
-    for (const entry of changed) {
-        const folder = dirname(entry.path) || '.';
-        if (!folderMap.has(folder)) folderMap.set(folder, []);
-        folderMap.get(folder).push(entry);
-    }
-
-    const folders = [...folderMap.keys()];
-
-    // Folder-level pre-selection (only shown when there are multiple folders)
-    let includedFolders = new Set(folders);
-    if (folders.length > 1) {
-        const { selectedFolders } = await inquirer.prompt([
-            {
-                type: 'checkbox',
-                name: 'selectedFolders',
-                message: `Select workflows/folders to ${verb}:`,
-                choices: folders.map((f) => ({
-                    name: `${f}/  (${folderMap.get(f).length} changed)`,
-                    value: f,
-                    checked: true,
-                })),
-            },
-        ]);
-        includedFolders = new Set(selectedFolders);
-    }
-
-    const candidates = changed.filter((e) => includedFolders.has(dirname(e.path) || '.'));
-
-    if (!candidates.length) return [];
-
     const badgeFor = (status) => {
         if (mode === 'push') {
-            return status === 'fast-forward' ? '↑ local updated' : '⚠ remote changes will be overwritten';
+            return status === 'fast-forward' ? '↑ safe' : '⚠ conflict';
         }
-        return status === 'fast-forward' ? '↑ remote updated' : '⚠ local changes will be lost';
+        return status === 'fast-forward' ? '↑ safe' : '⚠ conflict';
     };
+
+    const choices = changed.map((e) => ({
+        name: `${e.name}  [${badgeFor(e.status)}]`,
+        value: e,
+        checked: true,
+    }));
 
     const { selected } = await inquirer.prompt([
         {
             type: 'checkbox',
             name: 'selected',
-            message: `Fine-tune records to ${verb}: (space to toggle, a to toggle all)`,
-            choices: candidates.map((e) => ({
-                name: `[${dirname(e.path) || '.'}]  ${e.name}  [${badgeFor(e.status)}]`,
-                value: e,
-                checked: true,
-            })),
+            message: `Select records to ${verb}:`,
+            choices,
             pageSize: 20,
         },
     ]);
