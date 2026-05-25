@@ -55,7 +55,7 @@ function escapeXml(str) {
 function generateXml(templates) {
     const records = templates
         .map((t) => {
-            const id = toXmlId(t.name);
+            const id = `mail_template_${toXmlId(t.template_code)}`;
             const modelRef = Object.values(t.model_id)[0];
             return `        <record id="${id}" model="mail.template">
             <field name="name">${escapeXml(t.name)}</field>
@@ -93,28 +93,41 @@ async function exportEmailTemplates(opts) {
     const token = await getToken();
 
     const moduleChoices = await getModuleChoices();
-    const module = await search({
-        message: 'Select module:',
-        source: async (input) => {
-            if (!input) return moduleChoices;
-            return moduleChoices.filter((c) => fuzzyMatch(c.name, input));
-        },
-    });
+    const moduleMatch = opts.module ? moduleChoices.find((c) => c.name === opts.module) : null;
+    const module = moduleMatch
+        ? moduleMatch.value
+        : await search({
+              message: 'Select module:',
+              source: async (input) => {
+                  if (!input) return moduleChoices;
+                  return moduleChoices.filter((c) => fuzzyMatch(c.name, input));
+              },
+          });
 
     console.log('Fetching workflows...');
     const workflows = await getWorkflows(token);
     const choices = workflows.map((w) => ({ name: w.name, value: w.id }));
 
-    const workflowId = await search({
-        message: 'Select workflow:',
-        source: async (input) => {
-            if (!input) return choices;
-            return choices.filter((c) => fuzzyMatch(c.name, input));
-        },
-    });
+    const workflowMatch = opts.workflow
+        ? workflows.find((w) => w.name === opts.workflow || String(w.id) === opts.workflow)
+        : null;
+    const workflowId = workflowMatch
+        ? workflowMatch.id
+        : await search({
+              message: 'Select workflow:',
+              source: async (input) => {
+                  if (!input) return choices;
+                  return choices.filter((c) => fuzzyMatch(c.name, input));
+              },
+          });
 
     console.log(`Fetching email templates for workflow ${workflowId}...`);
-    const templates = await getEmailTemplates(workflowId, token);
+    const excludes = opts.exclude ?? [];
+    const templates = (await getEmailTemplates(workflowId, token))
+        .filter((t) => t.template_code)
+        .filter((t) => {
+            return !excludes.some((ex) => ex === String(t.id) || ex === t.name || ex === t.template_code);
+        });
 
     if (!templates.length) {
         console.log('No email templates found for this workflow.');

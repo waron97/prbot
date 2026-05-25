@@ -112,6 +112,9 @@ exportCmd
 exportCmd
     .command('email-templates')
     .option('--no-commit')
+    .option('-e, --exclude <value...>', 'exclude templates matching id, name, or template_code')
+    .option('-m, --module <name>', 'module directory name (skip prompt)')
+    .option('-w, --workflow <value>', 'workflow name or id (skip prompt)')
     .action((opts) => {
         exportEmailTemplates(opts).catch((err) => {
             throw err;
