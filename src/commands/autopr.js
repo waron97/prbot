@@ -150,9 +150,11 @@ function scoreSections(sections, candidates) {
                 continue;
             }
             // Token fallback
-            const tokens = lc.split(/[\s|_\-.]+/).filter((t) => t.length > 2);
+            const tokens = lc.split(/[\s|_\-.]+/).filter((t) => t.length > 1);
             for (const token of tokens) {
-                if (heading.includes(token)) score++;
+                if (heading.includes(token)) {
+                    score += /^\d+$/.test(token) ? 5 : 1;
+                }
             }
         }
         if (score > 0) results.push({ ...section, score });
