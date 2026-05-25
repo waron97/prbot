@@ -125,7 +125,7 @@ async function exportEmailTemplates(opts) {
     const dataDir = path.join(ADDONS_PATH, 'config', module, 'data');
     await fs.mkdir(dataDir, { recursive: true });
 
-    const outPath = path.join(dataDir, 'mail_templates.xml');
+    const outPath = path.join(dataDir, 'mail_template.xml');
     await fs.writeFile(outPath, generateXml(templates), 'utf-8');
     console.log(`Written: ${outPath}`);
 
