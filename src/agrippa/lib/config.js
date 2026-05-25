@@ -19,7 +19,7 @@ function writeConfig(config) {
 function loadEffectiveEnv(localConfig) {
     // Load global prbot config as the base (KC_URL, KC_USER, RIP_URL, etc. live here)
     if (existsSync(CONFIG_FILE)) {
-        configDotenv({ path: CONFIG_FILE });
+        configDotenv({ path: CONFIG_FILE, quiet: true });
     }
 
     // Overlay workspace-level overrides from agrippa.yaml's agrippa: section

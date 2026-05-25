@@ -11,7 +11,7 @@ import { main as prMain } from './commands/pr.js';
 import { verbot } from './commands/ver.js';
 import { CONFIG_FILE } from './config.js';
 
-configDotenv({ path: CONFIG_FILE });
+configDotenv({ path: CONFIG_FILE, quiet: true });
 
 program
     .command('pr <module>')
