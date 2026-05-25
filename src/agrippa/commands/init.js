@@ -74,15 +74,19 @@ async function init() {
             },
         ]);
         if (!overwrite) {
-            console.log('Aborted.');
-            return;
+            console.log('Skipped workspace file.');
+        } else {
+            writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
+            console.log(`Created ${WORKSPACE_FILE}`);
+            console.log(`Run 'agrippa clone' to add resources to this workspace.`);
+            console.log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
         }
+    } else {
+        writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
+        console.log(`Created ${WORKSPACE_FILE}`);
+        console.log(`Run 'agrippa clone' to add resources to this workspace.`);
+        console.log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
     }
-
-    writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
-    console.log(`Created ${WORKSPACE_FILE}`);
-    console.log(`Run 'agrippa clone' to add resources to this workspace.`);
-    console.log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
 
     if (!existsSync('pyproject.toml')) {
         writeFileSync('pyproject.toml', PYPROJECT_TOML, 'utf-8');
