@@ -10,8 +10,18 @@ import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
 import { verbot } from './commands/ver.js';
 import { CONFIG_FILE } from './config.js';
+import { checkForUpdate, currentVersion } from './lib/updateCheck.js';
 
 configDotenv({ path: CONFIG_FILE, quiet: true });
+
+let _updateAvailable = null;
+checkForUpdate().then((v) => { _updateAvailable = v; });
+
+process.on('exit', () => {
+    if (_updateAvailable) {
+        console.log(`\nUpdate available: ${currentVersion} → ${_updateAvailable}\nRun: prbot update`);
+    }
+});
 
 program
     .command('pr <module>')
