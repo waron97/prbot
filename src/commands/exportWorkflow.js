@@ -42,7 +42,7 @@ async function exportWorkflow(opts) {
     }
 
     if (bumpLevel && bumpLevel !== 'none') {
-        await verbot(module, bumpLevel);
+        await verbot(module, bumpLevel, opts);
     }
 }
 

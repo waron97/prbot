@@ -114,7 +114,7 @@ async function initPhase() {
     // Resolve result objects — API may return IDs or full objects
     let results = phase.allowed_phase_result_ids || [];
     if (results.length > 0 && typeof results[0] === 'number') {
-        results = await getPhaseResults(token, ripUrl, phase.id);
+        results = await getPhaseResults(token, ripUrl, results);
     }
 
     const code = generateCode(results);

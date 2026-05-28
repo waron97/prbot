@@ -48,11 +48,12 @@ function updateMfa(token, ripUrl, mfaId, code) {
     return makeRequest('POST', '/symple.workflow/update_mfa', token, ripUrl, { id: mfaId, code });
 }
 
-async function getPhaseResults(token, ripUrl, phaseId) {
+async function getPhaseResults(token, ripUrl, ids) {
+    if (!ids || ids.length === 0) return [];
     try {
         return await makeRequest(
             'GET',
-            `/symple.triplet.phase.result/*?_filter_=[('code_phase_id', '=', ${phaseId})]`,
+            `/symple.triplet.phase.result/*?_filter_=[('id', 'in', [${ids.join(',')}])]`,
             token,
             ripUrl,
         );
