@@ -6,6 +6,7 @@ import { getToken } from '../lib/auth.js';
 import { execGit } from '../lib/git.js';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
+import { log } from '../lib/logger.js';
 
 async function getProcessList(token) {
     const url = `${process.env.IMPORTEXPORT_URL}/object/process_builder?addLanguageParam=true`;
@@ -120,14 +121,14 @@ async function exportPb(opts) {
     const { guid, document_id } = selected;
     const filename = `${document_id}.zip`;
 
-    console.log(`Initiating export for ${document_id}...`);
+    log(`Initiating export for ${document_id}...`);
     const requestTime = Date.now();
     await initiateExport(guid, token);
 
-    console.log('Waiting for export to complete...');
+    log('Waiting for export to complete...');
     const requestId = await pollExportResult(guid, requestTime, token);
 
-    console.log(`Downloading ${filename}...`);
+    log(`Downloading ${filename}...`);
     const zipBuffer = await downloadZip(requestId, token);
 
     const ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
@@ -138,18 +139,18 @@ async function exportPb(opts) {
     if (existing) {
         savePath = existing;
         await fs.writeFile(savePath, zipBuffer);
-        console.log(`Updated existing file at ${savePath}`);
+        log(`Updated existing file at ${savePath}`);
     } else {
         savePath = path.join(processesDir, 'all', filename);
         await fs.mkdir(path.dirname(savePath), { recursive: true });
         await fs.writeFile(savePath, zipBuffer);
-        console.log(`Created new file at ${savePath}`);
+        log(`Created new file at ${savePath}`);
     }
 
     if (opts.commit !== false) {
         await execGit(['add', savePath], ADDONS_PATH);
         await execGit(['commit', '-m', '[IMP][.cloudbuild] Update wizard'], ADDONS_PATH);
-        console.log('Committed.');
+        log('Committed.');
     }
 }
 

@@ -6,6 +6,7 @@ import { getToken } from '../lib/auth.js';
 import { execGit } from '../lib/git.js';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
+import { log } from '../lib/logger.js';
 
 const IMPEREX_REL = 'sorgenia_imperex_metadata/migrations/0.0.0/imperex';
 
@@ -56,7 +57,7 @@ async function exportImperex(opts) {
         },
     });
 
-    console.log(`Fetching records for ${model}...`);
+    log(`Fetching records for ${model}...`);
     const records = await listRecords(model, token);
     const recChoices = records.map((r) => ({ name: String(r.name ?? r.id), value: r.id }));
     const recordId = await search({
@@ -67,7 +68,7 @@ async function exportImperex(opts) {
         },
     });
 
-    console.log(`Exporting record ${recordId}...`);
+    log(`Exporting record ${recordId}...`);
     const { attachments } = await exportRecord(model, recordId, token);
 
     const modelDir = path.join(ADDONS_PATH, IMPEREX_REL, model);
@@ -78,7 +79,7 @@ async function exportImperex(opts) {
         if (att.name === '__manifest__.yaml') continue;
         const destPath = path.join(modelDir, path.basename(att.name));
         await fs.writeFile(destPath, att.content, 'utf-8');
-        console.log(`Written: ${destPath}`);
+        log(`Written: ${destPath}`);
         saved.push(destPath);
     }
 
@@ -90,7 +91,7 @@ async function exportImperex(opts) {
             ['commit', '-m', `[IMP][sorgenia_imperex_metadata] update ${model} record`],
             ADDONS_PATH,
         );
-        console.log('Committed.');
+        log('Committed.');
     }
 }
 

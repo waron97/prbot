@@ -1,9 +1,10 @@
-import { execFile } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import fetch from 'node-fetch';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { getToken } from '../lib/auth.js';
+import { execGit } from '../lib/git.js';
+import { log } from '../lib/logger.js';
 
 async function getFiles(module_name, token) {
     const url = `${process.env.RIP_URL}/ir.model/xml_prbot`;
@@ -66,7 +67,7 @@ async function runPr(module_name, opts = {}) {
 
         await fs.mkdir(path.dirname(destPath), { recursive: true });
         await fs.writeFile(destPath, content);
-        console.log(`Processed: ${file.name} -> ${destPath}`);
+        log(`Processed: ${file.name} -> ${destPath}`);
     }
 
     if (opts.commit === false) return;
@@ -78,23 +79,13 @@ async function runPr(module_name, opts = {}) {
     ];
 
     for (const filePath of filesToAdd) {
-        await new Promise((resolve, reject) => {
-            execFile('git', ['add', filePath], { cwd: ADDONS_PATH }, (error) => {
-                if (error) reject(error);
-                else resolve();
-            });
-        });
+        await execGit(['add', filePath], ADDONS_PATH);
     }
 
     const commitMessage = `[IMP][${module_name}] Update workflow`;
-    await new Promise((resolve, reject) => {
-        execFile('git', ['commit', '-m', commitMessage], { cwd: ADDONS_PATH }, (error) => {
-            if (error) reject(error);
-            else resolve();
-        });
-    });
+    await execGit(['commit', '-m', commitMessage], ADDONS_PATH);
 
-    console.log(`Committed with message: ${commitMessage}`);
+    log(`Committed with message: ${commitMessage}`);
 }
 
 async function main(module_name) {

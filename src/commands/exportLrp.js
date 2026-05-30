@@ -5,10 +5,7 @@ import search from '@inquirer/search';
 import { getToken } from '../lib/auth.js';
 import { execGit } from '../lib/git.js';
 import { resolveAddonsPath } from '../lib/addons.js';
-import { fuzzyMatch } from '../lib/fuzzy.js';
-import { CONFIG_DIR } from '../config.js';
-
-const CACHE_FILE = path.join(CONFIG_DIR, 'lrp_processes_cache.json');
+import { log } from '../lib/logger.js';
 
 function getSymphonyBase() {
     const url = process.env.IMPORTEXPORT_URL;
@@ -17,13 +14,16 @@ function getSymphonyBase() {
     return `${parsed.protocol}//${parsed.host}`;
 }
 
-async function fetchProcessList(token, signal) {
+async function fetchProcesses(token, nameFilter, signal) {
     const base = getSymphonyBase();
-    const params = encodeURIComponent(JSON.stringify({ page: 1, size: 1000, sorters: [], filters: [] }));
+    const size = nameFilter ? 20 : 12;
+    const params = encodeURIComponent(
+        JSON.stringify({ page: 1, size, sorters: [], filters: [] })
+    );
     const otherfilters = encodeURIComponent(
         JSON.stringify([
             { field: 'id', type: '=', value: null },
-            { field: 'name', type: 'like', value: null },
+            { field: 'name', type: 'like', value: nameFilter ?? null },
             { field: 'tenantId', type: '=', value: null },
             { field: 'latestVersion', type: '=', value: true },
         ])
@@ -51,24 +51,6 @@ async function fetchProcessList(token, signal) {
         }
     }
     return items;
-}
-
-async function loadCache() {
-    try {
-        const data = await fs.readFile(CACHE_FILE, 'utf-8');
-        return JSON.parse(data);
-    } catch {
-        return null;
-    }
-}
-
-async function saveCache(items) {
-    try {
-        await fs.mkdir(path.dirname(CACHE_FILE), { recursive: true });
-        await fs.writeFile(CACHE_FILE, JSON.stringify(items));
-    } catch {
-        // non-fatal
-    }
 }
 
 async function fetchProcessDetail(id, token) {
@@ -118,41 +100,30 @@ async function findExistingFile(baseDir, filename) {
 async function exportLrp(opts) {
     const token = await getToken();
 
-    // choices is a mutable ref so source() sees background updates live
-    let choices = [];
+    log('Fetching processes...');
+    const initialItems = await fetchProcesses(token, null);
+    const initialChoices = initialItems.map((p) => ({ name: p.name, value: p.id }));
 
-    const cached = await loadCache();
-
-    const bgController = new AbortController();
-
-    if (cached) {
-        choices = cached.map((p) => ({ name: p.name, value: p.id }));
-        console.log(`Loaded ${choices.length} processes from cache. Fetching fresh list in background (~1 min) — results update as you type.`);
-        fetchProcessList(token, bgController.signal)
-            .then(async (fresh) => {
-                await saveCache(fresh);
-                const updated = fresh.map((p) => ({ name: p.name, value: p.id }));
-                choices.length = 0;
-                choices.push(...updated);
-            })
-            .catch(() => {});
-    } else {
-        console.log('No cache found. Fetching process list (~1 min)...');
-        const items = await fetchProcessList(token);
-        await saveCache(items);
-        choices = items.map((p) => ({ name: p.name, value: p.id }));
-        console.log(`Loaded ${choices.length} processes.`);
-    }
+    let searchController = null;
 
     const selectedId = await search({
         message: 'Select LRP process to export:',
         source: async (input) => {
-            if (!input) return choices;
-            return choices.filter((c) => fuzzyMatch(c.name, input));
+            if (!input) return initialChoices;
+
+            if (searchController) searchController.abort();
+            searchController = new AbortController();
+
+            try {
+                const items = await fetchProcesses(token, input, searchController.signal);
+                return items.map((p) => ({ name: p.name, value: p.id }));
+            } catch {
+                return initialChoices;
+            }
         },
     });
 
-    console.log('Fetching process detail...');
+    log('Fetching process detail...');
     const jsText = await fetchProcessDetail(selectedId, token);
     const { xml, filename } = extractBpmnData(jsText);
     const bpmnFilename = `${filename.replace(/^B2WA_/, '')}.bpmn20.xml`;
@@ -165,21 +136,19 @@ async function exportLrp(opts) {
     if (existing) {
         savePath = existing;
         await fs.writeFile(savePath, xml, 'utf-8');
-        console.log(`Updated: ${savePath}`);
+        log(`Updated: ${savePath}`);
     } else {
         savePath = path.join(processesDir, 'all', bpmnFilename);
         await fs.mkdir(path.dirname(savePath), { recursive: true });
         await fs.writeFile(savePath, xml, 'utf-8');
-        console.log(`Created: ${savePath}`);
+        log(`Created: ${savePath}`);
     }
 
     if (opts.commit !== false) {
         await execGit(['add', savePath], ADDONS_PATH);
         await execGit(['commit', '-m', '[IMP][.cloudbuild] Update long running process'], ADDONS_PATH);
-        console.log('Committed.');
+        log('Committed.');
     }
-
-    bgController.abort();
 }
 
 export { exportLrp };

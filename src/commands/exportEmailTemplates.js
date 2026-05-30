@@ -6,6 +6,7 @@ import { getToken } from '../lib/auth.js';
 import { execGit } from '../lib/git.js';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
+import { log } from '../lib/logger.js';
 
 async function getWorkflows(token) {
     const url = `${process.env.RIP_URL}/symple.workflow/*`;
@@ -104,7 +105,7 @@ async function exportEmailTemplates(opts) {
               },
           });
 
-    console.log('Fetching workflows...');
+    log('Fetching workflows...');
     const workflows = await getWorkflows(token);
     const choices = workflows.map((w) => ({ name: w.name, value: w.id }));
 
@@ -121,7 +122,7 @@ async function exportEmailTemplates(opts) {
               },
           });
 
-    console.log(`Fetching email templates for workflow ${workflowId}...`);
+    log(`Fetching email templates for workflow ${workflowId}...`);
     const excludes = opts.exclude ?? [];
     const templates = (await getEmailTemplates(workflowId, token))
         .filter((t) => t.template_code)
@@ -130,7 +131,7 @@ async function exportEmailTemplates(opts) {
         });
 
     if (!templates.length) {
-        console.log('No email templates found for this workflow.');
+        log('No email templates found for this workflow.');
         return;
     }
 
@@ -140,7 +141,7 @@ async function exportEmailTemplates(opts) {
 
     const outPath = path.join(dataDir, 'mail_template.xml');
     await fs.writeFile(outPath, generateXml(templates), 'utf-8');
-    console.log(`Written: ${outPath}`);
+    log(`Written: ${outPath}`);
 
     if (opts.commit !== false) {
         await execGit(['add', outPath], ADDONS_PATH);
@@ -148,7 +149,7 @@ async function exportEmailTemplates(opts) {
             ['commit', '-m', `[IMP][${module}] Export email templates`],
             ADDONS_PATH,
         );
-        console.log('Committed.');
+        log('Committed.');
     }
 }
 

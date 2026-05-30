@@ -1,7 +1,8 @@
-import { execFile } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { resolveAddonsPath } from '../lib/addons.js';
+import { execGit } from '../lib/git.js';
+import { log } from '../lib/logger.js';
 
 async function verbot(module_name, level, opts = {}) {
     if (!['major', 'minor', 'patch'].includes(level)) {
@@ -50,26 +51,16 @@ async function verbot(module_name, level, opts = {}) {
     );
 
     await fs.writeFile(manifestPath, newContent);
-    console.log(`Updated version: ${currentVersion} -> ${newVersion}`);
+    log(`Updated version: ${currentVersion} -> ${newVersion}`);
 
     if (opts.commit === false) return;
 
-    await new Promise((resolve, reject) => {
-        execFile('git', ['add', manifestPath], { cwd: ADDONS_PATH }, (error) => {
-            if (error) reject(error);
-            else resolve();
-        });
-    });
+    await execGit(['add', manifestPath], ADDONS_PATH);
 
     const commitMessage = `[VER][${module_name}] Bump`;
-    await new Promise((resolve, reject) => {
-        execFile('git', ['commit', '-m', commitMessage], { cwd: ADDONS_PATH }, (error) => {
-            if (error) reject(error);
-            else resolve();
-        });
-    });
+    await execGit(['commit', '-m', commitMessage], ADDONS_PATH);
 
-    console.log(`Committed with message: ${commitMessage}`);
+    log(`Committed with message: ${commitMessage}`);
 }
 
 export { verbot };

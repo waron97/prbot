@@ -17,14 +17,19 @@ async function getModuleChoices() {
 }
 
 async function exportWorkflow(opts) {
-    const moduleChoices = await getModuleChoices();
-    const module = await search({
-        message: 'Select module:',
-        source: async (input) => {
-            if (!input) return moduleChoices;
-            return moduleChoices.filter((c) => fuzzyMatch(c.name, input));
-        },
-    });
+    let module;
+    if (opts.module) {
+        module = opts.module;
+    } else {
+        const moduleChoices = await getModuleChoices();
+        module = await search({
+            message: 'Select module:',
+            source: async (input) => {
+                if (!input) return moduleChoices;
+                return moduleChoices.filter((c) => fuzzyMatch(c.name, input));
+            },
+        });
+    }
 
     await runPr(module, opts);
 
