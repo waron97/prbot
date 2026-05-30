@@ -5,7 +5,7 @@ import { configDotenv } from 'dotenv';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
-import { exportPb, exportRip, exportImperex, exportEmailTemplates, exportWorkflow } from './commands/export.js';
+import { exportPb, exportRip, exportImperex, exportEmailTemplates, exportWorkflow, exportLrp } from './commands/export.js';
 import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
 import { verbot } from './commands/ver.js';
@@ -115,6 +115,15 @@ exportCmd
     .option('--no-commit')
     .action((opts) => {
         exportImperex(opts).catch((err) => {
+            throw err;
+        });
+    });
+
+exportCmd
+    .command('lrp')
+    .option('--no-commit')
+    .action((opts) => {
+        exportLrp(opts).catch((err) => {
             throw err;
         });
     });
