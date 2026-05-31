@@ -134,9 +134,9 @@ from odoo_records import _UomCategory, _UomUom, _UpdateCadastreData, _UtmCampaig
 from odoo_records import _UtmSource, _UtmStage, _UtmTag, _ValidateAccountMove, _VulnerabilityDashboard, _VulnerabilityDashboardLine
 from odoo_records import _VulnerabilityHistory, _VulnerabilityNotifyAdmissibility, _VulnerabilityNotifyAdmissibilityLine, _VulnerabilityNotifyOutgoing, _WalletImportWizard, _WalletManagementLine
 from odoo_records import _WatchlistAddWizard, _WatchlistDownloadWizard, _WatchlistRemoveWizard, _WebEditorAssets, _WebEditorConverterTest, _WebEditorConverterTestSub
-from odoo_records import _WebTourTour, _WelcomeAttachmentTable, _WelcomeLetterAttachmentMixin, _WizardIrModelMenuCreate, _WizardUploadVulnerability, _X
-from odoo_records import _XCcq, _XMktCom, _XPod, _XPrecheck, _XTopny, _XmlgeneratorDataAggregator
-from odoo_records import _XmlgeneratorDataField, _XmlgeneratorDataModel
+from odoo_records import _WebTourTour, _WelcomeAttachmentTable, _WizardIrModelMenuCreate, _WizardUploadVulnerability, _X, _XCcq
+from odoo_records import _XMktCom, _XPod, _XPrecheck, _XTopny, _XmlgeneratorDataAggregator, _XmlgeneratorDataField
+from odoo_records import _XmlgeneratorDataModel
 
 
 class OdooEnvironment:
@@ -1913,10 +1913,6 @@ class OdooEnvironment:
     def __getitem__(self, model_name: Literal["web_tour.tour"]) -> _WebTourTour: ...
     @overload
     def __getitem__(self, model_name: Literal["welcome.attachment.table"]) -> _WelcomeAttachmentTable: ...
-    @overload
-    def __getitem__(
-        self, model_name: Literal["welcome.letter.attachment.mixin"]
-    ) -> _WelcomeLetterAttachmentMixin: ...
     @overload
     def __getitem__(self, model_name: Literal["wizard.ir.model.menu.create"]) -> _WizardIrModelMenuCreate: ...
     @overload
