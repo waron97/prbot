@@ -97,6 +97,7 @@ exportCmd
     .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
     .option('-m, --module <id>', 'Module/workflow ID to export (skips interactive selection)')
     .option('-s, --silent', 'Suppress all output and swallow errors')
+    .option('--auto-premigrate', 'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)')
     .action((opts) => {
         if (opts.silent) setSilent(true);
         exportWorkflow(opts).catch((err) => {

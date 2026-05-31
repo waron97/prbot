@@ -43,6 +43,7 @@ function stepOpts(step) {
     if (step.workflow) opts.workflow = step.workflow;
     if (step.exclude) opts.exclude = step.exclude;
     if (step.no_commit) opts.commit = false;
+    if (step.auto_premigrate) opts.autoPremigrate = true;
     return opts;
 }
 
