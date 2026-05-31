@@ -143,10 +143,12 @@ exportCmd
 exportCmd
     .command('email-templates')
     .option('--no-commit')
+    .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
     .option('-e, --exclude <value...>', 'exclude templates matching id, name, or template_code')
     .option('-m, --module <name>', 'module directory name (skip prompt)')
     .option('-w, --workflow <value>', 'workflow name or id (skip prompt)')
     .option('-s, --silent', 'Suppress all output and swallow errors')
+    .option('--auto-premigrate', 'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)')
     .action((opts) => {
         if (opts.silent) setSilent(true);
         exportEmailTemplates(opts).catch((err) => {

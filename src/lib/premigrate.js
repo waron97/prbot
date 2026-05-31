@@ -139,4 +139,85 @@ function generatePreMigrateScript(stateCodes, phaseCodes) {
     return lines.join('\n') + '\n';
 }
 
-export { readWorkflowMappings, detectRenames, computeMigrationVersion, generatePreMigrateScript };
+function parseEmailTemplateMappings(content) {
+    const templates = new Map();
+
+    const chunks = content.split('<record ');
+    for (const chunk of chunks) {
+        const idMatch = chunk.match(/^id="([^"]+)"/);
+        if (!idMatch) continue;
+        const xmlId = idMatch[1];
+
+        if (!chunk.match(/model="mail\.template"/)) continue;
+
+        const codeMatch = chunk.match(/<field name="template_code">([^<]+)<\/field>/);
+        if (codeMatch) templates.set(codeMatch[1].trim(), xmlId);
+    }
+
+    return templates;
+}
+
+async function readEmailTemplateMappings(dataDir) {
+    try {
+        const content = await fs.readFile(path.join(dataDir, 'mail_template.xml'), 'utf-8');
+        return parseEmailTemplateMappings(content);
+    } catch {
+        return new Map();
+    }
+}
+
+function detectEmailRenames(oldMap, newMap) {
+    const templateCodes = [];
+    for (const [code, oldXmlId] of oldMap) {
+        const newXmlId = newMap.get(code);
+        if (newXmlId && newXmlId !== oldXmlId) templateCodes.push(code);
+    }
+    return templateCodes;
+}
+
+function generateEmailPreMigrateScript(templateCodes) {
+    const lines = [
+        '# Copyright 2025-TODAY Symphonie Prime S.r.l. (www.symphonieprime.com)',
+        '# All rights reserved.',
+        '',
+        'from openupgradelib import openupgrade',
+        '',
+        '',
+        '@openupgrade.migrate()',
+        'def migrate(env, version):',
+        '    env.cr.execute(',
+        '        "SELECT 1 FROM information_schema.tables WHERE table_name = %s",',
+        '        ("mail_template",),',
+        '    )',
+        '    if not env.cr.fetchone():',
+        '        return',
+        '',
+    ];
+
+    if (templateCodes.length === 1) {
+        lines.push(`    template_codes = ("${templateCodes[0]}",)`);
+    } else {
+        lines.push('    template_codes = (');
+        for (const code of templateCodes) lines.push(`        "${code}",`);
+        lines.push('    )');
+    }
+
+    lines.push(
+        '    env.cr.execute(',
+        '        "DELETE FROM mail_template WHERE template_code IN %s",',
+        '        (template_codes,),',
+        '    )',
+    );
+
+    return lines.join('\n') + '\n';
+}
+
+export {
+    readWorkflowMappings,
+    detectRenames,
+    computeMigrationVersion,
+    generatePreMigrateScript,
+    readEmailTemplateMappings,
+    detectEmailRenames,
+    generateEmailPreMigrateScript,
+};

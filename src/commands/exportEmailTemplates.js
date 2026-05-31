@@ -2,11 +2,19 @@ import fs from 'fs/promises';
 import path from 'path';
 import fetch from 'node-fetch';
 import search from '@inquirer/search';
+import { select, confirm } from '@inquirer/prompts';
 import { getToken } from '../lib/auth.js';
 import { execGit } from '../lib/git.js';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
-import { log } from '../lib/logger.js';
+import { log, isSilent } from '../lib/logger.js';
+import { verbot } from './ver.js';
+import {
+    readEmailTemplateMappings,
+    detectEmailRenames,
+    computeMigrationVersion,
+    generateEmailPreMigrateScript,
+} from '../lib/premigrate.js';
 
 async function getWorkflows(token) {
     const url = `${process.env.RIP_URL}/symple.workflow/*`;
@@ -90,6 +98,21 @@ async function getModuleChoices() {
         .map((e) => ({ name: e.name, value: e.name }));
 }
 
+async function resolveManifestPath(module, ADDONS_PATH) {
+    for (const candidate of [
+        path.join(ADDONS_PATH, module, '__manifest__.py'),
+        path.join(ADDONS_PATH, 'config', module, '__manifest__.py'),
+    ]) {
+        try {
+            await fs.access(candidate);
+            return candidate;
+        } catch {
+            // try next
+        }
+    }
+    return null;
+}
+
 async function exportEmailTemplates(opts) {
     const token = await getToken();
 
@@ -139,17 +162,75 @@ async function exportEmailTemplates(opts) {
     const dataDir = path.join(ADDONS_PATH, 'config', module, 'data');
     await fs.mkdir(dataDir, { recursive: true });
 
+    const oldMappings = await readEmailTemplateMappings(dataDir);
+
     const outPath = path.join(dataDir, 'mail_template.xml');
     await fs.writeFile(outPath, generateXml(templates), 'utf-8');
     log(`Written: ${outPath}`);
 
-    if (opts.commit !== false) {
-        await execGit(['add', outPath], ADDONS_PATH);
-        await execGit(
-            ['commit', '-m', `[IMP][${module}] Export email templates`],
-            ADDONS_PATH,
-        );
-        log('Committed.');
+    const newMappings = await readEmailTemplateMappings(dataDir);
+    const renamedCodes = detectEmailRenames(oldMappings, newMappings);
+
+    let bumpLevel = opts.bump;
+    if (!bumpLevel) {
+        bumpLevel = await select({
+            message: 'Bump version?',
+            choices: [
+                { name: 'No bump', value: 'none' },
+                { name: 'Patch', value: 'patch' },
+                { name: 'Minor', value: 'minor' },
+                { name: 'Major', value: 'major' },
+            ],
+        });
+    }
+
+    let preMigratePath = null;
+
+    if (renamedCodes.length > 0) {
+        log(`Renamed template_codes (${renamedCodes.length}): ${renamedCodes.join(', ')}`);
+
+        let shouldGenerate = opts.autoPremigrate;
+        if (!shouldGenerate && !isSilent()) {
+            shouldGenerate = await confirm({
+                message: `Detected ${renamedCodes.length} renamed template_code(s). Generate pre-migrate script?`,
+                default: true,
+            });
+        }
+
+        if (shouldGenerate) {
+            const manifestPath = await resolveManifestPath(module, ADDONS_PATH);
+            if (!manifestPath) {
+                log(`Warning: __manifest__.py not found for ${module}, skipping pre-migrate generation`);
+            } else {
+                const version = await computeMigrationVersion(manifestPath, bumpLevel);
+                const migrationDir = path.join(ADDONS_PATH, 'config', module, 'migrations', version);
+                preMigratePath = path.join(migrationDir, 'pre-migrate.py');
+                await fs.mkdir(migrationDir, { recursive: true });
+                await fs.writeFile(preMigratePath, generateEmailPreMigrateScript(renamedCodes));
+                log(`Wrote pre-migrate: ${preMigratePath}`);
+            }
+        }
+    }
+
+    if (opts.commit === false) {
+        if (bumpLevel && bumpLevel !== 'none') {
+            await verbot(module, bumpLevel, { ...opts, commit: false });
+        }
+        return;
+    }
+
+    const filesToAdd = [outPath];
+    if (preMigratePath) filesToAdd.push(preMigratePath);
+
+    for (const filePath of filesToAdd) {
+        await execGit(['add', filePath], ADDONS_PATH);
+    }
+
+    await execGit(['commit', '-m', `[IMP][${module}] Export email templates`], ADDONS_PATH);
+    log('Committed.');
+
+    if (bumpLevel && bumpLevel !== 'none') {
+        await verbot(module, bumpLevel, opts);
     }
 }
 
