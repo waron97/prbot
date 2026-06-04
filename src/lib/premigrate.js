@@ -175,7 +175,7 @@ function detectEmailRenames(oldMap, newMap) {
     return renames;
 }
 
-function generateEmailPreMigrateScript(renames) {
+function generateEmailPreMigrateScript(renames, module) {
     const lines = [
         '# Copyright 2025-TODAY Symphonie Prime S.r.l. (www.symphonieprime.com)',
         '# All rights reserved.',
@@ -196,8 +196,8 @@ function generateEmailPreMigrateScript(renames) {
         '    ]',
         '    for old_name, new_name in renames:',
         '        env.cr.execute(',
-        '            "UPDATE ir_model_data SET name = %s WHERE name = %s AND model = %s",',
-        '            (new_name, old_name, "mail.template"),',
+        `            "UPDATE ir_model_data SET name = %s WHERE name = %s AND model = %s AND module = %s",`,
+        `            (new_name, old_name, "mail.template", "${module}"),`,
         '        )',
     );
 

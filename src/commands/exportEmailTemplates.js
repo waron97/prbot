@@ -206,7 +206,7 @@ async function exportEmailTemplates(opts) {
                 const migrationDir = path.join(ADDONS_PATH, 'config', module, 'migrations', version);
                 preMigratePath = path.join(migrationDir, 'pre-migrate.py');
                 await fs.mkdir(migrationDir, { recursive: true });
-                await fs.writeFile(preMigratePath, generateEmailPreMigrateScript(renames));
+                await fs.writeFile(preMigratePath, generateEmailPreMigrateScript(renames, module));
                 log(`Wrote pre-migrate: ${preMigratePath}`);
             }
         }

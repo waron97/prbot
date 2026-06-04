@@ -196,7 +196,8 @@ function appendRefsToLine(line, tridentIds, jiras) {
         const suffix = tridentIds.map((id) => `#${id}`).join(', ');
         const tridentMatch = result.match(/Trident (#[\d, #]+)/);
         if (tridentMatch) {
-            result = result.replace(/Trident (#[\d, #]+)/, `Trident ${tridentMatch[1]}, ${suffix}`);
+            const existingTridents = tridentMatch[1].replace(/[,\s]+$/, '');
+            result = result.replace(/Trident (#[\d, #]+)/, `Trident ${existingTridents}, ${suffix}`);
         } else {
             const parenMatch = result.match(/\(([^)]*)\)\s*$/);
             if (parenMatch) {
