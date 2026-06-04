@@ -77,6 +77,7 @@ program
     .option('-m, --message <text>', 'Changelog entry message')
     .option('-b, --branch <name>', 'Branch name (default: autopr_<taskId>)')
     .option('-n, --name <text>', 'PR title (default: task name from Odoo)')
+    .option('--amend', 'Amend existing PR on current branch with new trident/jira refs')
     .action((opts) => {
         autopr(opts).catch((err) => {
             throw err;

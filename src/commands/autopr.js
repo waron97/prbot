@@ -8,10 +8,12 @@ import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
 import {
     appendPrToLine,
+    appendRefsToLine,
     buildRefString,
     detectIndentation,
     extractSections,
     findDuplicateLine,
+    findLineByPrNumber,
     findSectionEndLine,
 } from './changelog.js';
 
@@ -68,6 +70,28 @@ function buildPrDescription(taskIds, jiras) {
         lines.push(`https://sorgenia.atlassian.net/browse/${jira}`);
     }
     return lines.join('\n');
+}
+
+async function fetchActivePr(branch) {
+    const { DEVOPS_ORG, DEVOPS_PROJECT, DEVOPS_REPO } = process.env;
+    const apiUrl = `https://dev.azure.com/${DEVOPS_ORG}/${DEVOPS_PROJECT}/_apis/git/repositories/${DEVOPS_REPO}/pullrequests?searchCriteria.sourceRefName=refs/heads/${branch}&searchCriteria.status=active&api-version=7.0`;
+    const res = await fetch(apiUrl, { headers: devopsHeaders() });
+    const data = await res.json();
+    if (!res.ok) throw new Error(`DevOps PR fetch failed: ${JSON.stringify(data)}`);
+    if (!data.value || data.value.length === 0) throw new Error(`No active PR found for branch: ${branch}`);
+    return data.value[0];
+}
+
+async function patchDevopsPrDescription(prId, description) {
+    const { DEVOPS_ORG, DEVOPS_PROJECT, DEVOPS_REPO } = process.env;
+    const apiUrl = `https://dev.azure.com/${DEVOPS_ORG}/${DEVOPS_PROJECT}/_apis/git/repositories/${DEVOPS_REPO}/pullrequests/${prId}?api-version=7.0`;
+    const res = await fetch(apiUrl, {
+        method: 'PATCH',
+        headers: devopsHeaders(),
+        body: JSON.stringify({ description }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(`DevOps PR patch failed: ${JSON.stringify(data)}`);
 }
 
 async function createDevopsPR(branch, title, description) {
@@ -190,7 +214,60 @@ async function selectSection(sections, candidates) {
     return sections.find((s) => s.heading === selected);
 }
 
+async function autoprAmend(options) {
+    const ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
+    const changelogPath = `${ADDONS_PATH}/CHANGELOG.md`;
+    const { DEVOPS_ORG, DEVOPS_PROJECT, DEVOPS_REPO } = process.env;
+
+    const branch = (await execGit(['rev-parse', '--abbrev-ref', 'HEAD'], ADDONS_PATH)).trim();
+    const pr = await fetchActivePr(branch);
+    const prNumber = pr.pullRequestId;
+    const prUrl = `https://dev.azure.com/${DEVOPS_ORG}/${DEVOPS_PROJECT}/_git/${DEVOPS_REPO}/pullrequest/${prNumber}`;
+    console.log(`Found PR #${prNumber}: ${prUrl}`);
+
+    const ids = options.trident ?? [];
+    const jiras = options.jira ?? [];
+
+    const tasks = ids.length > 0 ? await Promise.all(ids.map(fetchTask)) : [];
+    tasks.forEach((t) => console.log(`Task: ${t.name}`));
+
+    const newLinks = [
+        ...ids.map((id) => `${process.env.TRIDENT_URL}/odoo/my-tasks/${id}`),
+        ...jiras.map((j) => `https://sorgenia.atlassian.net/browse/${j}`),
+    ];
+    if (newLinks.length > 0) {
+        const updatedDescription = pr.description
+            ? `${pr.description}\n${newLinks.join('\n')}`
+            : newLinks.join('\n');
+        await patchDevopsPrDescription(prNumber, updatedDescription);
+        console.log('PR description updated');
+    }
+
+    for (let i = 0; i < ids.length; i++) {
+        await appendChecklistPrLink(ids[i], tasks[i].x_release_checklist, prUrl, prNumber);
+    }
+    if (ids.length > 0) console.log('Checklist updated');
+
+    const content = readFileSync(changelogPath, 'utf-8');
+    const existing = findLineByPrNumber(content, prNumber);
+    if (!existing) {
+        console.log(`Warning: no changelog line found for PR #${prNumber} — skipping changelog update`);
+        return;
+    }
+    const lines = content.split('\n');
+    lines[existing.lineNumber] = appendRefsToLine(existing.line, ids, jiras);
+    await fs.writeFile(changelogPath, lines.join('\n'));
+
+    await execGit(['add', 'CHANGELOG.md'], ADDONS_PATH);
+    await execGit(['commit', '-m', '[DOC][CHANGELOG] Changelog'], ADDONS_PATH);
+    await execGit(['push'], ADDONS_PATH);
+    console.log('Changelog updated and pushed');
+    console.log('\nReminder: squash the two changelog commits before merging the PR.');
+}
+
 async function autopr(options) {
+    if (options.amend) return autoprAmend(options);
+
     const ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
     const changelogPath = `${ADDONS_PATH}/CHANGELOG.md`;
 

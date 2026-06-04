@@ -167,15 +167,15 @@ async function readEmailTemplateMappings(dataDir) {
 }
 
 function detectEmailRenames(oldMap, newMap) {
-    const templateCodes = [];
+    const renames = [];
     for (const [code, oldXmlId] of oldMap) {
         const newXmlId = newMap.get(code);
-        if (newXmlId && newXmlId !== oldXmlId) templateCodes.push(code);
+        if (newXmlId && newXmlId !== oldXmlId) renames.push({ oldXmlId, newXmlId });
     }
-    return templateCodes;
+    return renames;
 }
 
-function generateEmailPreMigrateScript(templateCodes) {
+function generateEmailPreMigrateScript(renames) {
     const lines = [
         '# Copyright 2025-TODAY Symphonie Prime S.r.l. (www.symphonieprime.com)',
         '# All rights reserved.',
@@ -185,28 +185,20 @@ function generateEmailPreMigrateScript(templateCodes) {
         '',
         '@openupgrade.migrate()',
         'def migrate(env, version):',
-        '    env.cr.execute(',
-        '        "SELECT 1 FROM information_schema.tables WHERE table_name = %s",',
-        '        ("mail_template",),',
-        '    )',
-        '    if not env.cr.fetchone():',
-        '        return',
-        '',
+        '    renames = [',
     ];
 
-    if (templateCodes.length === 1) {
-        lines.push(`    template_codes = ("${templateCodes[0]}",)`);
-    } else {
-        lines.push('    template_codes = (');
-        for (const code of templateCodes) lines.push(`        "${code}",`);
-        lines.push('    )');
+    for (const { oldXmlId, newXmlId } of renames) {
+        lines.push(`        ("${oldXmlId}", "${newXmlId}"),`);
     }
 
     lines.push(
-        '    env.cr.execute(',
-        '        "DELETE FROM mail_template WHERE template_code IN %s",',
-        '        (template_codes,),',
-        '    )',
+        '    ]',
+        '    for old_name, new_name in renames:',
+        '        env.cr.execute(',
+        '            "UPDATE ir_model_data SET name = %s WHERE name = %s AND model = %s",',
+        '            (new_name, old_name, "mail.template"),',
+        '        )',
     );
 
     return lines.join('\n') + '\n';

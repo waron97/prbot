@@ -179,6 +179,54 @@ async function changelog(prNumber, options) {
     console.log('Changelog entry added');
 }
 
+function findLineByPrNumber(content, prNumber) {
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes(`#${prNumber}ADO`)) {
+            return { lineNumber: i, line: lines[i] };
+        }
+    }
+    return null;
+}
+
+function appendRefsToLine(line, tridentIds, jiras) {
+    let result = line;
+
+    if (tridentIds && tridentIds.length > 0) {
+        const suffix = tridentIds.map((id) => `#${id}`).join(', ');
+        const tridentMatch = result.match(/Trident (#[\d, #]+)/);
+        if (tridentMatch) {
+            result = result.replace(/Trident (#[\d, #]+)/, `Trident ${tridentMatch[1]}, ${suffix}`);
+        } else {
+            const parenMatch = result.match(/\(([^)]*)\)\s*$/);
+            if (parenMatch) {
+                result = result.replace(/\(([^)]*)\)\s*$/, `(Trident ${suffix}, ${parenMatch[1]})`);
+            } else {
+                result = `${result.trimEnd()} (Trident ${suffix})`;
+            }
+        }
+    }
+
+    if (jiras && jiras.length > 0) {
+        const suffix = jiras.join(', ');
+        const jiraMatch = result.match(/JIRA ([^,)]+)/);
+        if (jiraMatch) {
+            result = result.replace(/JIRA ([^,)]+)/, `JIRA ${jiraMatch[1].trimEnd()}, ${suffix}`);
+        } else if (result.includes('PR sorgenia_addons')) {
+            result = result.replace(/(PR sorgenia_addons)/, `JIRA ${suffix}, $1`);
+        } else {
+            const parenMatch = result.match(/\(([^)]*)\)\s*$/);
+            if (parenMatch) {
+                result = result.replace(/\(([^)]*)\)\s*$/, `(${parenMatch[1]}, JIRA ${suffix})`);
+            } else {
+                result = `${result.trimEnd()} (JIRA ${suffix})`;
+            }
+        }
+    }
+
+    return result;
+}
+
 export {
     changelog,
     extractSections,
@@ -187,4 +235,6 @@ export {
     buildRefString,
     findDuplicateLine,
     appendPrToLine,
+    findLineByPrNumber,
+    appendRefsToLine,
 };

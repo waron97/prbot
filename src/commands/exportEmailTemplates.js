@@ -169,7 +169,7 @@ async function exportEmailTemplates(opts) {
     log(`Written: ${outPath}`);
 
     const newMappings = await readEmailTemplateMappings(dataDir);
-    const renamedCodes = detectEmailRenames(oldMappings, newMappings);
+    const renames = detectEmailRenames(oldMappings, newMappings);
 
     let bumpLevel = opts.bump;
     if (!bumpLevel) {
@@ -186,13 +186,13 @@ async function exportEmailTemplates(opts) {
 
     let preMigratePath = null;
 
-    if (renamedCodes.length > 0) {
-        log(`Renamed template_codes (${renamedCodes.length}): ${renamedCodes.join(', ')}`);
+    if (renames.length > 0) {
+        log(`Renamed XML IDs (${renames.length}): ${renames.map((r) => `${r.oldXmlId} → ${r.newXmlId}`).join(', ')}`);
 
         let shouldGenerate = opts.autoPremigrate;
         if (!shouldGenerate && !isSilent()) {
             shouldGenerate = await confirm({
-                message: `Detected ${renamedCodes.length} renamed template_code(s). Generate pre-migrate script?`,
+                message: `Detected ${renames.length} renamed template_code(s). Generate pre-migrate script?`,
                 default: true,
             });
         }
@@ -206,7 +206,7 @@ async function exportEmailTemplates(opts) {
                 const migrationDir = path.join(ADDONS_PATH, 'config', module, 'migrations', version);
                 preMigratePath = path.join(migrationDir, 'pre-migrate.py');
                 await fs.mkdir(migrationDir, { recursive: true });
-                await fs.writeFile(preMigratePath, generateEmailPreMigrateScript(renamedCodes));
+                await fs.writeFile(preMigratePath, generateEmailPreMigrateScript(renames));
                 log(`Wrote pre-migrate: ${preMigratePath}`);
             }
         }
