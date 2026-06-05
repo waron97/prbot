@@ -5,7 +5,7 @@ CLI tool for managing PRs, changelogs, and Odoo workflow XML files in the addons
 ## Install
 
 ```bash
-npm install -g .
+npm install -g @waron97/prbot
 ```
 
 ## Setup
