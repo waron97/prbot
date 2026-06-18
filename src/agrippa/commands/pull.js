@@ -2,9 +2,13 @@ import inquirer from 'inquirer';
 import { dirname } from 'path';
 import { readConfig, writeConfig, loadEffectiveEnv } from '../lib/config.js';
 import { getPhasesByIds, getPhasesByWorkflow, listMfas } from '../lib/api.js';
+import { getProcess } from '../lib/pbApi.js';
 import { getToken } from '../../lib/auth.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { readCodeFile, writeCodeFile, fileExists, toSlug } from '../lib/workspace.js';
+import { localChecksum } from '../lib/pbProject.js';
+import { projectReader } from '../lib/pbWorkspace.js';
+import { pullPbEntry } from './pullPb.js';
 
 async function pull() {
     const config = readConfig();
@@ -35,7 +39,8 @@ async function pull() {
     const token = await getToken();
 
     // ── pull existing tracked entries ─────────────────────────────────────────
-    // process_builder entries are push-only for now (pull-pb is a future task).
+    // process_builder wizards are refreshed separately (different checksum model);
+    // see pullPbEntries below.
     const pullable = config.workspace.filter((e) => e.object_type !== 'process_builder');
     if (pullable.length) {
         console.log('Fetching remote code...');
@@ -89,8 +94,74 @@ async function pull() {
         console.log('No tracked resources. Run `agrippa clone` first.');
     }
 
+    // ── refresh tracked process-builder wizards ───────────────────────────────
+    await pullPbEntries(token, config);
+
     // ── discover new phases on tracked workflows ──────────────────────────────
     await discoverNewPhases(token, ripUrl, config);
+}
+
+// Refresh tracked wizards from upstream. Pull concern (inverted from push):
+// overwriting *local* edits. Status per entry from three states —
+// checksum_at_pull, current local (recomposed), upstream updated_date:
+//   unchanged    remote not advanced → nothing to bring down
+//   fast-forward remote advanced, local untouched since pull → safe overwrite
+//   conflict     remote advanced AND local diverged → overwrite loses local work
+async function pullPbEntries(token, config) {
+    const entries = config.workspace.filter((e) => e.object_type === 'process_builder');
+    if (!entries.length) return;
+    if (!process.env.PB_URL) throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+
+    console.log('Checking process-builder wizards...');
+    const classified = [];
+    for (const entry of entries) {
+        let upstream = null;
+        try {
+            upstream = await getProcess(token, entry.guid);
+        } catch {
+            upstream = null;
+        }
+        if (!upstream) {
+            console.warn(`  ${entry.name}: could not fetch upstream, skipping`);
+            continue;
+        }
+        const local = localChecksum(projectReader(entry.path));
+        const localChanged = entry.checksum_at_pull !== local;
+        const remoteChanged = upstream.updated_date !== entry.updated_date;
+        let status;
+        if (!remoteChanged) status = 'unchanged';
+        else status = localChanged ? 'conflict' : 'fast-forward';
+        classified.push({ ...entry, upstream, status });
+    }
+
+    const changed = classified.filter((e) => e.status !== 'unchanged');
+    if (!changed.length) {
+        console.log('Wizards are up to date.');
+        return;
+    }
+
+    const selected = await selectEntries(changed, 'pull (overwrites local wizard files)');
+    if (!selected.length) {
+        console.log('No wizards selected.');
+        return;
+    }
+
+    const backupTs = new Date().toISOString().replace(/:/g, '-').replace('T', '_').slice(0, 19);
+    for (const entry of selected) {
+        const res = await pullPbEntry(token, entry, '.backup', backupTs);
+        const idx = config.workspace.findIndex(
+            (e) => e.object_type === 'process_builder' && e.guid === entry.guid,
+        );
+        if (idx !== -1) {
+            config.workspace[idx].checksum_at_pull = res.newChecksum;
+            if (res.newUpdatedDate) config.workspace[idx].updated_date = res.newUpdatedDate;
+            if (res.newStatus) config.workspace[idx].status = res.newStatus;
+        }
+        const note = res.diffs.length ? ` (WARNING: ${res.diffs.length} round-trip diff(s))` : '';
+        console.log(`  ${entry.name} → refreshed${note}`);
+    }
+    writeConfig(config);
+    console.log(`\nPulled ${selected.length} wizard(s). Local backups in .backup/${backupTs}/`);
 }
 
 async function discoverNewPhases(token, ripUrl, config) {
