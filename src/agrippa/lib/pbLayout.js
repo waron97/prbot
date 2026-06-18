@@ -56,6 +56,46 @@ function round(v) {
     return Math.round(v);
 }
 
+// ----- happy-flow edges -----
+// The happy flow is every edge crossed walking from a scope's startEvent to
+// any dead end, taking ONLY the `default` branch at an exclusiveGateway and
+// ALL outgoing edges at any other node (forks like parallel gateways are not
+// a "choice", so every branch counts as happy). Computed per scope (root,
+// then recursively inside each subProcess/transaction's own `nodes`) since a
+// sequenceFlow only ever connects siblings within the same container.
+function happyEdgesInScope(nodes, acc) {
+    const byId = new Map((nodes || []).map((n) => [n.id, n]));
+    const visited = new Set();
+    const visit = (n) => {
+        if (visited.has(n.id)) return;
+        visited.add(n.id);
+        const edges = n.edges || [];
+        if (n.type === 'exclusiveGateway' && edges.length > 1) {
+            const def = n.attrs?.default;
+            const e = edges.find((e) => e.id === def) || edges[0];
+            acc.add(e.id);
+            const next = byId.get(e.target);
+            if (next) visit(next);
+        } else {
+            for (const e of edges) {
+                acc.add(e.id);
+                const next = byId.get(e.target);
+                if (next) visit(next);
+            }
+        }
+    };
+    for (const n of nodes || []) {
+        if (n.type === 'startEvent') visit(n);
+        if (n.nodes) happyEdgesInScope(n.nodes, acc);
+    }
+}
+
+function computeHappyEdges(structure) {
+    const acc = new Set();
+    happyEdgesInScope(structure.nodes, acc);
+    return acc;
+}
+
 async function autoLayout(structure) {
     // ----- build the elk graph (all edges declared at root) -----
     const children = (structure.nodes || []).map(toElk);
@@ -63,10 +103,22 @@ async function autoLayout(structure) {
         children.push({ id: a.id, width: a.layout?.width || 100, height: a.layout?.height || 30 });
     }
 
+    const happyEdges = computeHappyEdges(structure);
     const edges = [];
     eachNode(structure.nodes, null, (n) => {
-        for (const e of n.edges || [])
-            edges.push({ id: e.id, sources: [n.id], targets: [e.target] });
+        for (const e of n.edges || []) {
+            const isHappy = happyEdges.has(e.id);
+            edges.push({
+                id: e.id,
+                sources: [n.id],
+                targets: [e.target],
+                layoutOptions: {
+                    'elk.layered.priority.straightness': isHappy ? '10' : 1,
+                    'elk.layered.priority.shortness': isHappy ? '10' : 1,
+                    'elk.layered.priority.direction': isHappy ? '10' : 1,
+                },
+            });
+        }
     });
     for (const a of structure.associations || []) {
         edges.push({ id: a.id, sources: [a.sourceRef], targets: [a.targetRef] });
