@@ -42,8 +42,10 @@ program
 
 program
     .command('push')
-    .description('Push local changes to RIP (backs up remote code first)')
-    .action(() => push().catch((err) => { console.error(`Error: ${err.message}`); process.exit(1); }));
+    .description('Push local changes to RIP / Process Builder (backs up remote first)')
+    .option('--publish', 'Auto-publish pushed process-builder wizards')
+    .option('--skip-publish', 'Skip publishing pushed wizards (no prompt)')
+    .action((opts) => push(opts).catch((err) => { console.error(`Error: ${err.message}`); process.exit(1); }));
 
 program
     .command('diff [path]')

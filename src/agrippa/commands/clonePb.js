@@ -5,7 +5,7 @@ import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { listProcesses, getProcess } from '../lib/pbApi.js';
-import { decompose, recompose, comparePayload } from '../lib/pbProject.js';
+import { decompose, recompose, comparePayload, stableStringify } from '../lib/pbProject.js';
 import { writeProject, projectReader } from '../lib/pbWorkspace.js';
 
 async function clonePb(opts) {
@@ -92,7 +92,11 @@ async function clonePb(opts) {
         guid: chosen.guid,
         document_id: chosen.document_id,
         name: chosen.process_name,
-        checksum_at_pull: computeChecksum(JSON.stringify(payload)),
+        // Baselines for `push` classification: checksum of the *recomposed* payload
+        // (changes only when local files change) + upstream updated_date/status.
+        checksum_at_pull: computeChecksum(stableStringify(rebuilt)),
+        updated_date: payload.updated_date,
+        status: payload.status,
     };
     if (existing >= 0) config.workspace[existing] = entry;
     else config.workspace.push(entry);

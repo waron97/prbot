@@ -1,6 +1,6 @@
 // Disk IO for a decomposed process-builder project.
 
-import { mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 
 // Write a { path -> content } file map under baseDir. Content is written
@@ -18,4 +18,13 @@ function projectReader(baseDir) {
     return (rel) => readFileSync(join(baseDir, rel), 'utf-8');
 }
 
-export { writeProject, projectReader };
+// Relative paths of the page files under <baseDir>/pages.
+function listPageFiles(baseDir) {
+    const dir = join(baseDir, 'pages');
+    if (!existsSync(dir)) return [];
+    return readdirSync(dir)
+        .filter((f) => f.endsWith('.yml') || f.endsWith('.yaml'))
+        .map((f) => `pages/${f}`);
+}
+
+export { writeProject, projectReader, listPageFiles };

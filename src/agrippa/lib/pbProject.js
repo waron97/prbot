@@ -18,6 +18,7 @@
 import { parse as yamlParse, stringify as yamlStringify, Document, visit } from 'yaml';
 import slugify from 'slugify';
 import { parseProcess, buildProcess, compareProcess, compareDiagram, diff } from './pbModel.js';
+import { computeChecksum } from './checksum.js';
 
 const MANIFEST_FILE = '.agrippa-pb.json';
 const STRUCTURE_FILE = 'structure.yaml';
@@ -317,6 +318,46 @@ function comparePayload(payload, rebuilt) {
     return diffs;
 }
 
+// ---------- push helpers ----------
+
+// Deterministic JSON (recursively sorted keys) for stable checksums.
+function stableStringify(value) {
+    if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
+    if (value && typeof value === 'object') {
+        return `{${Object.keys(value)
+            .sort()
+            .map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`)
+            .join(',')}}`;
+    }
+    return JSON.stringify(value ?? null);
+}
+
+// Checksum of the recomposed payload — stable across runs, changes only when the
+// local files change. clonePb stores this as checksum_at_pull; push recomputes it.
+function localChecksum(read) {
+    return computeChecksum(stableStringify(recompose(read)));
+}
+
+// Enumerate the wizard's pages from the pages/*.yml files (the authoritative
+// local set). Each page links to its userTask via `page._id.stepkey`; the
+// manifest supplies the upstream page guid (absent => a locally-added page that
+// must be created). `pageFiles` is the list of relative page file paths.
+function enumeratePages(read, pageFiles) {
+    const manifest = JSON.parse(read(MANIFEST_FILE));
+    return pageFiles.map((file) => {
+        const page = yamlParse(read(file));
+        const stepkey = page?._id?.stepkey;
+        const info = manifest.pages?.[stepkey];
+        return {
+            stepkey,
+            file,
+            page,
+            guid: info?.wrapper?.guid ?? null,
+            wrapper: info?.wrapper ?? null,
+        };
+    });
+}
+
 // In-memory round-trip: decompose -> recompose from the produced file map -> compare.
 function verifyRoundTrip(payload) {
     const { files } = decompose(payload);
@@ -332,6 +373,9 @@ export {
     recompose,
     comparePayload,
     verifyRoundTrip,
+    stableStringify,
+    localChecksum,
+    enumeratePages,
     MANIFEST_FILE,
     STRUCTURE_FILE,
     PROCESS_FILE,

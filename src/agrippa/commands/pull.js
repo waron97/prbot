@@ -35,11 +35,13 @@ async function pull() {
     const token = await getToken();
 
     // ── pull existing tracked entries ─────────────────────────────────────────
-    if (config.workspace.length) {
+    // process_builder entries are push-only for now (pull-pb is a future task).
+    const pullable = config.workspace.filter((e) => e.object_type !== 'process_builder');
+    if (pullable.length) {
         console.log('Fetching remote code...');
-        const remoteCodeMap = await fetchRemoteCode(token, ripUrl, config.workspace);
+        const remoteCodeMap = await fetchRemoteCode(token, ripUrl, pullable);
 
-        const classified = config.workspace.map((entry) => {
+        const classified = pullable.map((entry) => {
             const key = `${entry.object_type}:${entry.id}`;
             const remoteCode = remoteCodeMap.get(key) ?? null;
             const localCode = readCodeFile(entry.path);
