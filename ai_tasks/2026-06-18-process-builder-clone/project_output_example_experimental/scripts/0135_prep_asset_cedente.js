@@ -16,9 +16,7 @@ try {
     // Main Execution
     // ----------------------------
 
-    var assetQuery = encodeURIComponent(
-        ['type=product', 'prcode=' + servicePoint.code].join('&')
-    );
+    var assetQuery = encodeURIComponent(['type=product', 'prcode=' + servicePoint.code].join('&'));
 
     getOutgoingAssetUrl = getOutgoingAssetUrl + '?query=' + assetQuery;
 

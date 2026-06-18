@@ -4,12 +4,8 @@ try {
     // ----------------------------
 
     var podResponse = JSON.parse(execution.getVariable('search_pod_response'));
-    var clientResponse = JSON.parse(
-        execution.getVariable('get_outgoing_client_response')
-    );
-    var meterResponse = JSON.parse(
-        execution.getVariable('search_meter_response')
-    );
+    var clientResponse = JSON.parse(execution.getVariable('get_outgoing_client_response'));
+    var meterResponse = JSON.parse(execution.getVariable('search_meter_response'));
 
     // ----------------------------
     // Output variable initialization
@@ -19,8 +15,7 @@ try {
     var outgoingClient;
     var meter;
     var meterType;
-    var tariffType
-
+    var tariffType;
 
     // ----------------------------
     // Logical Helpers
@@ -28,34 +23,25 @@ try {
 
     function parseBodyFromResponse(response, resourceName) {
         if (response.code !== 200) {
-            throw new Error(
-                "Resource '" + resourceName + "' returned non-200 response"
-            );
+            throw new Error("Resource '" + resourceName + "' returned non-200 response");
         }
 
         var body;
 
         if (!response.body) {
-            throw new Error(
-                "Resource '" + resourceName + "' returned an empty body"
-            );
+            throw new Error("Resource '" + resourceName + "' returned an empty body");
         }
 
         try {
             body = JSON.parse(response.body);
         } catch (err) {
             throw new Error(
-                "Resource '" +
-                    resourceName +
-                    "' contains a non-parsable body: " +
-                    err.message
+                "Resource '" + resourceName + "' contains a non-parsable body: " + err.message
             );
         }
 
         if (body.length === 0) {
-            throw new Error(
-                "Resource '" + resourceName + "' returned an empty list"
-            );
+            throw new Error("Resource '" + resourceName + "' returned an empty list");
         }
 
         if (body.length > 0) {
@@ -73,7 +59,7 @@ try {
     outgoingClient = parseBodyFromResponse(clientResponse, 'CLIENT_RESPONSE');
     meter = parseBodyFromResponse(meterResponse, 'METER_RESPONSE');
     meterType = meter.type;
-    tariffType = meter.tariff_type
+    tariffType = meter.tariff_type;
 
     // ----------------------------
     // Output

@@ -36,7 +36,7 @@ Prompts for all required config values and writes them to `~/.config/prbot/confi
 | `DEVOPS_PROJECT`       | Azure DevOps project                                     |
 | `DEVOPS_REPO`          | Azure DevOps repository name                             |
 | `AUTOPR_TARGET_BRANCH` | Target branch for auto-created PRs (default: `15.0-dev`) |
-| `IMPORTEXPORT_URL`     | ImportExport API base URL                                 |
+| `IMPORTEXPORT_URL`     | ImportExport API base URL                                |
 
 ## Commands
 
@@ -223,7 +223,7 @@ agrippa clone --pb --name ml_review_billing --path my-wizard/
 
 Options:
 
-| Flag                   | Description                                                    |
+| Flag                   | Description                                                   |
 | ---------------------- | ------------------------------------------------------------- |
 | `--phase`              | Clone a phase (select a workflow)                             |
 | `--mfa`                | Clone an MFA record                                           |
@@ -295,9 +295,9 @@ Newly added blocks get placeholder geometry. `pb format` re-lays-out the **whole
 | `pb add`        | Add a node (`--type`, `--name`, `--parent`); scaffolds script/page files             |
 | `pb rm`         | Remove a node (`--id`), its edges, and its script/page files                         |
 | `pb connect`    | Add a flow (`--from`, `--to`, `--condition`, `--default`); enforces the gateway rule |
-| `pb disconnect` | Remove a flow (`--id`, or `--from`/`--to`)                                            |
+| `pb disconnect` | Remove a flow (`--id`, or `--from`/`--to`)                                           |
 | `pb ls`         | List nodes and edges with their ids (discover targets without reading the YAML)      |
-| `pb preview`    | Render the diagram to an SVG (`--out`) for a quick visual check                       |
+| `pb preview`    | Render the diagram to an SVG (`--out`) for a quick visual check                      |
 
 ```bash
 agrippa pb ls --pb ml_review_billing
@@ -305,4 +305,3 @@ agrippa pb add --type scriptTask --name "Check pod" --pb ml_review_billing
 agrippa pb connect --from ScriptTask_x --to ExclusiveGateway_y --pb ml_review_billing
 agrippa pb format --pb ml_review_billing
 ```
-

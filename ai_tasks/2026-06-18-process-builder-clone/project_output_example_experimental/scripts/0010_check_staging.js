@@ -3,9 +3,7 @@ try {
     // Input gathering
     // ----------------------------
 
-    var jsonResponse = JSON.parse(
-        execution.getVariable('process_data_response')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('process_data_response'));
     var baseUrl = execution.getVariable('odooEndpoint');
 
     // ----------------------------
@@ -58,11 +56,9 @@ try {
     }
 
     if (assetType === 'pod') {
-        searchUrl =
-            baseUrl + 'res.partner.pod/search_pod?pod_code=' + podPdrCode;
+        searchUrl = baseUrl + 'res.partner.pod/search_pod?pod_code=' + podPdrCode;
     } else {
-        searchUrl =
-            baseUrl + 'res.partner.pdr/search_pdr?pdr_code=' + podPdrCode;
+        searchUrl = baseUrl + 'res.partner.pdr/search_pdr?pdr_code=' + podPdrCode;
     }
 
     // ----------------------------
@@ -75,8 +71,5 @@ try {
     execution.setVariable('assetType', assetType);
 } catch (err) {
     execution.setVariable('isAlive', false);
-    execution.setVariable(
-        'errorCode',
-        'CHECK_STAGING_DATA_GENERIC_FAIL: ' + err.message
-    );
+    execution.setVariable('errorCode', 'CHECK_STAGING_DATA_GENERIC_FAIL: ' + err.message);
 }

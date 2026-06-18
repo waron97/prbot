@@ -3,32 +3,22 @@ try {
     // Input gathering
     // ----------------------------
 
-    var incomingClientSddMethods = JSON.parse(
-        execution.getVariable('incomingClientSddMethods')
-    );
+    var incomingClientSddMethods = JSON.parse(execution.getVariable('incomingClientSddMethods'));
 
-    var allClientProfiles = JSON.parse(
-        execution.getVariable('incomingClientProfiles')
-    );
+    var allClientProfiles = JSON.parse(execution.getVariable('incomingClientProfiles'));
 
     var contract_signed_date = execution.getVariable('contract_signed_date');
 
-    var interaction_client_email = execution.getVariable(
-        'interaction_client_email'
-    );
+    var interaction_client_email = execution.getVariable('interaction_client_email');
     var interaction_client_business_email = execution.getVariable(
         'interaction_client_business_email'
     );
-    var interaction_partner_email = execution.getVariable(
-        'interaction_partner_email'
-    );
+    var interaction_partner_email = execution.getVariable('interaction_partner_email');
     var interaction_partner_business_email = execution.getVariable(
         'interaction_partner_business_email'
     );
 
-    var incomingClientAddresses = JSON.parse(
-        execution.getVariable('incomingClientAddresses')
-    );
+    var incomingClientAddresses = JSON.parse(execution.getVariable('incomingClientAddresses'));
 
     // ----------------------------
     // Output variable initialization
@@ -106,8 +96,7 @@ try {
         number = number + ''; // Convert to string
         return number.length >= width
             ? number
-            : new Array(width - number.length + 1).join(paddingCharacter) +
-                  number;
+            : new Array(width - number.length + 1).join(paddingCharacter) + number;
     }
 
     function formatDateES5(d) {
@@ -125,11 +114,7 @@ try {
         if (!obj) return defaultValue;
 
         var props = typeof path === 'string' ? path.split('.') : path;
-        if (
-            !props ||
-            !props.length ||
-            Object.prototype.toString.call(props) !== '[object Array]'
-        ) {
+        if (!props || !props.length || Object.prototype.toString.call(props) !== '[object Array]') {
             return defaultValue;
         }
 
@@ -292,16 +277,10 @@ try {
 
     execution.setVariable('hasSddProfiles', hasSddProfiles);
 
-    execution.setVariable(
-        'mandateTypeOptions',
-        JSON.stringify(mandateTypeOptions)
-    );
+    execution.setVariable('mandateTypeOptions', JSON.stringify(mandateTypeOptions));
     execution.setVariable('mandate_type', mandate_type);
 
-    execution.setVariable(
-        'paymentMethodOptions',
-        JSON.stringify(paymentMethodOptions)
-    );
+    execution.setVariable('paymentMethodOptions', JSON.stringify(paymentMethodOptions));
     execution.setVariable('payment_method_type', payment_method_type);
 
     execution.setVariable(
@@ -310,10 +289,7 @@ try {
     );
     execution.setVariable('invoice_shipping_method', invoice_shipping_method);
 
-    execution.setVariable(
-        'invoiceTypeOptions',
-        JSON.stringify(invoiceTypeOptions)
-    );
+    execution.setVariable('invoiceTypeOptions', JSON.stringify(invoiceTypeOptions));
     execution.setVariable('invoice_type', invoice_type);
 
     execution.setVariable('emailOptions', JSON.stringify(emailOptions));

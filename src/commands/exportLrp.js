@@ -1,10 +1,10 @@
 import fs from 'fs/promises';
 import path from 'path';
-import fetch from 'node-fetch';
 import search from '@inquirer/search';
+import fetch from 'node-fetch';
+import { resolveAddonsPath } from '../lib/addons.js';
 import { getToken } from '../lib/auth.js';
 import { execGit } from '../lib/git.js';
-import { resolveAddonsPath } from '../lib/addons.js';
 import { log } from '../lib/logger.js';
 
 function getSymphonyBase() {
@@ -17,9 +17,7 @@ function getSymphonyBase() {
 async function fetchProcesses(token, nameFilter, signal) {
     const base = getSymphonyBase();
     const size = nameFilter ? 20 : 12;
-    const params = encodeURIComponent(
-        JSON.stringify({ page: 1, size, sorters: [], filters: [] })
-    );
+    const params = encodeURIComponent(JSON.stringify({ page: 1, size, sorters: [], filters: [] }));
     const otherfilters = encodeURIComponent(
         JSON.stringify([
             { field: 'id', type: '=', value: null },
@@ -28,7 +26,9 @@ async function fetchProcesses(token, nameFilter, signal) {
             { field: 'latestVersion', type: '=', value: true },
         ])
     );
-    const othersort = encodeURIComponent(JSON.stringify({ field: 'lastModifiedDate', dir: 'desc' }));
+    const othersort = encodeURIComponent(
+        JSON.stringify({ field: 'lastModifiedDate', dir: 'desc' })
+    );
     const url = `${base}/symphony/restInfo/ajax/tabulator?params=${params}&connector=SymphBpmnFileTabCon&otherfilters=${otherfilters}&card=true&othersort=${othersort}`;
 
     const response = await fetch(url, {
@@ -146,7 +146,10 @@ async function exportLrp(opts) {
 
     if (opts.commit !== false) {
         await execGit(['add', savePath], ADDONS_PATH);
-        await execGit(['commit', '-m', '[IMP][.cloudbuild] Update long running process'], ADDONS_PATH);
+        await execGit(
+            ['commit', '-m', '[IMP][.cloudbuild] Update long running process'],
+            ADDONS_PATH
+        );
         log('Committed.');
     }
 }

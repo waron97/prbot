@@ -1,7 +1,5 @@
 try {
-    var jsonResponse = JSON.parse(
-        execution.getVariable('post_sm_order_result')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('post_sm_order_result'));
     if (jsonResponse.code != 200) {
         execution.setVariable('isAlive', false);
         execution.setVariable('errorCode', 'POST_STATEMODEL_FAIL');

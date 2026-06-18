@@ -20,10 +20,7 @@ try {
         throw new Error('Could not find contract id from outgoing asset');
     }
 
-    getContractUrl =
-        b2wEndpoint +
-        'api/ordermanagement/v1/contract/' +
-        outgoingAsset.contract_id;
+    getContractUrl = b2wEndpoint + 'api/ordermanagement/v1/contract/' + outgoingAsset.contract_id;
 
     // ----------------------------
     // Output

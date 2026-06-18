@@ -12,28 +12,19 @@ try {
     //Store the endpoint read from the template in a symphony variable to use it in the next steps
     execution.setVariable('meteringEndpoint', jsonTemplate.meteringEndpoint);
     execution.setVariable('keyCloakEndpoint', jsonTemplate.keyCloakEndpoint);
-    execution.setVariable(
-        'keyCloakHeaders',
-        JSON.stringify(jsonTemplate.keyCloakHeaders)
-    );
+    execution.setVariable('keyCloakHeaders', JSON.stringify(jsonTemplate.keyCloakHeaders));
     execution.setVariable('keyCloakBody', jsonTemplate.keyCloakBody);
     execution.setVariable('odooEndpoint', jsonTemplate.odooEndpoint);
     execution.setVariable('pollingEndpoint', jsonTemplate.pollingEndpoint);
     execution.setVariable('b2wEndpoint', jsonTemplate.b2wEndpoint);
     execution.setVariable('tenantId', jsonTemplate.tenantId);
     execution.setVariable('orgToken', jsonTemplate.orgToken);
-    execution.setVariable(
-        'meteringKeyCloakEndpoint',
-        jsonTemplate.meteringKeyCloakEndpoint
-    );
+    execution.setVariable('meteringKeyCloakEndpoint', jsonTemplate.meteringKeyCloakEndpoint);
     execution.setVariable(
         'meteringKeyCloakHeaders',
         JSON.stringify(jsonTemplate.meteringKeyCloakHeaders)
     );
-    execution.setVariable(
-        'meteringKeyCloakBody',
-        jsonTemplate.meteringKeyCloakBody
-    );
+    execution.setVariable('meteringKeyCloakBody', jsonTemplate.meteringKeyCloakBody);
     execution.setVariable('status', 'SUCCESS');
 
     execution.setVariable('CDNEndpoint', jsonTemplate.CDNEndpoint);

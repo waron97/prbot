@@ -5,23 +5,34 @@ import { configDotenv } from 'dotenv';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
-import { exportPb, exportRip, exportImperex, exportEmailTemplates, exportWorkflow, exportLrp } from './commands/export.js';
-import { routine } from './commands/routine.js';
+import {
+    exportEmailTemplates,
+    exportImperex,
+    exportLrp,
+    exportPb,
+    exportRip,
+    exportWorkflow,
+} from './commands/export.js';
 import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
+import { routine } from './commands/routine.js';
 import { verbot } from './commands/ver.js';
 import { CONFIG_FILE } from './config.js';
-import { checkForUpdate, currentVersion } from './lib/updateCheck.js';
 import { setSilent } from './lib/logger.js';
+import { checkForUpdate, currentVersion } from './lib/updateCheck.js';
 
 configDotenv({ path: CONFIG_FILE, quiet: true });
 
 let _updateAvailable = null;
-checkForUpdate().then((v) => { _updateAvailable = v; });
+checkForUpdate().then((v) => {
+    _updateAvailable = v;
+});
 
 process.on('exit', () => {
     if (_updateAvailable) {
-        console.log(`\nUpdate available: ${currentVersion} → ${_updateAvailable}\nRun: prbot update`);
+        console.log(
+            `\nUpdate available: ${currentVersion} → ${_updateAvailable}\nRun: prbot update`
+        );
     }
 });
 
@@ -98,7 +109,10 @@ exportCmd
     .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
     .option('-m, --module <id>', 'Module/workflow ID to export (skips interactive selection)')
     .option('-s, --silent', 'Suppress all output and swallow errors')
-    .option('--auto-premigrate', 'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)')
+    .option(
+        '--auto-premigrate',
+        'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
+    )
     .action((opts) => {
         if (opts.silent) setSilent(true);
         exportWorkflow(opts).catch((err) => {
@@ -149,7 +163,10 @@ exportCmd
     .option('-m, --module <name>', 'module directory name (skip prompt)')
     .option('-w, --workflow <value>', 'workflow name or id (skip prompt)')
     .option('-s, --silent', 'Suppress all output and swallow errors')
-    .option('--auto-premigrate', 'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)')
+    .option(
+        '--auto-premigrate',
+        'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
+    )
     .action((opts) => {
         if (opts.silent) setSilent(true);
         exportEmailTemplates(opts).catch((err) => {

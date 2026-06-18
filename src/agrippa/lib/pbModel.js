@@ -8,7 +8,7 @@
 // values exact) and their diagrams match structurally. See compareProcess /
 // compareDiagram.
 
-import { XMLParser, XMLBuilder } from 'fast-xml-parser';
+import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 
 const XML_OPTS = {
     ignoreAttributes: false,
@@ -143,9 +143,16 @@ function parseMultiInstance(node, tag) {
     if (!mi) return undefined;
     const out = { attrs: allAttrs(mi) };
     const card = mi.multiInstanceLoopCharacteristics.find((k) => tagOf(k) === 'loopCardinality');
-    const comp = mi.multiInstanceLoopCharacteristics.find((k) => tagOf(k) === 'completionCondition');
-    if (card) out.loopCardinality = { value: textOf(card, 'loopCardinality'), attrs: allAttrs(card) };
-    if (comp) out.completionCondition = { value: textOf(comp, 'completionCondition'), attrs: allAttrs(comp) };
+    const comp = mi.multiInstanceLoopCharacteristics.find(
+        (k) => tagOf(k) === 'completionCondition'
+    );
+    if (card)
+        out.loopCardinality = { value: textOf(card, 'loopCardinality'), attrs: allAttrs(card) };
+    if (comp)
+        out.completionCondition = {
+            value: textOf(comp, 'completionCondition'),
+            attrs: allAttrs(comp),
+        };
     return out;
 }
 
@@ -199,7 +206,8 @@ function parseFlowChildren(children, parentId, model) {
             if (attrs['@_name'] !== undefined) edge.name = attrs['@_name'];
             if (parentId) edge.parent = parentId;
             if (cond) {
-                edge.condition = cdataOf(cond, 'conditionExpression') ?? textOf(cond, 'conditionExpression');
+                edge.condition =
+                    cdataOf(cond, 'conditionExpression') ?? textOf(cond, 'conditionExpression');
                 const xsi = attrsOf(cond)['@_xsi:type'];
                 if (xsi) edge.conditionType = xsi;
             }
@@ -219,14 +227,16 @@ function parseFlowChildren(children, parentId, model) {
 
             if (tag === 'scriptTask') {
                 const scriptEl = child.scriptTask?.find((k) => tagOf(k) === 'script');
-                n.script = scriptEl ? cdataOf(scriptEl, 'script') ?? '' : '';
+                n.script = scriptEl ? (cdataOf(scriptEl, 'script') ?? '') : '';
             } else if (tag === 'serviceTask') {
                 if (attrs['@_activiti:class'] !== undefined) n.class = attrs['@_activiti:class'];
                 n.fields = parseServiceFields(child);
             } else if (tag === 'userTask') {
-                if (attrs['@_activiti:formKey'] !== undefined) n.formKey = attrs['@_activiti:formKey'];
+                if (attrs['@_activiti:formKey'] !== undefined)
+                    n.formKey = attrs['@_activiti:formKey'];
             } else if (tag === 'boundaryEvent') {
-                if (attrs['@_attachedToRef'] !== undefined) n.attachedToRef = attrs['@_attachedToRef'];
+                if (attrs['@_attachedToRef'] !== undefined)
+                    n.attachedToRef = attrs['@_attachedToRef'];
                 const eed = parseErrorEventDef(child, tag);
                 if (eed) n.errorEventDefinition = eed;
             } else if (tag === 'endEvent') {
@@ -323,14 +333,23 @@ function parseDiagram(builtPage) {
                 .filter((x) => tagOf(x) === 'omgdi:waypoint')
                 .map((w) => mapBounds(allAttrs(w)));
             const label = c['bpmndi:BPMNEdge'].find((x) => tagOf(x) === 'bpmndi:BPMNLabel');
-            edges.push({ attrs: allAttrs(c), waypoints: wps, label: label ? parseLabel(label) : null });
+            edges.push({
+                attrs: allAttrs(c),
+                waypoints: wps,
+                label: label ? parseLabel(label) : null,
+            });
         }
     }
     return { attrs: allAttrs(dia), plane: { attrs: allAttrs(plane) }, shapes, edges };
 }
 
 function boundsAttrs(b) {
-    return { '@_x': String(b.x), '@_y': String(b.y), '@_width': String(b.width), '@_height': String(b.height) };
+    return {
+        '@_x': String(b.x),
+        '@_y': String(b.y),
+        '@_width': String(b.width),
+        '@_height': String(b.height),
+    };
 }
 
 // Rebuild <bpmndi> purely from structure.yaml geometry (model graph + geo maps).
@@ -354,17 +373,20 @@ function buildDiagram(model, geo) {
     const pushEdge = (id) => {
         const wps = geo.waypoints[id];
         if (!wps) return;
-        const pts = wps.map(([x, y]) => el('omgdi:waypoint', { '@_x': String(x), '@_y': String(y) }, []));
+        const pts = wps.map(([x, y]) =>
+            el('omgdi:waypoint', { '@_x': String(x), '@_y': String(y) }, [])
+        );
         edgeEls.push(el('bpmndi:BPMNEdge', { '@_id': `${id}_di`, '@_bpmnElement': id }, pts));
     };
     for (const e of model.edges) pushEdge(e.id);
     for (const a of model.associations || []) pushEdge(a.id);
 
     if (!shapeEls.length && !edgeEls.length) return null;
-    const plane = el('bpmndi:BPMNPlane', { '@_id': 'BPMNPlane_1', '@_bpmnElement': model.process.id }, [
-        ...shapeEls,
-        ...edgeEls,
-    ]);
+    const plane = el(
+        'bpmndi:BPMNPlane',
+        { '@_id': 'BPMNPlane_1', '@_bpmnElement': model.process.id },
+        [...shapeEls, ...edgeEls]
+    );
     return builder.build([el('bpmndi:BPMNDiagram', { '@_id': 'BPMNDiagram_1' }, [plane])]).trim();
 }
 
@@ -469,13 +491,21 @@ function buildFlowChildren(model, parentId) {
                 if (mi.loopCardinality) {
                     const lc = mi.loopCardinality;
                     miKids.push(
-                        el('loopCardinality', restoreAttr(lc.attrs), lc.value != null ? [textChild(lc.value)] : []),
+                        el(
+                            'loopCardinality',
+                            restoreAttr(lc.attrs),
+                            lc.value != null ? [textChild(lc.value)] : []
+                        )
                     );
                 }
                 if (mi.completionCondition) {
                     const cc = mi.completionCondition;
                     miKids.push(
-                        el('completionCondition', restoreAttr(cc.attrs), cc.value != null ? [textChild(cc.value)] : []),
+                        el(
+                            'completionCondition',
+                            restoreAttr(cc.attrs),
+                            cc.value != null ? [textChild(cc.value)] : []
+                        )
                     );
                 }
                 kids.push(el('multiInstanceLoopCharacteristics', restoreAttr(mi.attrs), miKids));
@@ -490,7 +520,8 @@ function buildFlowChildren(model, parentId) {
         const attrs = { '@_id': e.id, '@_sourceRef': e.source, '@_targetRef': e.target };
         if (e.name !== undefined) attrs['@_name'] = e.name;
         const kids = [];
-        if (e.documentation != null) kids.push(el('documentation', {}, [textChild(e.documentation)]));
+        if (e.documentation != null)
+            kids.push(el('documentation', {}, [textChild(e.documentation)]));
         if (e.condition != null) {
             const cAttrs = e.conditionType ? { '@_xsi:type': e.conditionType } : {};
             kids.push(el('conditionExpression', cAttrs, [cdataChild(e.condition)]));
@@ -504,16 +535,21 @@ function buildFlowChildren(model, parentId) {
             children.push(
                 el('textAnnotation', { '@_id': a.id, ...restoreAttr(a.attrs) }, [
                     el('text', {}, [textChild(a.text ?? '')]),
-                ]),
+                ])
             );
         }
         for (const a of model.associations) {
             children.push(
                 el(
                     'association',
-                    { '@_id': a.id, '@_sourceRef': a.sourceRef, '@_targetRef': a.targetRef, ...restoreAttr(a.attrs) },
-                    [],
-                ),
+                    {
+                        '@_id': a.id,
+                        '@_sourceRef': a.sourceRef,
+                        '@_targetRef': a.targetRef,
+                        ...restoreAttr(a.attrs),
+                    },
+                    []
+                )
             );
         }
     }
@@ -527,7 +563,8 @@ function buildProcess({ ns, model, geo }) {
     const diagramXml = buildDiagram(model, geo);
     const procAttrs = { '@_id': model.process.id };
     if (model.process.name !== undefined) procAttrs['@_name'] = model.process.name;
-    if (model.process.isExecutable !== undefined) procAttrs['@_isExecutable'] = model.process.isExecutable;
+    if (model.process.isExecutable !== undefined)
+        procAttrs['@_isExecutable'] = model.process.isExecutable;
     for (const [k, v] of Object.entries(model.process.attrs || {})) procAttrs[`@_${k}`] = v;
 
     const procNode = el('process', procAttrs, buildFlowChildren(model, null));
@@ -539,11 +576,7 @@ function buildProcess({ ns, model, geo }) {
 
     // Whitespace between elements is insignificant in XML. The <process> is
     // compact (format:false) to keep CDATA exact; the diagram is regenerated.
-    const parts = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        `<definitions ${defAttrs}>`,
-        procXml,
-    ];
+    const parts = ['<?xml version="1.0" encoding="UTF-8"?>', `<definitions ${defAttrs}>`, procXml];
     if (diagramXml) parts.push(diagramXml);
     parts.push('</definitions>');
     return parts.join('\n');

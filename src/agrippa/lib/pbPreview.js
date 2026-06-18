@@ -4,12 +4,15 @@
 // task=rounded rect, container=rect) and each edge as a waypoint polyline, from
 // the geometry in structure.yaml.
 
-import { eachNode, CONTAINER } from './pbEdit.js';
+import { CONTAINER, eachNode } from './pbEdit.js';
 
 const EVENT = new Set(['startEvent', 'endEvent', 'boundaryEvent']);
 
 function esc(s) {
-    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(s ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 function toSvg(structure) {
@@ -56,45 +59,61 @@ function toSvg(structure) {
 
     const out = [];
     out.push(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="sans-serif" font-size="11">`,
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="sans-serif" font-size="11">`
     );
     out.push(
         '<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">' +
-            '<path d="M0,0 L8,3 L0,6 z" fill="#444"/></marker></defs>',
+            '<path d="M0,0 L8,3 L0,6 z" fill="#444"/></marker></defs>'
     );
     out.push('<rect width="100%" height="100%" fill="#fff"/>');
 
     const label = (cx, cy, text) =>
-        text ? `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle">${esc(text)}</text>` : '';
+        text
+            ? `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle">${esc(text)}</text>`
+            : '';
 
     // containers behind everything
     for (const n of containers) {
         const l = n.layout;
         const x = l.x + ox;
         const y = l.y + oy;
-        out.push(`<rect x="${x}" y="${y}" width="${l.width}" height="${l.height}" rx="8" fill="#f5f7fa" stroke="#9aa7b4"/>`);
-        out.push(`<text x="${x + 8}" y="${y + 16}" font-weight="bold">${esc(n.name || n.type)}</text>`);
+        out.push(
+            `<rect x="${x}" y="${y}" width="${l.width}" height="${l.height}" rx="8" fill="#f5f7fa" stroke="#9aa7b4"/>`
+        );
+        out.push(
+            `<text x="${x + 8}" y="${y + 16}" font-weight="bold">${esc(n.name || n.type)}</text>`
+        );
     }
     // edges
     for (const e of edges) {
         const pts = e.waypoints.map(([x, y]) => `${x + ox},${y + oy}`).join(' ');
-        out.push(`<polyline points="${pts}" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>`);
+        out.push(
+            `<polyline points="${pts}" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>`
+        );
         if (e.name) {
             const m = e.waypoints[Math.floor(e.waypoints.length / 2)];
-            out.push(`<text x="${m[0] + ox}" y="${m[1] + oy - 4}" text-anchor="middle" fill="#666" font-size="9">${esc(e.name)}</text>`);
+            out.push(
+                `<text x="${m[0] + ox}" y="${m[1] + oy - 4}" text-anchor="middle" fill="#666" font-size="9">${esc(e.name)}</text>`
+            );
         }
     }
     for (const a of assocs) {
         const pts = a.waypoints.map(([x, y]) => `${x + ox},${y + oy}`).join(' ');
-        out.push(`<polyline points="${pts}" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>`);
+        out.push(
+            `<polyline points="${pts}" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>`
+        );
     }
     // annotations
     for (const a of anns) {
         const l = a.layout;
         const x = l.x + ox;
         const y = l.y + oy;
-        out.push(`<rect x="${x}" y="${y}" width="${l.width}" height="${l.height}" fill="#fffbe6" stroke="#d4b106"/>`);
-        out.push(`<text x="${x + 4}" y="${y + 14}" font-size="9">${esc((a.text || '').slice(0, 40))}</text>`);
+        out.push(
+            `<rect x="${x}" y="${y}" width="${l.width}" height="${l.height}" fill="#fffbe6" stroke="#d4b106"/>`
+        );
+        out.push(
+            `<text x="${x + 4}" y="${y + 14}" font-size="9">${esc((a.text || '').slice(0, 40))}</text>`
+        );
     }
     // leaf shapes on top
     for (const n of leaves) {
@@ -105,16 +124,23 @@ function toSvg(structure) {
         const cy = y + l.height / 2;
         if (EVENT.has(n.type)) {
             const sw = n.type === 'endEvent' ? 3 : 1.5;
-            out.push(`<circle cx="${cx}" cy="${cy}" r="${l.width / 2}" fill="#fff" stroke="#333" stroke-width="${sw}"/>`);
+            out.push(
+                `<circle cx="${cx}" cy="${cy}" r="${l.width / 2}" fill="#fff" stroke="#333" stroke-width="${sw}"/>`
+            );
             out.push(label(cx, y + l.height + 10, n.name));
         } else if (n.type === 'exclusiveGateway') {
             const p = `${cx},${y} ${x + l.width},${cy} ${cx},${y + l.height} ${x},${cy}`;
             out.push(`<polygon points="${p}" fill="#fff" stroke="#333"/>`);
-            out.push(`<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>`);
+            out.push(
+                `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>`
+            );
             out.push(label(cx, y + l.height + 10, n.name));
         } else {
-            const fill = n.type === 'userTask' ? '#e6f4ff' : n.type === 'serviceTask' ? '#f0ffe6' : '#fff';
-            out.push(`<rect x="${x}" y="${y}" width="${l.width}" height="${l.height}" rx="8" fill="${fill}" stroke="#333"/>`);
+            const fill =
+                n.type === 'userTask' ? '#e6f4ff' : n.type === 'serviceTask' ? '#f0ffe6' : '#fff';
+            out.push(
+                `<rect x="${x}" y="${y}" width="${l.width}" height="${l.height}" rx="8" fill="${fill}" stroke="#333"/>`
+            );
             out.push(label(cx, cy, n.name));
         }
     }

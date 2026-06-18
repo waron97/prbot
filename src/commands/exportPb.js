@@ -1,11 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-import fetch from 'node-fetch';
 import search from '@inquirer/search';
-import { getToken } from '../lib/auth.js';
-import { execGit } from '../lib/git.js';
+import fetch from 'node-fetch';
 import { resolveAddonsPath } from '../lib/addons.js';
+import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
+import { execGit } from '../lib/git.js';
 import { log } from '../lib/logger.js';
 
 async function getProcessList(token) {
@@ -57,8 +57,7 @@ async function pollExportResult(guid, requestTime, token) {
         const { data } = await response.json();
         const match = data.find(
             (item) =>
-                item.customResponse?.guid === guid &&
-                new Date(item.createdDate).getTime() >= cutoff
+                item.customResponse?.guid === guid && new Date(item.createdDate).getTime() >= cutoff
         );
 
         if (!match) continue;

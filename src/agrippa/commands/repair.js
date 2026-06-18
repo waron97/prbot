@@ -18,7 +18,9 @@ async function repair() {
     }
 
     writeConfig(config);
-    console.log(`Removed ${stale.length} stale entr${stale.length === 1 ? 'y' : 'ies'} (${before} → ${config.workspace.length}).`);
+    console.log(
+        `Removed ${stale.length} stale entr${stale.length === 1 ? 'y' : 'ies'} (${before} → ${config.workspace.length}).`
+    );
 }
 
 export { repair };

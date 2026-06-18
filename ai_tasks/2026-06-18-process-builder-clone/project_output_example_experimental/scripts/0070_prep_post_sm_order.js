@@ -6,15 +6,9 @@ try {
         sm_reason: 'In Order Digital',
     };
 
-    execution.setVariable(
-        'post_sm_order_body',
-        JSON.stringify(post_statemodel_body)
-    );
+    execution.setVariable('post_sm_order_body', JSON.stringify(post_statemodel_body));
 } catch (err) {
     execution.setVariable('isAlive', false);
-    execution.setVariable(
-        'errorCode',
-        'PROCESS_ORDER_CREATION_FAIL_UNEXPECTED_ERROR'
-    );
+    execution.setVariable('errorCode', 'PROCESS_ORDER_CREATION_FAIL_UNEXPECTED_ERROR');
     execution.setVariable('errorMessage', err.message);
 }

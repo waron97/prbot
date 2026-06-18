@@ -243,9 +243,7 @@
                             "field_type": "String",
                             "field_label": null,
                             "field_value": "",
-                            "field_filters": [
-                                "podcode"
-                            ],
+                            "field_filters": ["podcode"],
                             "field_section": "885190-section-694498",
                             "entity_provider": "custom",
                             "process_variable": "pod_selected",
@@ -328,9 +326,7 @@
                             "field_type": "String",
                             "field_label": null,
                             "field_value": "",
-                            "field_filters": [
-                                "podcode"
-                            ],
+                            "field_filters": ["podcode"],
                             "field_section": "956307-section-767889",
                             "entity_provider": "custom",
                             "process_variable": "pod_selected",
@@ -422,9 +418,7 @@
                             "field_type": "String",
                             "field_label": null,
                             "field_value": "",
-                            "field_filters": [
-                                "podcode"
-                            ],
+                            "field_filters": ["podcode"],
                             "field_section": "811538-section-981417",
                             "entity_provider": "custom",
                             "process_variable": "pod_selected",
@@ -701,9 +695,7 @@
                             "field_type": "String",
                             "field_label": null,
                             "field_value": "",
-                            "field_filters": [
-                                "invoice_number"
-                            ],
+                            "field_filters": ["invoice_number"],
                             "field_section": "895538-section-458799",
                             "entity_provider": "custom",
                             "process_variable": "invoices_selected",

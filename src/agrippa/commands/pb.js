@@ -12,17 +12,25 @@
 // project is resolved from the workspace by document_id (--pb), single-entry
 // auto-select, or a fuzzy prompt.
 
-import { existsSync, mkdirSync, writeFileSync, unlinkSync, readdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { parse as yamlParse } from 'yaml';
+import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'fs';
+import { dirname, join } from 'path';
 import search from '@inquirer/search';
-import { readConfig } from '../lib/config.js';
+import { parse as yamlParse } from 'yaml';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
-import { projectReader } from '../lib/pbWorkspace.js';
-import { recompose, stringifyStructure, STRUCTURE_FILE, MANIFEST_FILE } from '../lib/pbProject.js';
-import { addNode, removeNode, connect, disconnect, listGraph, eachNode, lintGateways } from '../lib/pbEdit.js';
+import { readConfig } from '../lib/config.js';
+import {
+    addNode,
+    connect,
+    disconnect,
+    eachNode,
+    lintGateways,
+    listGraph,
+    removeNode,
+} from '../lib/pbEdit.js';
 import { autoLayout } from '../lib/pbLayout.js';
 import { toSvg } from '../lib/pbPreview.js';
+import { MANIFEST_FILE, recompose, stringifyStructure, STRUCTURE_FILE } from '../lib/pbProject.js';
+import { projectReader } from '../lib/pbWorkspace.js';
 
 // ---------- project resolution ----------
 
@@ -30,7 +38,9 @@ async function resolveProjectPath(opts) {
     const config = readConfig();
     const entries = (config.workspace || []).filter((e) => e.object_type === 'process_builder');
     if (!entries.length) {
-        throw new Error('No process-builder wizards in this workspace. Clone one with `agrippa clone --pb`.');
+        throw new Error(
+            'No process-builder wizards in this workspace. Clone one with `agrippa clone --pb`.'
+        );
     }
     const sel = opts.pb || opts.name;
     if (sel) {
@@ -43,7 +53,9 @@ async function resolveProjectPath(opts) {
         message: 'Select a cloned wizard:',
         source: (input) => {
             const list = input
-                ? entries.filter((e) => fuzzyMatch(e.name, input) || fuzzyMatch(e.document_id, input))
+                ? entries.filter(
+                      (e) => fuzzyMatch(e.name, input) || fuzzyMatch(e.document_id, input)
+                  )
                 : entries;
             return list.map((e) => ({ name: `${e.name}  (${e.document_id})`, value: e }));
         },
@@ -107,7 +119,9 @@ async function pbFormat(opts) {
         if (!n.layout) missing++;
     });
     validate(dir);
-    console.log(`Formatted ${dir} (${nodes} node(s) laid out${missing ? `, ${missing} without layout` : ''}).`);
+    console.log(
+        `Formatted ${dir} (${nodes} node(s) laid out${missing ? `, ${missing} without layout` : ''}).`
+    );
     const issues = lintGateways(structure);
     if (issues.length) {
         console.warn('Gateway issues (exclusiveGateway default/condition rule):');
@@ -116,21 +130,26 @@ async function pbFormat(opts) {
 }
 
 async function pbAdd(opts) {
-    if (!opts.type) throw new Error('--type is required (e.g. scriptTask, serviceTask, userTask, exclusiveGateway, subProcess, endEvent...)');
+    if (!opts.type)
+        throw new Error(
+            '--type is required (e.g. scriptTask, serviceTask, userTask, exclusiveGateway, subProcess, endEvent...)'
+        );
     const dir = await resolveProjectPath(opts);
     const { structure, manifest } = loadProject(dir);
     const { writes, result } = addNode(
         structure,
         manifest,
         { type: opts.type, name: opts.name, parentId: opts.parent },
-        { existingScripts: listScriptFiles(dir), documentId: manifest.document_id },
+        { existingScripts: listScriptFiles(dir), documentId: manifest.document_id }
     );
     applyEffects(dir, { writes, deletes: [] });
     saveStructure(dir, structure);
     saveManifest(dir, manifest);
     validate(dir);
     console.log(`Added ${result.type} ${result.id}${result.file ? ` (${result.file})` : ''}.`);
-    console.log('Connect it with `agrippa pb connect`, then run `agrippa pb format` to lay it out.');
+    console.log(
+        'Connect it with `agrippa pb connect`, then run `agrippa pb format` to lay it out.'
+    );
 }
 
 async function pbRemove(opts) {
@@ -144,7 +163,7 @@ async function pbRemove(opts) {
     validate(dir);
     console.log(
         `Removed ${result.removed.length} node(s) [${result.removed.join(', ')}], ` +
-            `${result.removedEdges} dangling edge(s), ${deletes.length} file(s).`,
+            `${result.removedEdges} dangling edge(s), ${deletes.length} file(s).`
     );
 }
 
@@ -162,13 +181,16 @@ async function pbConnect(opts) {
     });
     saveStructure(dir, structure);
     validate(dir);
-    console.log(`Connected ${result.from} → ${result.to} (${result.id})${opts.default ? ' [default]' : ''}.`);
+    console.log(
+        `Connected ${result.from} → ${result.to} (${result.id})${opts.default ? ' [default]' : ''}.`
+    );
     for (const w of result.warnings || []) console.warn(`  ! ${w}`);
     console.log('Run `agrippa pb format` to route it.');
 }
 
 async function pbDisconnect(opts) {
-    if (!opts.id && !(opts.from && opts.to)) throw new Error('provide --id, or both --from and --to');
+    if (!opts.id && !(opts.from && opts.to))
+        throw new Error('provide --id, or both --from and --to');
     const dir = await resolveProjectPath(opts);
     const { structure } = loadProject(dir);
     const { result } = disconnect(structure, { id: opts.id, from: opts.from, to: opts.to });
@@ -186,7 +208,11 @@ async function pbList(opts) {
         const label = r.name ? `  "${r.name}"` : '';
         console.log(`${r.id}  (${r.type})${label}${where}`);
         for (const e of r.edges) {
-            const tag = [e.isDefault && '[default]', e.name && `"${e.name}"`, e.condition && `if ${e.condition}`]
+            const tag = [
+                e.isDefault && '[default]',
+                e.name && `"${e.name}"`,
+                e.condition && `if ${e.condition}`,
+            ]
                 .filter(Boolean)
                 .join(' ');
             console.log(`    → ${e.target}  (${e.id})${tag ? `  ${tag}` : ''}`);

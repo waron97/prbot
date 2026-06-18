@@ -15,10 +15,10 @@
 // nothing is ever lost; process.yaml and the per-node layout/waypoints in
 // structure.yaml *override* the manifest on recompose (so edits flow through).
 
-import { parse as yamlParse, stringify as yamlStringify, Document, visit } from 'yaml';
 import slugify from 'slugify';
-import { parseProcess, buildProcess, compareProcess, compareDiagram, diff } from './pbModel.js';
+import { Document, visit, parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import { computeChecksum } from './checksum.js';
+import { buildProcess, compareDiagram, compareProcess, diff, parseProcess } from './pbModel.js';
 
 const MANIFEST_FILE = '.agrippa-pb.json';
 const STRUCTURE_FILE = 'structure.yaml';
@@ -104,10 +104,12 @@ function geometryMaps(diagram) {
     if (diagram) {
         for (const s of diagram.shapes) {
             if (s.bounds) bounds[s.attrs.bpmnElement] = { ...s.bounds };
-            if (s.attrs.isExpanded !== undefined) expanded[s.attrs.bpmnElement] = s.attrs.isExpanded;
+            if (s.attrs.isExpanded !== undefined)
+                expanded[s.attrs.bpmnElement] = s.attrs.isExpanded;
         }
         for (const e of diagram.edges)
-            if (e.waypoints?.length) waypoints[e.attrs.bpmnElement] = e.waypoints.map((w) => [w.x, w.y]);
+            if (e.waypoints?.length)
+                waypoints[e.attrs.bpmnElement] = e.waypoints.map((w) => [w.x, w.y]);
     }
     return { bounds, waypoints, expanded };
 }
@@ -218,9 +220,11 @@ function decompose(payload) {
         process: model.process,
         errors: model.errors,
         nodes: nestNodes(model, null, scriptsMap, geo),
-        annotations: model.annotations.map((a) => (geo.bounds[a.id] ? { ...a, layout: geo.bounds[a.id] } : a)),
+        annotations: model.annotations.map((a) =>
+            geo.bounds[a.id] ? { ...a, layout: geo.bounds[a.id] } : a
+        ),
         associations: model.associations.map((a) =>
-            geo.waypoints[a.id] ? { ...a, waypoints: geo.waypoints[a.id] } : a,
+            geo.waypoints[a.id] ? { ...a, waypoints: geo.waypoints[a.id] } : a
         ),
     };
     files[STRUCTURE_FILE] = stringifyStructure(structure);
@@ -311,7 +315,7 @@ function comparePayload(payload, rebuilt) {
     const sd = diff(
         omit(payload, ['built_page', 'pages', 'process_structure']),
         omit(rebuilt, ['built_page', 'pages', 'process_structure']),
-        '$',
+        '$'
     );
     if (sd) diffs.push(`scalars: ${sd}`);
 

@@ -199,7 +199,10 @@ function appendRefsToLine(line, tridentIds, jiras) {
             const rawCapture = tridentMatch[1];
             const trailing = rawCapture.match(/([,\s]+)$/)?.[1] ?? '';
             const existingTridents = rawCapture.replace(/[,\s]+$/, '');
-            result = result.replace(/Trident (#[\d, #]+)/, `Trident ${existingTridents}, ${suffix}${trailing}`);
+            result = result.replace(
+                /Trident (#[\d, #]+)/,
+                `Trident ${existingTridents}, ${suffix}${trailing}`
+            );
         } else {
             const parenMatch = result.match(/\(([^)]*)\)\s*$/);
             if (parenMatch) {

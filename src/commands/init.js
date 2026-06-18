@@ -128,8 +128,7 @@ async function init() {
             name: 'PB_URL',
             message: 'Process Builder URL:',
             default:
-                existing.PB_URL ??
-                'https://sorgenia-test-02.symple.cloud/api/processbuilder/v1',
+                existing.PB_URL ?? 'https://sorgenia-test-02.symple.cloud/api/processbuilder/v1',
         },
     ]);
 

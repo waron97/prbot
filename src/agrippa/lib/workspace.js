@@ -1,6 +1,7 @@
-import slugify from 'slugify';
-import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
+import slugify from 'slugify';
+import { stringify as yamlStringify } from 'yaml';
 
 function toSlug(name) {
     return slugify(name, { lower: true, strict: true });
@@ -39,4 +40,23 @@ function fileExists(filePath) {
     return existsSync(filePath);
 }
 
-export { toSlug, defaultPhasePath, defaultMfaPath, ensureDir, writeCodeFile, readCodeFile, fileExists };
+// Auto-generated, read-only context: dumps the workflow graph returned by the
+// `agrippa_describe_workflow` MFA to `<dirPath>/workflow.yml`. Not tracked in the
+// workspace -- it is not pushable, it is regenerated on every clone/pull.
+function writeWorkflowDoc(dirPath, structure) {
+    const filePath = `${dirPath}/workflow.yml`;
+    ensureDir(filePath);
+    writeFileSync(filePath, yamlStringify(structure, { lineWidth: 0 }), 'utf-8');
+    return filePath;
+}
+
+export {
+    toSlug,
+    defaultPhasePath,
+    defaultMfaPath,
+    ensureDir,
+    writeCodeFile,
+    readCodeFile,
+    fileExists,
+    writeWorkflowDoc,
+};

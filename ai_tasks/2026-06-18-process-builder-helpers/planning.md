@@ -15,7 +15,7 @@ ergonomics**: an auto-formatter and structural graph helpers.
    Matches the `pb format` syntax in the instructions. Selector resolves a
    `process_builder` workspace entry by `document_id` (`--pb <id>`), or uses the cwd
    project if it holds `.agrippa-pb.json`, else fuzzy-prompts.
-3. **New-node geometry = stub + require `format`.** Mutations write correct *size* and a
+3. **New-node geometry = stub + require `format`.** Mutations write correct _size_ and a
    placeholder position (and a straight-line waypoint for new edges) so the project stays
    recompose-valid; the agent runs `pb format` to finalize. Clean mutation/geometry split.
    `push` warns if any node still lacks real layout.
@@ -24,13 +24,13 @@ ergonomics**: an auto-formatter and structural graph helpers.
 
 ## Element sizes (fixed, measured across all fixtures)
 
-| type | W×H |
-|---|---|
-| startEvent / endEvent / boundaryEvent | 36×36 |
-| exclusiveGateway | 50×50 |
-| scriptTask / serviceTask / userTask | 84×84 |
-| subProcess / transaction | computed from contents (ELK sizes the parent) |
-| textAnnotation | computed from label |
+| type                                  | W×H                                           |
+| ------------------------------------- | --------------------------------------------- |
+| startEvent / endEvent / boundaryEvent | 36×36                                         |
+| exclusiveGateway                      | 50×50                                         |
+| scriptTask / serviceTask / userTask   | 84×84                                         |
+| subProcess / transaction              | computed from contents (ELK sizes the parent) |
+| textAnnotation                        | computed from label                           |
 
 Flow line convention (from a real clone): every node centered on a shared y (e.g. y=120);
 left→right. ELK layered RIGHT reproduces this.

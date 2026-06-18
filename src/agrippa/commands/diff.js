@@ -1,19 +1,20 @@
-import { existsSync, statSync, writeFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
 import { spawnSync } from 'child_process';
-import { readConfig, loadEffectiveEnv } from '../lib/config.js';
-import { fetchRemoteCode } from './pull.js';
+import { existsSync, statSync, unlinkSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { getToken } from '../../lib/auth.js';
-import { readCodeFile, fileExists } from '../lib/workspace.js';
 import { computeChecksum } from '../lib/checksum.js';
+import { loadEffectiveEnv, readConfig } from '../lib/config.js';
+import { fileExists, readCodeFile } from '../lib/workspace.js';
+import { fetchRemoteCode } from './pull.js';
 
 async function diff(targetArg) {
     const config = readConfig();
     loadEffectiveEnv(config);
 
     const ripUrl = process.env.RIP_URL;
-    if (!ripUrl) throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (!ripUrl)
+        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
     if (!config.workspace.length) {
         console.log('No tracked resources. Run `agrippa clone` first.');
@@ -56,7 +57,7 @@ async function diff(targetArg) {
             const result = spawnSync(
                 'git',
                 ['diff', '--no-index', '--color=always', tmpPath, entry.path],
-                { stdio: ['ignore', 'inherit', 'inherit'] },
+                { stdio: ['ignore', 'inherit', 'inherit'] }
             );
             // exit code 1 means differences found (normal), 0 means identical, >1 means error
             if (result.status !== null && result.status > 1) {
@@ -66,7 +67,11 @@ async function diff(targetArg) {
         }
     } finally {
         for (const f of tmpFiles) {
-            try { unlinkSync(f); } catch { /* ignore */ }
+            try {
+                unlinkSync(f);
+            } catch {
+                /* ignore */
+            }
         }
     }
 

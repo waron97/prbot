@@ -41,10 +41,7 @@ try {
     }
 
     var listinoFamily = arrayFind(product.families, function (family) {
-        return (
-            family.name === 'LISTINO' ||
-            family.name === 'LISTINO Dynamic Lookup'
-        );
+        return family.name === 'LISTINO' || family.name === 'LISTINO Dynamic Lookup';
     });
 
     if (!listinoFamily) {
@@ -57,10 +54,7 @@ try {
             : arrayFind(listinoFamily.attributes, function (attribute) {
                   // Safely handle undefined names, trim whitespace, and convert to lowercase
                   var attrName = (attribute.name || '').trim().toLowerCase();
-                  return (
-                      attrName === 'listino' ||
-                      attrName === 'listino dynamic lookup'
-                  );
+                  return attrName === 'listino' || attrName === 'listino dynamic lookup';
               });
 
     if (!listinoAttribute) {
@@ -84,10 +78,7 @@ try {
     // Output
     // ----------------------------
 
-    execution.setVariable(
-        'setAttributesBody',
-        JSON.stringify(setAttributesBody)
-    );
+    execution.setVariable('setAttributesBody', JSON.stringify(setAttributesBody));
     execution.setVariable('productClientType', productClientType);
     execution.setVariable('productOfferType', productOfferType);
 } catch (err) {

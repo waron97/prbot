@@ -16,7 +16,7 @@
 // attached task's bottom border in a post-pass.
 
 import ELK from 'elkjs/lib/elk.bundled.js';
-import { SIZE, CONTAINER, eachNode } from './pbEdit.js';
+import { CONTAINER, eachNode, SIZE } from './pbEdit.js';
 
 const elk = new ELK();
 
@@ -65,7 +65,8 @@ async function autoLayout(structure) {
 
     const edges = [];
     eachNode(structure.nodes, null, (n) => {
-        for (const e of n.edges || []) edges.push({ id: e.id, sources: [n.id], targets: [e.target] });
+        for (const e of n.edges || [])
+            edges.push({ id: e.id, sources: [n.id], targets: [e.target] });
     });
     for (const a of structure.associations || []) {
         edges.push({ id: a.id, sources: [a.sourceRef], targets: [a.targetRef] });
@@ -124,7 +125,13 @@ async function autoLayout(structure) {
     // ----- write geometry back into the structure -----
     eachNode(structure.nodes, null, (n) => {
         const p = pos[n.id];
-        if (p) n.layout = { x: round(p.x), y: round(p.y), width: round(p.width), height: round(p.height) };
+        if (p)
+            n.layout = {
+                x: round(p.x),
+                y: round(p.y),
+                width: round(p.width),
+                height: round(p.height),
+            };
         for (const e of n.edges || []) {
             const wp = waypointsFor(e.id, lcaOffset(n.id, e.target));
             if (wp) e.waypoints = wp;
@@ -135,12 +142,24 @@ async function autoLayout(structure) {
     eachNode(structure.nodes, null, (n) => {
         if (n.type !== 'boundaryEvent' || !n.attachedToRef) return;
         const t = pos[n.attachedToRef];
-        if (t) n.layout = { x: round(t.x + t.width / 2 - 18), y: round(t.y + t.height - 18), width: 36, height: 36 };
+        if (t)
+            n.layout = {
+                x: round(t.x + t.width / 2 - 18),
+                y: round(t.y + t.height - 18),
+                width: 36,
+                height: 36,
+            };
     });
 
     for (const a of structure.annotations || []) {
         const p = pos[a.id];
-        if (p) a.layout = { x: round(p.x), y: round(p.y), width: round(p.width), height: round(p.height) };
+        if (p)
+            a.layout = {
+                x: round(p.x),
+                y: round(p.y),
+                width: round(p.width),
+                height: round(p.height),
+            };
     }
     for (const a of structure.associations || []) {
         const wp = waypointsFor(a.id, lcaOffset(a.sourceRef, a.targetRef));

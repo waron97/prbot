@@ -3,9 +3,7 @@ try {
     // Input gathering
     // ----------------------------
 
-    var jsonResponse = JSON.parse(
-        execution.getVariable('outgoingPricelistResult')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('outgoingPricelistResult'));
 
     // ----------------------------
     // Output variable initialization
@@ -37,10 +35,7 @@ try {
     execution.setVariable('mortisCausaError', false);
 } catch (err) {
     execution.setVariable('mortisCausaError', true);
-    execution.setVariable(
-        'mortisCausaErrorCode',
-        'ERR_CHECK_MORTIS_CAUSA_PRICELIST'
-    );
+    execution.setVariable('mortisCausaErrorCode', 'ERR_CHECK_MORTIS_CAUSA_PRICELIST');
     execution.setVariable('mortisCausaErrorMessage', err.message);
     execution.setVariable('mortis_causa_pricelist_fail', true);
 }

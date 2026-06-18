@@ -1,5 +1,5 @@
 import { execFile } from 'child_process';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { CONFIG_DIR } from '../config.js';
@@ -36,7 +36,10 @@ function readCache() {
 function writeCache(latestVersion) {
     try {
         mkdirSync(CONFIG_DIR, { recursive: true });
-        writeFileSync(CACHE_FILE, JSON.stringify({ checkedAt: new Date().toISOString(), latestVersion }));
+        writeFileSync(
+            CACHE_FILE,
+            JSON.stringify({ checkedAt: new Date().toISOString(), latestVersion })
+        );
     } catch {
         // non-critical
     }

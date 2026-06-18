@@ -31,6 +31,30 @@ inside corresponds to a Python phase with code.
 For phases and MFAs you simply **edit the `.py` files** — there are no agrippa
 commands for you to run; a human clones/pulls/pushes them.
 
+### Workflow structure (`workflow.yml`)
+
+Each cloned workflow directory contains a `workflow.yml` next to its phase `.py`
+files. It is **auto-generated, read-only context** describing how the workflow is
+wired — the graph the editable phase files live inside. Read it to understand a
+workflow before editing a phase; **never edit it** (it is regenerated on every
+clone/pull and is not pushed anywhere). It does not contain phase Python code —
+that lives in the `.py` files.
+
+It holds:
+
+- `workflow` — identity + flags (`process_type`, `is_tiqv`, `start_phase`,
+  `code_excluded_phases`, and the `triplets` / ticket-type details that enter it).
+- `phases` — every phase as a graph node: `id`, `name`, `phase_code`,
+  `set_result_automatically`, `has_code_file` (true ⇒ an editable `.py` was cloned
+  for it), process/integration flags, `timeout`, `allowed_processes`,
+  `allowed_manual_phases`, and `results`.
+- `results` (per phase) — the **outgoing edges**: each `result` has a `next_phase`
+  plus, for `from_code` phases, the `code_values` the phase's Python must assign to
+  `result` to take that edge (and `triplet_details` for `from_triplet` phases).
+
+So to find "what value does this phase set to go to phase X", read `workflow.yml`:
+match the result whose `next_phase` is X and use its `code_values`.
+
 ### Code inside phases and MFAs
 
 The following applies to both phases and MFAs.
@@ -115,12 +139,12 @@ A node looks like:
 - id: ScriptTask_0mmmti4
   type: scriptTask
   name: Init
-  script: scripts/0010_init.js      # ref to the body file
+  script: scripts/0010_init.js # ref to the body file
   layout: { x: -462, y: 78, width: 84, height: 84 }
-  edges:                            # OUTGOING flows belong to the source node
-    - id: SequenceFlow_1lso8x0
-      target: ExclusiveGateway_1lghfov
-      waypoints: [[-378, 120], [-345, 120]]
+  edges: # OUTGOING flows belong to the source node
+      - id: SequenceFlow_1lso8x0
+        target: ExclusiveGateway_1lghfov
+        waypoints: [[-378, 120], [-345, 120]]
 ```
 
 Node types: `startEvent`, `endEvent`, `boundaryEvent`, `exclusiveGateway`,
@@ -246,12 +270,12 @@ understood.
 Use the **commands** for graph structure (adding/removing nodes, wiring flows).
 Edit the **files directly** for content within an existing node:
 
-| Change | How |
-| --- | --- |
-| A scriptTask body | edit its `scripts/NNNN_*.js` file |
-| A userTask page | edit its `pages/<formKey>.yml` file |
+| Change                                                                     | How                                      |
+| -------------------------------------------------------------------------- | ---------------------------------------- |
+| A scriptTask body                                                          | edit its `scripts/NNNN_*.js` file        |
+| A userTask page                                                            | edit its `pages/<formKey>.yml` file      |
 | A node's `name`, a flow's `condition`/`name`, serviceTask `fields`/`class` | edit `structure.yaml` for that node/edge |
-| Identity/flags | edit `process.yaml` |
+| Identity/flags                                                             | edit `process.yaml`                      |
 
 Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints`.
 

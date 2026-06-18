@@ -3,9 +3,7 @@ try {
     // Input gathering
     // ----------------------------
 
-    var jsonResponse = JSON.parse(
-        execution.getVariable('filteredListsResponse')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('filteredListsResponse'));
 
     var currentOptions = JSON.parse(execution.getVariable('productOptions'));
 

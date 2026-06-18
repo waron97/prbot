@@ -8,15 +8,15 @@ A new `pb` subcommand group on the agrippa CLI — all **local-only** (no networ
 they operate on a cloned, decomposed wizard and resolve the project dir from the
 workspace by `document_id` (`--pb`), single-entry auto-select, or fuzzy prompt.
 
-| command | does |
-|---|---|
-| `pb format` | auto-lays-out the diagram (elkjs, left→right) and rewrites `layout`/`waypoints` in structure.yaml |
-| `pb add --type T [--name] [--parent id]` | adds a node; scaffolds script/page + manifest entry; stub geometry |
-| `pb rm --id ID` | removes node (+ container children), its edges, inbound danglers, script/page files, manifest entries |
-| `pb connect --from A --to B [--name] [--condition E] [--default]` | adds a sequenceFlow; enforces the exclusiveGateway default/condition rule (warns) |
-| `pb disconnect --id E` / `--from --to` | removes a sequenceFlow |
-| `pb ls` | flat node/edge dump with ids, `[default]`, conditions — lets an agent navigate without reading the YAML |
-| `pb preview [--out f.svg]` | renders the diagram to SVG (dev check of format output) |
+| command                                                           | does                                                                                                    |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pb format`                                                       | auto-lays-out the diagram (elkjs, left→right) and rewrites `layout`/`waypoints` in structure.yaml       |
+| `pb add --type T [--name] [--parent id]`                          | adds a node; scaffolds script/page + manifest entry; stub geometry                                      |
+| `pb rm --id ID`                                                   | removes node (+ container children), its edges, inbound danglers, script/page files, manifest entries   |
+| `pb connect --from A --to B [--name] [--condition E] [--default]` | adds a sequenceFlow; enforces the exclusiveGateway default/condition rule (warns)                       |
+| `pb disconnect --id E` / `--from --to`                            | removes a sequenceFlow                                                                                  |
+| `pb ls`                                                           | flat node/edge dump with ids, `[default]`, conditions — lets an agent navigate without reading the YAML |
+| `pb preview [--out f.svg]`                                        | renders the diagram to SVG (dev check of format output)                                                 |
 
 Agent loop: `pb ls` → `pb add` / `pb connect` → `pb format` → `agrippa push`.
 
@@ -51,7 +51,7 @@ Agent loop: `pb ls` → `pb add` / `pb connect` → `pb format` → `agrippa pus
 - **Node coords are parent-relative** → accumulated to absolute (BPMN bounds are
   absolute even for subProcess children).
 - **Edge section coords are relative to the endpoints' lowest common ancestor (LCA)
-  container** — *not* always root. Verified empirically: a flow between two nodes
+  container** — _not_ always root. Verified empirically: a flow between two nodes
   inside the same subProcess comes back in SUB-relative coords; a flow crossing into
   the subProcess comes back root-relative. `autoLayout` computes each edge's LCA from
   the container path and offsets waypoints by that container's absolute origin.

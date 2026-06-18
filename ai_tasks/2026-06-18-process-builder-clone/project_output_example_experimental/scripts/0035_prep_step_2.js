@@ -47,8 +47,7 @@ try {
         number = number + ''; // Convert to string
         return number.length >= width
             ? number
-            : new Array(width - number.length + 1).join(paddingCharacter) +
-                  number;
+            : new Array(width - number.length + 1).join(paddingCharacter) + number;
     }
 
     function formatDateES5(d) {
@@ -215,22 +214,13 @@ try {
 
     execution.setVariable('yesNoOptions', JSON.stringify(yesNoOptions));
     execution.setVariable('useTypeOptions', JSON.stringify(useTypeOptions));
-    execution.setVariable(
-        'allUseTypeOptions',
-        JSON.stringify(allUseTypeOptions)
-    );
-    execution.setVariable(
-        'useCategoryOptions',
-        JSON.stringify(useCategoryOptions)
-    );
+    execution.setVariable('allUseTypeOptions', JSON.stringify(allUseTypeOptions));
+    execution.setVariable('useCategoryOptions', JSON.stringify(useCategoryOptions));
     execution.setVariable('showAutoCert', showAutoCert);
     execution.setVariable('showNoDebt', showNoDebt);
     execution.setVariable('noDebtUntilMaxDate', noDebtUntilMaxDate);
     execution.setVariable('readingMaxDate', readingMaxDate);
-    execution.setVariable(
-        'extractionClassOptions',
-        JSON.stringify(extractionClassOptions)
-    );
+    execution.setVariable('extractionClassOptions', JSON.stringify(extractionClassOptions));
     execution.setVariable('outgoingExtractionClass', outgoingExtractionClass);
     execution.setVariable('declaredAnnualUsage', declaredAnnualUsage || '');
     execution.setVariable('mortis_causa_vulnerable', mortis_causa_vulnerable);

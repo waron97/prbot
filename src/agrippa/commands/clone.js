@@ -1,12 +1,12 @@
-import inquirer from 'inquirer';
-import select from '@inquirer/select';
 import search from '@inquirer/search';
-import { readConfig, writeConfig, loadEffectiveEnv } from '../lib/config.js';
-import { listWorkflows, getPhasesByWorkflow, listMfas } from '../lib/api.js';
+import select from '@inquirer/select';
+import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
-import { computeChecksum } from '../lib/checksum.js';
-import { toSlug, defaultMfaPath, writeCodeFile } from '../lib/workspace.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
+import { describeWorkflow, getPhasesByWorkflow, listMfas, listWorkflows } from '../lib/api.js';
+import { computeChecksum } from '../lib/checksum.js';
+import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
+import { defaultMfaPath, toSlug, writeCodeFile, writeWorkflowDoc } from '../lib/workspace.js';
 import { clonePb } from './clonePb.js';
 
 async function clone(opts) {
@@ -33,7 +33,8 @@ async function clone(opts) {
     if (objectType === 'pb') return clonePb(opts);
 
     const ripUrl = process.env.RIP_URL;
-    if (!ripUrl) throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (!ripUrl)
+        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
     console.log('Fetching records...');
     const token = await getToken();
@@ -60,9 +61,7 @@ async function clone(opts) {
         record = await search({
             message: `Select a ${objectType}:`,
             source: (input) => {
-                const filtered = input
-                    ? records.filter((r) => fuzzyMatch(r.name, input))
-                    : records;
+                const filtered = input ? records.filter((r) => fuzzyMatch(r.name, input)) : records;
                 return filtered.map((r) => ({
                     name: objectType === 'mfa' ? `${r.model_name} / ${r.name}` : r.name,
                     value: r,
@@ -108,6 +107,15 @@ async function clone(opts) {
                 name: `${record.name} / ${phase.name}`,
             });
             console.log(`  wrote ${filePath}`);
+        }
+
+        // Drop the workflow graph alongside the phase files as read-only context.
+        try {
+            const structure = await describeWorkflow(token, ripUrl, record.id);
+            const docPath = writeWorkflowDoc(basePath, structure);
+            console.log(`  wrote ${docPath}`);
+        } catch (err) {
+            console.warn(`  could not fetch workflow structure: ${err.message}`);
         }
 
         console.log(`Cloned ${phases.length} phase(s) to ${basePath}/`);

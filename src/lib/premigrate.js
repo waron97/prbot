@@ -115,7 +115,7 @@ function generatePreMigrateScript(stateCodes, phaseCodes) {
             '    env.cr.execute(',
             '        "DELETE FROM symple_triplet_phase_result WHERE state_code IN %s",',
             '        (state_codes,),',
-            '    )',
+            '    )'
         );
     }
 
@@ -132,7 +132,7 @@ function generatePreMigrateScript(stateCodes, phaseCodes) {
             '    env.cr.execute(',
             '        "DELETE FROM symple_triplet_phase WHERE phase_code IN %s",',
             '        (phase_codes,),',
-            '    )',
+            '    )'
         );
     }
 
@@ -198,7 +198,7 @@ function generateEmailPreMigrateScript(renames, module) {
         '        env.cr.execute(',
         `            "UPDATE ir_model_data SET name = %s WHERE name = %s AND model = %s AND module = %s",`,
         `            (new_name, old_name, "mail.template", "${module}"),`,
-        '        )',
+        '        )'
     );
 
     return lines.join('\n') + '\n';

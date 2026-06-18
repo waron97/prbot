@@ -32,8 +32,5 @@ try {
     execution.setVariable('servicePoint', JSON.stringify(servicePoint));
 } catch (err) {
     execution.setVariable('isAlive', false);
-    execution.setVariable(
-        'errorCode',
-        'CHECK_STAGING_DATA_GENERIC_FAIL: ' + err.message
-    );
+    execution.setVariable('errorCode', 'CHECK_STAGING_DATA_GENERIC_FAIL: ' + err.message);
 }

@@ -64,15 +64,9 @@ try {
     }
 
     function getSddProfiles(profiles) {
-        var sddProfiles = arrayFilter(
-            profiles,
-            function (profile, index, self) {
-                return (
-                    profile.payment_method === 'sdd' &&
-                    !arraySome(self, checkMethodCb(profile))
-                );
-            }
-        );
+        var sddProfiles = arrayFilter(profiles, function (profile, index, self) {
+            return profile.payment_method === 'sdd' && !arraySome(self, checkMethodCb(profile));
+        });
 
         return arrayMap(sddProfiles, computeFullName);
     }
@@ -93,9 +87,9 @@ try {
         throw new Error('get_addresses returned non-200 response');
     }
 
-    var profilesBody = JSON.parse(pmResponse.body || "[]");
-    var sddBody = JSON.parse(sddResponse.body || "[]");
-    var addressBody = JSON.parse(addressResponse.body || "[]");
+    var profilesBody = JSON.parse(pmResponse.body || '[]');
+    var sddBody = JSON.parse(sddResponse.body || '[]');
+    var addressBody = JSON.parse(addressResponse.body || '[]');
 
     incomingClientProfiles = profilesBody;
     incomingClientSddMethods = getSddProfiles(sddBody);
@@ -111,18 +105,9 @@ try {
     // Output
     // ----------------------------
 
-    execution.setVariable(
-        'incomingClientSddMethods',
-        JSON.stringify(incomingClientSddMethods)
-    );
-    execution.setVariable(
-        'incomingClientProfiles',
-        JSON.stringify(incomingClientProfiles)
-    );
-    execution.setVariable(
-        'incomingClientAddresses',
-        JSON.stringify(incomingClientAddresses)
-    );
+    execution.setVariable('incomingClientSddMethods', JSON.stringify(incomingClientSddMethods));
+    execution.setVariable('incomingClientProfiles', JSON.stringify(incomingClientProfiles));
+    execution.setVariable('incomingClientAddresses', JSON.stringify(incomingClientAddresses));
     execution.setVariable('hasActiveProfile', hasActiveProfile);
 } catch (err) {
     execution.setVariable('isAlive', false);

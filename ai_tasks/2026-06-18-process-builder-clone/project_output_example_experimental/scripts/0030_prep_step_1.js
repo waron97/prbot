@@ -29,8 +29,7 @@ try {
         number = number + ''; // Convert to string
         return number.length >= width
             ? number
-            : new Array(width - number.length + 1).join(paddingCharacter) +
-                  number;
+            : new Array(width - number.length + 1).join(paddingCharacter) + number;
     }
 
     function formatDateES5(d) {
@@ -85,14 +84,8 @@ try {
     // Output
     // ----------------------------
 
-    execution.setVariable(
-        'legalBasisOptions',
-        JSON.stringify(legalBasisOptions)
-    );
-    execution.setVariable(
-        'volturaTypeOptions',
-        JSON.stringify(volturaTypeOptions)
-    );
+    execution.setVariable('legalBasisOptions', JSON.stringify(legalBasisOptions));
+    execution.setVariable('volturaTypeOptions', JSON.stringify(volturaTypeOptions));
 
     execution.setVariable('legal_basis', legal_basis);
     execution.setVariable('voltura_type', voltura_type);

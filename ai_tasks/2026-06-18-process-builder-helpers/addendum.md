@@ -12,7 +12,7 @@ Phase. Added a **Process Builder** choice that routes to `clonePb`.
 
 - `src/agrippa/commands/clone.js`: added `{ name: 'Process Builder', value: 'pb' }`
   to the `select` choices; on `pb`, `return clonePb(opts)`. Moved the `RIP_URL`
-  guard to *after* that branch so a PB-only user (no RIP_URL, only PB_URL) isn't
+  guard to _after_ that branch so a PB-only user (no RIP_URL, only PB_URL) isn't
   blocked. `loadEffectiveEnv` runs before the prompt; `clonePb` re-loads it harmlessly.
 
 ## 2. `agrippa pull` now refreshes tracked wizards (pull-pb)
@@ -22,25 +22,25 @@ Now it refreshes tracked wizards from upstream, mirroring `pushPbEntry` with the
 concern inverted (pull risks overwriting **local** edits, not remote).
 
 - `src/agrippa/commands/pullPb.js` (new) — `pullPbEntry(token, entry, backupDir, ts)`:
-  1. backs up the current local state (recomposed payload → `.backup/<ts>/<path>/local.json`),
-  2. `decompose`s the upstream payload to a fresh file map,
-  3. **prunes orphan** `scripts/*` and `pages/*` not in the fresh map (so a wizard
-     whose nodes were renamed/removed upstream doesn't leave stale files),
-  4. `writeProject`, then `recompose` + `comparePayload` to verify 0-loss.
+    1. backs up the current local state (recomposed payload → `.backup/<ts>/<path>/local.json`),
+    2. `decompose`s the upstream payload to a fresh file map,
+    3. **prunes orphan** `scripts/*` and `pages/*` not in the fresh map (so a wizard
+       whose nodes were renamed/removed upstream doesn't leave stale files),
+    4. `writeProject`, then `recompose` + `comparePayload` to verify 0-loss.
 - `src/agrippa/commands/pull.js` — added `pullPbEntries(token, config)`, called after
   the phase/mfa pull and before `discoverNewPhases`. Classification (three-state,
   same `selectEntries` UX as phase/mfa, badges reused):
 
-  | status | meaning |
-  |---|---|
-  | `unchanged` | upstream `updated_date` not advanced → nothing to bring down |
-  | `fast-forward` | remote advanced, local untouched since pull → safe overwrite |
-  | `conflict` | remote advanced **and** local diverged → overwrite would lose local work |
+    | status         | meaning                                                                  |
+    | -------------- | ------------------------------------------------------------------------ |
+    | `unchanged`    | upstream `updated_date` not advanced → nothing to bring down             |
+    | `fast-forward` | remote advanced, local untouched since pull → safe overwrite             |
+    | `conflict`     | remote advanced **and** local diverged → overwrite would lose local work |
 
-  Baselines updated after a successful pull: `checksum_at_pull` (= recomposed
-  checksum, same as clone/push), `updated_date`, `status`. Wizards with an
-  unreachable upstream are skipped with a warning. New-wizard *discovery* is out of
-  scope (wizards aren't grouped under a parent like phases under a workflow).
+    Baselines updated after a successful pull: `checksum_at_pull` (= recomposed
+    checksum, same as clone/push), `updated_date`, `status`. Wizards with an
+    unreachable upstream are skipped with a warning. New-wizard _discovery_ is out of
+    scope (wizards aren't grouped under a parent like phases under a workflow).
 
 ### Symmetry note
 

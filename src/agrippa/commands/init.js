@@ -1,6 +1,6 @@
-import { existsSync, writeFileSync, mkdirSync, copyFileSync } from 'fs';
-import { fileURLToPath } from 'url';
+import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 import inquirer from 'inquirer';
 import { WORKSPACE_FILE } from '../lib/config.js';
 
@@ -44,16 +44,17 @@ builtins = [
 ]
 `;
 
-const PYRIGHTCONFIG = JSON.stringify(
-    {
-        pythonVersion: '3.10',
-        stubPath: 'typings',
-        typeCheckingMode: 'standard',
-        reportArgumentType: 'none',
-    },
-    null,
-    2,
-) + '\n';
+const PYRIGHTCONFIG =
+    JSON.stringify(
+        {
+            pythonVersion: '3.10',
+            stubPath: 'typings',
+            typeCheckingMode: 'standard',
+            reportArgumentType: 'none',
+        },
+        null,
+        2
+    ) + '\n';
 
 const TYPING_FILES = [
     '__builtins__.pyi',

@@ -38,10 +38,7 @@ try {
     // Output
     // ----------------------------
 
-    execution.setVariable(
-        'searchProductPayload',
-        JSON.stringify(searchProductPayload)
-    );
+    execution.setVariable('searchProductPayload', JSON.stringify(searchProductPayload));
 } catch (err) {
     execution.setVariable('isAlive', false);
     execution.setVariable('errorCode', 'ERR_PREP_TG_PRODUCTS');

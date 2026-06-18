@@ -10,12 +10,12 @@ is a later task; this task delivers clone + recompose + a round-trip validation 
 ## Decisions locked with the user
 
 1. **Strategy: full decompose + rebuild.** The BPMN is parsed into an authoritative,
-   editable model (`structure.yaml` + `scripts/` + `pages/`). On recompose we *regenerate*
+   editable model (`structure.yaml` + `scripts/` + `pages/`). On recompose we _regenerate_
    the BPMN XML from those files — we do **not** keep the original XML as a hidden skeleton.
 2. **Everything is editable from the filesystem** — every block (node) and every edge of the
    wizard. Future agrippa utilities (`add-node`, `remove-node`, `connect-node`) will make
    editing ergonomic, but the files alone are the source of truth and can be hand-edited.
-3. **0-loss bar = A (semantic / behavioral equivalence).** The rebuilt wizard must *behave*
+3. **0-loss bar = A (semantic / behavioral equivalence).** The rebuilt wizard must _behave_
    identically: same nodes, same edges, same scripts, same conditions, same service-task
    params, same page definitions. Byte-identical XML is **not** required — attribute order,
    namespace prefixes, whitespace, and self-closing-vs-empty-tag differences are acceptable.
@@ -27,15 +27,15 @@ is a later task; this task delivers clone + recompose + a round-trip validation 
 `GET {PB_URL}/builder/process` → list of `{guid, document_id, process_name, ...}`.
 `GET {PB_URL}/builder/process/<guid>` → full payload. Top-level fields:
 
-| Field | Role | Authoritative? |
-|---|---|---|
-| `document_id` | technical name (BPMN `processKey`) | scalar |
-| `process_name` | human name | scalar |
-| `version`, `icon`, `short_description`, `status`, `active`, `is_linear`, `execute_save`, `progressbar_enabled`, `start_date`, `end_date`, `favorite` | metadata flags | scalar |
-| `built_page` | **full Activiti/BPMN 2.0 XML string** — the whole graph | **source of truth** |
-| `process_structure` | object w/ `processSteps[]` (step nav summary) | **derived** server-side from `built_page` |
-| `pages[]` | one wrapper per `userTask`, holds the UI form (`page.page_builder`) | stored separately, **not** regenerated from XML |
-| `guid`, `created_*`, `updated_*`, `modified_by`, `sequence_data`, `owner_group` | audit | server-managed |
+| Field                                                                                                                                                | Role                                                                | Authoritative?                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ----------------------------------------------- |
+| `document_id`                                                                                                                                        | technical name (BPMN `processKey`)                                  | scalar                                          |
+| `process_name`                                                                                                                                       | human name                                                          | scalar                                          |
+| `version`, `icon`, `short_description`, `status`, `active`, `is_linear`, `execute_save`, `progressbar_enabled`, `start_date`, `end_date`, `favorite` | metadata flags                                                      | scalar                                          |
+| `built_page`                                                                                                                                         | **full Activiti/BPMN 2.0 XML string** — the whole graph             | **source of truth**                             |
+| `process_structure`                                                                                                                                  | object w/ `processSteps[]` (step nav summary)                       | **derived** server-side from `built_page`       |
+| `pages[]`                                                                                                                                            | one wrapper per `userTask`, holds the UI form (`page.page_builder`) | stored separately, **not** regenerated from XML |
+| `guid`, `created_*`, `updated_*`, `modified_by`, `sequence_data`, `owner_group`                                                                      | audit                                                               | server-managed                                  |
 
 Confirmed by reading the backend (`b2w-process-builder`):
 `built_page` is stored verbatim and is authoritative; `process_structure` is regenerated via
@@ -70,7 +70,7 @@ the friendlier `formKey`, with the id mapping recorded in the manifest.
 ### Counts observed (5 samples)
 
 scriptTasks 5–42, serviceTasks 3–28, userTasks 2–5. `scriptTask:<script>` is strictly 1:1.
-scriptTask `name`s are *mostly* unique but **not guaranteed** (one collision in a sample) →
+scriptTask `name`s are _mostly_ unique but **not guaranteed** (one collision in a sample) →
 filenames need an ordering prefix + manifest id-map, not name alone. `]]>` also appears inside
 `conditionExpression` and `activiti:string` → scripts must be extracted by walking
 `scriptTask` elements, never by a global CDATA regex.
@@ -93,6 +93,7 @@ filenames need an ordering prefix + manifest id-map, not name alone. `]]>` also 
 ```
 
 ### `process.yaml` (editable scalars)
+
 ```yaml
 document_id: ml_review_billing
 process_name: ML - Rettifica di fatturazione
@@ -117,59 +118,62 @@ end_date: null
 
 ```yaml
 process:
-  id: PB_PROCESS_NAME_VALUE        # the <process id> attr value as-is
-  name: PB_PROCESS_NAME_VALUE
-  isExecutable: "true"
-  documentation: Check Init
+    id: PB_PROCESS_NAME_VALUE # the <process id> attr value as-is
+    name: PB_PROCESS_NAME_VALUE
+    isExecutable: 'true'
+    documentation: Check Init
 errors: []
 nodes:
-  - id: ScriptTask_0m0bvsq
-    type: scriptTask
-    name: Init Variables
-    attrs: { scriptFormat: javascript, activiti:async: "false", activiti:exclusive: "false" }
-    script: scripts/0010_init-variables.js
-    layout: { x: 588, y: 78, width: 84, height: 84 }
-    edges:                                   # outgoing only; source implicit
-      - id: SequenceFlow_0ba03og
-        target: ExclusiveGateway_0rfhfmz
-        waypoints: [ [ 672, 120 ], [ 725, 120 ] ]
-  - id: ServiceTask_1b93zug
-    type: serviceTask
-    name: Template
-    class: com.symphony.action.TemplateDelegate
-    fields:                                  # order kept; string vs expression distinguished
-      - { name: method, string: "GET" }
-      - { name: value }                      # empty <activiti:field/> -> no value key
-    layout: { ... }
-    edges: [ ... ]
-  - id: SubProcess_1hgsdba
-    type: subProcess
-    multiInstance:
-      attrs: { isSequential: "true" }
-      loopCardinality: { value: "${numPagesToFetch}", attrs: { xsi:type: tFormalExpression } }
-      completionCondition: { value: "${nrOfCompletedInstances == numPagesToFetch}", attrs: { ... } }
-    layout: { ... }
-    edges: [ ... ]                           # edges leaving the subprocess
-    nodes:                                   # recursive: inner blocks + their edges
-      - id: ScriptTask_07dhbok
-        type: scriptTask
-        name: Prep fetch next
-        layout: { ... }
-        edges: [ { id: SequenceFlow_1qaj0jg, target: ServiceTask_12j7ob7 } ]
-      # ServiceTask_12j7ob7 (Fetch Next Page), ScriptTask_0vayzkg (Parse next page), ...
+    - id: ScriptTask_0m0bvsq
+      type: scriptTask
+      name: Init Variables
+      attrs: { scriptFormat: javascript, activiti:async: 'false', activiti:exclusive: 'false' }
+      script: scripts/0010_init-variables.js
+      layout: { x: 588, y: 78, width: 84, height: 84 }
+      edges: # outgoing only; source implicit
+          - id: SequenceFlow_0ba03og
+            target: ExclusiveGateway_0rfhfmz
+            waypoints: [[672, 120], [725, 120]]
+    - id: ServiceTask_1b93zug
+      type: serviceTask
+      name: Template
+      class: com.symphony.action.TemplateDelegate
+      fields: # order kept; string vs expression distinguished
+          - { name: method, string: 'GET' }
+          - { name: value } # empty <activiti:field/> -> no value key
+      layout: { ... }
+      edges: [...]
+    - id: SubProcess_1hgsdba
+      type: subProcess
+      multiInstance:
+          attrs: { isSequential: 'true' }
+          loopCardinality: { value: '${numPagesToFetch}', attrs: { xsi:type: tFormalExpression } }
+          completionCondition:
+              { value: '${nrOfCompletedInstances == numPagesToFetch}', attrs: { ... } }
+      layout: { ... }
+      edges: [...] # edges leaving the subprocess
+      nodes: # recursive: inner blocks + their edges
+          - id: ScriptTask_07dhbok
+            type: scriptTask
+            name: Prep fetch next
+            layout: { ... }
+            edges: [{ id: SequenceFlow_1qaj0jg, target: ServiceTask_12j7ob7 }]
+          # ServiceTask_12j7ob7 (Fetch Next Page), ScriptTask_0vayzkg (Parse next page), ...
 annotations: []
 associations: []
 ```
 
 Notes:
+
 - `incoming`/`outgoing` are reconstructed from edges — never stored (avoids a second source of truth).
 - Conditional edges carry `condition: "${...}"` (the JS condition). `default` gateway flow and
   any rare attrs are preserved via the generic `attrs` bag.
 - `layout`/`waypoints` round-trip the diagram and feed the future auto-formatter. The manifest
-  keeps the *full* parsed diagram (incl. annotation/association shapes, labels, plane ids) as the
+  keeps the _full_ parsed diagram (incl. annotation/association shapes, labels, plane ids) as the
   authoritative fallback; structure.yaml geometry overrides it on recompose.
 
 ### `pages/<formKey>.yml` (editable UI form)
+
 The `page` object verbatim as YAML (`_id`, `columns`, `page_name`, `entities`, `page_builder[]`).
 `page_builder` elements (`Title`/`Section`/`Field`/`Button`/`WebComponent`) keep all of
 `field_info`, `validation` (incl. `complex` conditional rules), `button_info`, `styles`.
@@ -177,8 +181,10 @@ Wrapper audit fields (`guid`, `process_guid`, `sequence_data`, `created_*`) go t
 not the page file.
 
 ### `.agrippa-pb.json` (manifest — machine-managed, not the edit surface)
-Holds everything needed to rebuild the *exact* payload for the round-trip test and to map
-files back to ids — i.e. the bits that aren't wizard *design*:
+
+Holds everything needed to rebuild the _exact_ payload for the round-trip test and to map
+files back to ids — i.e. the bits that aren't wizard _design_:
+
 ```json
 {
   "guid": "…", "document_id": "ml_review_billing", "process_name": "…", "version": 1,
@@ -227,13 +233,13 @@ that, for each of the 5 sample payloads:
 1. decompose payload → temp dir (files);
 2. recompose temp dir → rebuilt payload;
 3. normalize **both** payloads and assert deep-equal, where `normalize`:
-   - parses `built_page` of each into the canonical node/edge model (so XML formatting drift is
-     erased) and compares the models;
-   - compares scripts as exact text (after `.trim()`), per scriptTask id;
-   - compares each `page` object deep-equal (JSON semantics — key order irrelevant);
-   - compares the scalar fields;
-   - ignores purely server-managed/derived fields not in scope (documented explicitly, no
-     silent drops — anything ignored is logged).
+    - parses `built_page` of each into the canonical node/edge model (so XML formatting drift is
+      erased) and compares the models;
+    - compares scripts as exact text (after `.trim()`), per scriptTask id;
+    - compares each `page` object deep-equal (JSON semantics — key order irrelevant);
+    - compares the scalar fields;
+    - ignores purely server-managed/derived fields not in scope (documented explicitly, no
+      silent drops — anything ignored is logged).
 
 Run it against all 5 fixtures in the task folder; the harness fails loudly listing any
 node/edge/script/page/field that differs. This is the acceptance gate for the task.

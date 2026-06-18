@@ -32,7 +32,7 @@ function getPhasesByIds(token, ripUrl, ids) {
         'GET',
         `/symple.triplet.phase/*?_filter_=[('id', 'in', [${ids.join(',')}])]`,
         token,
-        ripUrl,
+        ripUrl
     );
 }
 
@@ -42,6 +42,19 @@ function updatePhase(token, ripUrl, phaseId, code) {
 
 function listMfas(token, ripUrl) {
     return makeRequest('GET', '/symple.workflow/get_mfas', token, ripUrl);
+}
+
+// Structure (graph) of a workflow: phases, results/edges, processes, triplets.
+// Backed by the `agrippa_describe_workflow` MFA on helpdesk.ticket. Returns no
+// phase code -- the editable phase code already lives on disk as .py files.
+// Registered as a GET MFA, so workflow_id rides the query string.
+function describeWorkflow(token, ripUrl, workflowId) {
+    return makeRequest(
+        'GET',
+        `/helpdesk.ticket/agrippa_describe_workflow?workflow_id=${workflowId}`,
+        token,
+        ripUrl
+    );
 }
 
 function updateMfa(token, ripUrl, mfaId, code) {
@@ -55,7 +68,7 @@ async function getPhaseResults(token, ripUrl, ids) {
             'GET',
             `/symple.triplet.phase.result/*?_filter_=[('id', 'in', [${ids.join(',')}])]`,
             token,
-            ripUrl,
+            ripUrl
         );
     } catch (err) {
         if (err.message.includes('404')) return [];
@@ -76,7 +89,7 @@ async function getPhaseConfigurators(token, ripUrl, phaseId) {
             'GET',
             `/result.code.configurator/*?_filter_=[('code_phase_id', '=', ${phaseId})]`,
             token,
-            ripUrl,
+            ripUrl
         );
     } catch (err) {
         if (err.message.includes('404')) return [];
@@ -98,6 +111,7 @@ export {
     getPhasesByIds,
     updatePhase,
     listMfas,
+    describeWorkflow,
     updateMfa,
     getPhaseResults,
     initPhaseRemote,

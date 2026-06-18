@@ -13,17 +13,17 @@ Base = `PB_URL` (`https://sorgenia-test-02.symple.cloud/api/processbuilder/v1`).
 Keycloak bearer agrippa already uses (the captured curls use browser cookies; the GET during
 clone proved bearer works — **verify PATCH/POST accept bearer during impl**).
 
-| action | method + path | body |
-|---|---|---|
-| **save whole wizard** (blocks/structure/scalars) | `PATCH /builder/process/<guid>` | full wizard payload (same shape as GET: `guid`, `built_page`, `pages`, `process_structure`, scalars…) |
-| **save existing page** | `PATCH /builder/process/<guid>/page/<page_guid>` | `{ name, page }` |
-| **create new page** | `POST /builder/process/<guid>/page` | `{ name, page }` |
-| **publish** | `POST /builder/process/publish/<guid>` | `null` |
+| action                                           | method + path                                    | body                                                                                                  |
+| ------------------------------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| **save whole wizard** (blocks/structure/scalars) | `PATCH /builder/process/<guid>`                  | full wizard payload (same shape as GET: `guid`, `built_page`, `pages`, `process_structure`, scalars…) |
+| **save existing page**                           | `PATCH /builder/process/<guid>/page/<page_guid>` | `{ name, page }`                                                                                      |
+| **create new page**                              | `POST /builder/process/<guid>/page`              | `{ name, page }`                                                                                      |
+| **publish**                                      | `POST /builder/process/publish/<guid>`           | `null`                                                                                                |
 
 - `name` = the userTask id (e.g. `UserTask_176nfh6`) = `page._id.stepkey`.
 - `page` = exactly the object stored in `pages/<formKey>.yml` (`_id, columns, entities,
-  language, page_name, page_builder, profile_info, page_unique_id, mongo_collection,
-  generic_information`).
+language, page_name, page_builder, profile_info, page_unique_id, mongo_collection,
+generic_information`).
 - **The page save is independent of the wizard save** (instructions): in the UI the page popup
   has its own "save" button. So pushing a wizard with page edits = page-endpoint call(s) **and**
   the whole-wizard PATCH. New page flow (per `update_payload_new_page*`): POST the page first,
@@ -41,11 +41,11 @@ clone proved bearer works — **verify PATCH/POST accept bearer during impl**).
    require storing the full upstream payload before edits).
 5. **Page sync** — authoritative page list = userTask nodes in `structure.yaml` (each points to
    a `pages/*.yml`); manifest supplies the page `guid`/audit:
-   - page has a guid (existing) **and** differs from upstream → `PATCH …/page/<guid> {name,page}`
-   - page has no guid (newly added userTask) → `POST …/page {name,page}` → record returned guid
-     into the manifest
-   - page deleted locally (userTask removed) → no DELETE call; the wizard PATCH drops it
-     server-side (`remove_pages` keys off built_page userTasks — confirmed in clone recon)
+    - page has a guid (existing) **and** differs from upstream → `PATCH …/page/<guid> {name,page}`
+    - page has no guid (newly added userTask) → `POST …/page {name,page}` → record returned guid
+      into the manifest
+    - page deleted locally (userTask removed) → no DELETE call; the wizard PATCH drops it
+      server-side (`remove_pages` keys off built_page userTasks — confirmed in clone recon)
 6. **Whole-wizard PATCH** `…/process/<guid>` with `localPayload` (saves blocks/structure;
    mirrors `update_payload_blocks_only` / `…_new_page_inserited`). Wizard → `draft`.
 7. **Publish** (optional): `--publish` auto, else prompt; `POST …/publish/<guid>` body `null`.
@@ -71,6 +71,7 @@ Backup (step 4) is the safety net regardless of the verdict.
 ## CLI — unified `push` pipeline (resolved with user)
 
 Same command, **one pipeline** for all object types. `agrippa push`:
+
 1. collects every workspace entry — phase, mfa, **and process_builder**;
 2. classifies each → `unchanged` / `fast-forward` / `conflict` (phase/mfa by 3-way checksum; pb
    by local-change + upstream `updated_date`, see below);
@@ -95,7 +96,7 @@ pb `conflict`).
 ## New code / changes
 
 - `src/agrippa/lib/pbApi.js` — add `updateProcess(guid, payload)` (PATCH), `updatePage(guid,
-  pageGuid, body)` (PATCH), `createPage(guid, body)` (POST), `publishProcess(guid)` (POST).
+pageGuid, body)` (PATCH), `createPage(guid, body)` (POST), `publishProcess(guid)` (POST).
 - `src/agrippa/commands/pushPb.js` — orchestration: recompose, fetch, conflict, backup, page
   sync, wizard PATCH, publish, persist.
 - `src/agrippa/commands/push.js` — branch process_builder entries to `pushPb`.
@@ -107,7 +108,7 @@ pb `conflict`).
 ## Resolved with user
 
 1. **Conflict strategy** — `updated_date` mismatch (+ `status`), **not** a wizard checksum.
-   Handled the *same way* as the existing `push`: classify → badge → select. `--force` to push a
+   Handled the _same way_ as the existing `push`: classify → badge → select. `--force` to push a
    `conflict` non-interactively. Backup upstream payload regardless.
 2. **Page deletion** — rely on the server's `remove_pages` (no DELETE call). ✔
 3. **Publish UX** — prompt by default; `--publish` auto; `--no-publish` skip. ✔

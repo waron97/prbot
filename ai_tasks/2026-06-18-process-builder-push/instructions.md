@@ -12,5 +12,3 @@ Odoo phases and MFAs use a checksum calculation to tell if the upstream was modi
 Reason about this a little, but I have a hunch this is too complex for wizards.
 In this case, we can just fall back to looking at the state of the upstream record: if "modified", agrippa alerts that conflicts are possible. Or we can look at last modified dates, if applicable.
 At any rate, the backup function should hold for wizards: store the full payload of the upstream wizard before applying edits.
-
-

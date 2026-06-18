@@ -8,9 +8,7 @@ try {
 
     var post_order_body;
     var outgoingAsset = JSON.parse(execution.getVariable('outgoingAsset'));
-    var outgoingContract = JSON.parse(
-        execution.getVariable('outgoingContract')
-    );
+    var outgoingContract = JSON.parse(execution.getVariable('outgoingContract'));
 
     // ----------------------------
     // Main Execution

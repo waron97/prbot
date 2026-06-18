@@ -3,7 +3,7 @@
 Running log of what was built and why. See `planning.md` for the agreed design.
 
 > **Reading order:** this file is chronological. "Decisions made during build" captures the
-> *initial* choices; several were later reversed in Revisions 1–3. The **Current design**
+> _initial_ choices; several were later reversed in Revisions 1–3. The **Current design**
 > section immediately below is the authoritative end state — trust it where an early section
 > conflicts (conflicts are flagged inline with "superseded").
 
@@ -14,7 +14,7 @@ and decomposes it into editable local files; `recompose` rebuilds the payload. P
 later task.
 
 **0-loss bar = A (behavioral / semantic), confirmed with the user.** The rebuilt wizard must
-*behave* identically; byte-identical XML is explicitly **not** required. Validated by:
+_behave_ identically; byte-identical XML is explicitly **not** required. Validated by:
 `compareProcess` (normalized `<process>` tree — whitespace/attr-order/sibling-order-insensitive,
 CDATA + attr values exact) + `compareDiagram` (geometry only) + deep-equal of `pages`,
 `process_structure`, and scalars.
@@ -47,22 +47,22 @@ state to regenerate):
 
 - `PB_URL = https://sorgenia-test-02.symple.cloud/api/processbuilder/v1` (same host as
   `IMPORTEXPORT_URL`, different service path). `GET /builder/process` → 200, returns 282
-  processes (the list endpoint actually returns *full* objects incl. `built_page`/`pages`,
+  processes (the list endpoint actually returns _full_ objects incl. `built_page`/`pages`,
   but we still use `GET /builder/process/<guid>` per spec for the single fetch).
 - Auth: the existing Keycloak `getToken()` bearer is accepted as-is. ✔
 - Dep added: `fast-xml-parser@^5.9.2` (parse with `preserveOrder` for faithful trees).
 
 ## Decisions made during build (refining planning.md)
 
-1. ~~**Geometry (bpmndi) lives in the manifest**, keyed by element id — *not* in
+1. ~~**Geometry (bpmndi) lives in the manifest**, keyed by element id — _not_ in
    `structure.yaml`.~~ **SUPERSEDED (Rev 1 → Rev 3):** geometry now lives inline in
    structure.yaml and the diagram is regenerated from it; the manifest no longer stores the
    diagram at all.
-2. **0-loss gate = normalized comparison**, independent of our model. *(Refined in Rev 3:)*
+2. **0-loss gate = normalized comparison**, independent of our model. _(Refined in Rev 3:)_
    `compareProcess` canonicalizes the `<process>` tree (drop pure-whitespace text, sort
    attributes, sort id-bearing siblings by key, sort `incoming`/`outgoing`; CDATA + attr values
    compared exact) — catches any dropped attr/element/CDATA. `compareDiagram` compares the
-   diagram by *geometry only* (per-`bpmnElement` bounds + `isExpanded`, ordered waypoints),
+   diagram by _geometry only_ (per-`bpmnElement` bounds + `isExpanded`, ordered waypoints),
    ignoring derived DI ids and labels.
 3. **Script bodies are preserved byte-exact** (no trim) on extract and re-wrap, so an untouched
    clone round-trips exactly. (`writeCodeFile` trims — not used for scripts.)
@@ -100,7 +100,7 @@ textAnnotation · association · bpmndi diagram (shapes/bounds, edges/waypoints,
 
 ## Build findings (things that bit, and the fix)
 
-- **`format:true` corrupts CDATA.** The XML builder injects indentation *inside* `<script>`
+- **`format:true` corrupts CDATA.** The XML builder injects indentation _inside_ `<script>`
   CDATA, mangling JS bodies. Fixed by building with `format:false`; `built_page` is compact
   (it is machine-reassembled, never hand-edited). CDATA child shape for the builder must be
   exactly `{ __cdata: [{ '#text': body }] }` — no sibling `#text` key.
@@ -118,7 +118,7 @@ textAnnotation · association · bpmndi diagram (shapes/bounds, edges/waypoints,
 - **Offline:** decompose → recompose → `comparePayload` deep-equal on all 5 task fixtures
   (logic `<process>` semantic, diagram by geometry, pages/`process_structure`/scalars deep-equal).
   Largest fixture: `ml_voltura_data_input` — 158 nodes, 199 edges, 42 scripts, 28 service tasks.
-  *(This section reflects phase 0–5; see Revisions 1–3 for the final representation.)*
+  _(This section reflects phase 0–5; see Revisions 1–3 for the final representation.)_
 - **Live:** `listProcesses` → 282 wizards; `getProcess` → decompose → write to disk → read back
   → recompose → 0-loss confirmed for `ml_voltura_data_input`.
 - **Command:** `agrippa clone --pb --name ml_review_billing --path w` writes process.yaml,
@@ -158,7 +158,7 @@ Per user feedback, the graph representation changed (still 0-loss, all 5 fixture
 2. **Diagram geometry is decomposed into structure.yaml**, not kept as a verbatim blob. Each
    node gets `layout: {x, y, width, height}`; each edge gets `waypoints: [[x,y],...]` (rendered
    inline via a flow-style YAML pass). This sets up the future auto-formatter. The manifest
-   still holds the *full* parsed diagram (incl. annotation/association shapes, labels, plane
+   still holds the _full_ parsed diagram (incl. annotation/association shapes, labels, plane
    ids) as the authoritative fallback; structure.yaml layout/waypoints **override** it on
    recompose (same overlay pattern as process.yaml). `pbModel` now parses/builds `<bpmndi>`
    structurally (`parseDiagram`/`buildDiagramXml`) and compares it semantically
@@ -182,14 +182,14 @@ flow leaving it — were being dropped). Sweep: **270/282 round-trip 0-loss**.
 The remaining 12 failing wizards are incomplete/never-finished, ported from an old system, or
 empty shells — confirmed not worth supporting. Listed here so the gap is explicit, not silent:
 
-| construct | wizards | status |
-|---|---|---|
-| `built_page = null` (empty shell) | ml_gas_activation_charges, PB_SRG_OM_TASK_VC | draft |
-| `parallelGateway` | PB_SRG_OM_TASK_ORDERITEM_CCQ, ...PRECHECK | published / modified |
-| `callActivity` (+activiti:in/out) | in_order_muse_ver_Two | published |
-| `intermediateCatchEvent` (+timer/message defs) | ml_modify_iva_rate_long_running_process | draft |
-| `activiti:field` with both string+expression | dl_indemnities, Workshop | published / draft |
-| `errorEventDefinition` extra @id/child | voltura_new, PB_SRG_OM_ACTION_OI_SOSPENDI, ForceCreditCheck(OLD), ml_short_prescription_to_delete | published / modified |
+| construct                                      | wizards                                                                                           | status               |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------- |
+| `built_page = null` (empty shell)              | ml_gas_activation_charges, PB_SRG_OM_TASK_VC                                                      | draft                |
+| `parallelGateway`                              | PB_SRG_OM_TASK_ORDERITEM_CCQ, ...PRECHECK                                                         | published / modified |
+| `callActivity` (+activiti:in/out)              | in_order_muse_ver_Two                                                                             | published            |
+| `intermediateCatchEvent` (+timer/message defs) | ml_modify_iva_rate_long_running_process                                                           | draft                |
+| `activiti:field` with both string+expression   | dl_indemnities, Workshop                                                                          | published / draft    |
+| `errorEventDefinition` extra @id/child         | voltura_new, PB_SRG_OM_ACTION_OI_SOSPENDI, ForceCreditCheck(OLD), ml_short_prescription_to_delete | published / modified |
 
 If any becomes relevant, each is a small targeted add (most mirror an existing type); a generic
 "preserve unknown elements verbatim in the manifest" pass would cover all at once.
@@ -197,7 +197,7 @@ If any becomes relevant, each is a small targeted add (most mirror an existing t
 ## Revision 3 — diagram regenerated from structure.yaml (no manifest reference)
 
 Earlier the manifest held the full parsed diagram and recompose used it as the base, with
-structure.yaml only *overriding* geometry. That made the manifest a hidden second source of
+structure.yaml only _overriding_ geometry. That made the manifest a hidden second source of
 truth that would go stale on structural edits (add a node → no shape; delete a node → orphan
 shape). Per the agrippa principle that local files are authoritative, the diagram is now
 **regenerated purely from structure.yaml**:
@@ -208,8 +208,8 @@ shape). Per the agrippa principle that local files are authoritative, the diagra
 - The manifest **no longer stores the diagram at all** (`buildDiagram(model, geo)` builds
   `<bpmndi>` from the structure graph + geometry; DI element ids are derived as `<id>_di`).
 - BPMNLabel boxes and the original (arbitrary) DI ids are **not** preserved — renderers
-  auto-place labels, and the ids carry no behavior. `compareDiagram` now compares *geometry
-  only* (per-bpmnElement bounds + isExpanded, ordered waypoints), ignoring ids/labels.
+  auto-place labels, and the ids carry no behavior. `compareDiagram` now compares _geometry
+  only_ (per-bpmnElement bounds + isExpanded, ordered waypoints), ignoring ids/labels.
 
 Full sweep after the change: **271/283 round-trip 0-loss**, and crucially **zero diagram-level
 failures** — every remaining failure is a `<process>`-level unsupported construct (the known
@@ -238,7 +238,7 @@ Chronological record of the choices made in conversation, so the "why" is preser
 
 2. **Representation strategy.** Offered: preserve-BPMN-verbatim-skeleton + extract editable
    views, vs **full decompose + rebuild**. User chose **full decompose + rebuild**, and required
-   that *every* block and edge be editable from the filesystem. Future agrippa utilities
+   that _every_ block and edge be editable from the filesystem. Future agrippa utilities
    (`add-node` / `remove-node` / `connect-node`) will make editing ergonomic, but the files
    alone are authoritative.
 
@@ -247,7 +247,7 @@ Chronological record of the choices made in conversation, so the "why" is preser
    (the decomposed `built_page`). User confirmed: **keep them split** (different authority,
    different edit cadence, clean diffs).
 
-4. **Edges modeled under their source block.** User: edges are connections that belong *to* the
+4. **Edges modeled under their source block.** User: edges are connections that belong _to_ the
    starting block — nest them under the source node (`source` implicit), not a flat top-level
    list. Done (Rev 1).
 
@@ -266,7 +266,7 @@ Chronological record of the choices made in conversation, so the "why" is preser
 
 8. **Failing live wizards — triage.** A full 282/283 sweep found ~13 wizards failing on
    constructs outside the 5 examples. User reviewed the list and judged them **incomplete /
-   never-worked-on / ported from an old system → no action warranted**, *except*:
+   never-worked-on / ported from an old system → no action warranted**, _except_:
 
 9. **`transaction` is a genuine missed block type** (not in the examples). User asked to handle
    it; done (Rev 2). The rest remain intentionally unsupported (table in Rev 2).

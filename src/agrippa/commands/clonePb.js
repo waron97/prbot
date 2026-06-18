@@ -1,12 +1,12 @@
-import inquirer from 'inquirer';
 import search from '@inquirer/search';
-import { readConfig, writeConfig, loadEffectiveEnv } from '../lib/config.js';
+import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
 import { computeChecksum } from '../lib/checksum.js';
-import { listProcesses, getProcess } from '../lib/pbApi.js';
-import { decompose, recompose, comparePayload, stableStringify } from '../lib/pbProject.js';
-import { writeProject, projectReader } from '../lib/pbWorkspace.js';
+import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
+import { getProcess, listProcesses } from '../lib/pbApi.js';
+import { comparePayload, decompose, recompose, stableStringify } from '../lib/pbProject.js';
+import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 
 async function clonePb(opts) {
     const config = readConfig();
@@ -35,7 +35,8 @@ async function clonePb(opts) {
             source: (input) => {
                 const list = input
                     ? processes.filter(
-                          (p) => fuzzyMatch(p.process_name, input) || fuzzyMatch(p.document_id, input),
+                          (p) =>
+                              fuzzyMatch(p.process_name, input) || fuzzyMatch(p.document_id, input)
                       )
                     : processes;
                 return list.map((p) => ({
@@ -84,7 +85,7 @@ async function clonePb(opts) {
     // Register in the workspace for later pull/push.
     config.workspace = config.workspace || [];
     const existing = config.workspace.findIndex(
-        (e) => e.object_type === 'process_builder' && e.guid === chosen.guid,
+        (e) => e.object_type === 'process_builder' && e.guid === chosen.guid
     );
     const entry = {
         path: dest,

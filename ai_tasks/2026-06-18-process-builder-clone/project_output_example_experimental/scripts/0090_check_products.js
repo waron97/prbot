@@ -3,13 +3,9 @@ try {
     // Input gathering
     // ----------------------------
 
-    var jsonResponse = JSON.parse(
-        execution.getVariable('searchProductResponse')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('searchProductResponse'));
     var currentPage = execution.getVariable('productPage', 1);
-    var currentOptions = JSON.parse(
-        execution.getVariable('productOptions', '[]')
-    );
+    var currentOptions = JSON.parse(execution.getVariable('productOptions', '[]'));
     var currentProducts = JSON.parse(execution.getVariable('products', '[]'));
 
     // ----------------------------

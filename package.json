@@ -21,15 +21,16 @@
         "inquirer-search-list": "^1.2.6",
         "node-fetch": "^3.3.2",
         "omelette": "^0.4.17",
-        "prettier": "^3.5.3",
         "slugify": "^1.6.9",
         "yaml": "^2.9.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.21.0",
+        "@ianvs/prettier-plugin-sort-imports": "^4.7.1",
         "@types/node": "^25.0.10",
         "@typescript-eslint/parser": "^8.26.0",
         "eslint": "^9.21.0",
+        "prettier": "^3.8.4",
         "typescript": "^5.8.2",
         "typescript-eslint": "^8.26.0"
     },

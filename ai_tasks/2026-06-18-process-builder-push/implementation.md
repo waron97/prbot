@@ -34,7 +34,7 @@ yet — awaiting plan review** (open questions in planning.md).
   badge → select → push → publish).
 - `src/agrippa/lib/pbProject.js` — `stableStringify`, `localChecksum`, `enumeratePages`.
 - `src/agrippa/lib/pbWorkspace.js` — `listPageFiles`.
-- `src/agrippa/commands/clonePb.js` — `checksum_at_pull` now hashes the *recomposed* payload;
+- `src/agrippa/commands/clonePb.js` — `checksum_at_pull` now hashes the _recomposed_ payload;
   store `updated_date` + `status` baselines for push classification.
 - `src/agrippa/commands/pull.js` — excludes process_builder entries (pull-pb is a future task).
 - `src/agrippa/index.js` — `push` gains `--publish` / `--skip-publish`.
@@ -57,6 +57,7 @@ yet — awaiting plan review** (open questions in planning.md).
 ## Validation — live, against real wizards (bearer auth accepted on all writes)
 
 Tested on disposable `[DA ELIMINARE]` wizards:
+
 - **Wizard save + backup** (`modify_voltage`): edited a script → `pushPbEntry` → upstream
   `built_page` contains the edit; `.backup/<ts>/<path>/upstream.json` written; status flips,
   `updated_date` changes.

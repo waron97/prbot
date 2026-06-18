@@ -1,11 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-import fetch from 'node-fetch';
 import search from '@inquirer/search';
-import { getToken } from '../lib/auth.js';
-import { execGit } from '../lib/git.js';
+import fetch from 'node-fetch';
 import { resolveAddonsPath } from '../lib/addons.js';
+import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
+import { execGit } from '../lib/git.js';
 import { log } from '../lib/logger.js';
 
 const IMPEREX_REL = 'sorgenia_imperex_metadata/migrations/0.0.0/imperex';
@@ -89,7 +89,7 @@ async function exportImperex(opts) {
         }
         await execGit(
             ['commit', '-m', `[IMP][sorgenia_imperex_metadata] update ${model} record`],
-            ADDONS_PATH,
+            ADDONS_PATH
         );
         log('Committed.');
     }

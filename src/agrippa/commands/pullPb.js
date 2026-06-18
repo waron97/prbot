@@ -1,9 +1,9 @@
-import { mkdirSync, writeFileSync, existsSync, readdirSync, rmSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
-import { getProcess } from '../lib/pbApi.js';
-import { decompose, recompose, comparePayload, stableStringify } from '../lib/pbProject.js';
-import { writeProject, projectReader } from '../lib/pbWorkspace.js';
 import { computeChecksum } from '../lib/checksum.js';
+import { getProcess } from '../lib/pbApi.js';
+import { comparePayload, decompose, recompose, stableStringify } from '../lib/pbProject.js';
+import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 
 // Delete files under <baseDir>/<sub> that are not in the fresh decompose map, so
 // a refresh that renames/removes scripts or pages doesn't leave orphans behind.

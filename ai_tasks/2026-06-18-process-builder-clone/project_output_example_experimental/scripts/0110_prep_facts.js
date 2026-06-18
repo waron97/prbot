@@ -41,10 +41,7 @@ try {
     // Output
     // ----------------------------
 
-    execution.setVariable(
-        'updateFactPayload',
-        JSON.stringify(updateFactPayload)
-    );
+    execution.setVariable('updateFactPayload', JSON.stringify(updateFactPayload));
 } catch (err) {
     execution.setVariable('isAlive', false);
     execution.setVariable('errorMessage', err.message);

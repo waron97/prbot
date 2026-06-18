@@ -140,9 +140,5 @@ function safeGet(obj, path, defaultValue) {
         current = current[keys[i]];
     }
 
-    return current !== undefined
-        ? current
-        : defaultValue !== undefined
-          ? defaultValue
-          : undefined;
+    return current !== undefined ? current : defaultValue !== undefined ? defaultValue : undefined;
 }

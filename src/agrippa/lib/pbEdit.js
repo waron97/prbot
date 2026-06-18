@@ -13,7 +13,7 @@
 // agent runs `pb format` to finalize layout. No IO happens here.
 
 import { stringify as yamlStringify } from 'yaml';
-import { toSlug, pad } from './pbProject.js';
+import { pad, toSlug } from './pbProject.js';
 
 // Fixed element sizes (measured across all fixtures). Containers are sized by
 // the layout engine; we seed a small default so a stubbed clone stays valid.
@@ -164,7 +164,8 @@ function addNode(structure, manifest, opts, ctx = {}) {
     if (parentId) {
         const f = findNode(structure, parentId);
         if (!f) throw new Error(`parent not found: ${parentId}`);
-        if (!CONTAINER.has(f.node.type)) throw new Error(`parent ${parentId} is not a container (subProcess/transaction)`);
+        if (!CONTAINER.has(f.node.type))
+            throw new Error(`parent ${parentId} is not a container (subProcess/transaction)`);
         f.node.nodes = f.node.nodes || [];
         f.node.nodes.push(node);
     } else {
@@ -215,7 +216,7 @@ function removeNode(structure, manifest, { id }) {
     });
     if (structure.associations) {
         structure.associations = structure.associations.filter(
-            (a) => !victimIds.has(a.sourceRef) && !victimIds.has(a.targetRef),
+            (a) => !victimIds.has(a.sourceRef) && !victimIds.has(a.targetRef)
         );
     }
 
@@ -253,12 +254,15 @@ function connect(structure, { from, to, name, condition, conditionType, makeDefa
     const warnings = [];
     if (makeDefault) {
         if (sf.node.type !== 'exclusiveGateway') {
-            warnings.push(`--default only applies to exclusiveGateway; ${from} is ${sf.node.type}.`);
+            warnings.push(
+                `--default only applies to exclusiveGateway; ${from} is ${sf.node.type}.`
+            );
         } else {
             const prev = sf.node.attrs?.default;
             sf.node.attrs = sf.node.attrs || {};
             sf.node.attrs.default = id;
-            if (prev && prev !== id) warnings.push(`replaced previous default flow ${prev} on ${from}.`);
+            if (prev && prev !== id)
+                warnings.push(`replaced previous default flow ${prev} on ${from}.`);
         }
     }
     // Re-check the gateway's invariant after the edit.
@@ -281,12 +285,16 @@ function lintGateways(structure) {
         const def = n.attrs?.default;
         const hasDefault = def && outs.some((e) => e.id === def);
         if (!hasDefault) {
-            issues.push(`${n.id} (${n.name || 'gateway'}): ${outs.length} outgoing flows but no default — mark one with --default.`);
+            issues.push(
+                `${n.id} (${n.name || 'gateway'}): ${outs.length} outgoing flows but no default — mark one with --default.`
+            );
         }
         for (const e of outs) {
             if (e.id === def) continue;
             if (e.condition === undefined) {
-                issues.push(`${n.id} → ${e.target} (${e.id}): non-default flow without a condition expression.`);
+                issues.push(
+                    `${n.id} → ${e.target} (${e.id}): non-default flow without a condition expression.`
+                );
             }
         }
     });

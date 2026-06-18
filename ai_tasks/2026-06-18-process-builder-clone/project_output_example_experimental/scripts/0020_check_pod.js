@@ -3,9 +3,7 @@ try {
     // Input gathering
     // ----------------------------
 
-    var searchPodResponse = JSON.parse(
-        execution.getVariable('search_pod_response')
-    );
+    var searchPodResponse = JSON.parse(execution.getVariable('search_pod_response'));
 
     var baseUrl = execution.getVariable('odooEndpoint');
 
@@ -52,14 +50,10 @@ try {
         servicePointId = podPdr['service_point_id'];
 
         if (assetType === 'pod') {
-            getMeterUrl =
-                baseUrl + 'res.partner.meter/search_meter?pod_id=' + podPdrId;
+            getMeterUrl = baseUrl + 'res.partner.meter/search_meter?pod_id=' + podPdrId;
             getFullPodPdrUrl = baseUrl + 'res.partner.pod/' + podPdrId;
         } else {
-            getMeterUrl =
-                baseUrl +
-                'res.partner.meter.pdr/search_meter_pdr?pdr_id=' +
-                podPdrId;
+            getMeterUrl = baseUrl + 'res.partner.meter.pdr/search_meter_pdr?pdr_id=' + podPdrId;
             getFullPodPdrUrl = baseUrl + 'res.partner.pdr/' + podPdrId;
         }
     }

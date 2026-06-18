@@ -76,17 +76,13 @@ try {
             attribute = arrayFind(
                 family.attributes(function (a) {
                     var name = a.name.toLowerCase();
-                    return (
-                        name === 'listino' || name === 'listino dynamic lookup'
-                    );
+                    return name === 'listino' || name === 'listino dynamic lookup';
                 })
             );
         }
 
         if (!attribute || !attribute.value) {
-            throw new Error(
-                '[getListinoFromAsset] listino attribute not found or it has no value'
-            );
+            throw new Error('[getListinoFromAsset] listino attribute not found or it has no value');
         }
 
         return attribute.value;
@@ -130,10 +126,7 @@ try {
         group_to_show: 'all',
         filters: [
             {
-                $and: [
-                    { pricelist_code: listino },
-                    { product_id: asset.prodid },
-                ],
+                $and: [{ pricelist_code: listino }, { product_id: asset.prodid }],
             },
         ],
     };
@@ -143,15 +136,9 @@ try {
     // ----------------------------
 
     execution.setVariable('getOutgoingPricelistUrl', getOutgoingPricelistUrl);
-    execution.setVariable(
-        'getOutgoingPricelistBody',
-        JSON.stringify(getOutgoingPricelistBody)
-    );
+    execution.setVariable('getOutgoingPricelistBody', JSON.stringify(getOutgoingPricelistBody));
     execution.setVariable('selectedProduct', selectedProduct);
-    execution.setVariable(
-        'productOptions',
-        JSON.stringify(updatedProductOptions)
-    );
+    execution.setVariable('productOptions', JSON.stringify(updatedProductOptions));
     execution.setVariable('mortisCausaError', false);
     execution.setVariable('searchListinoError', searchListinoError);
 } catch (err) {

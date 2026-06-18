@@ -21,9 +21,6 @@ try {
     }
 } catch (err) {
     execution.setVariable('isAlive', false);
-    execution.setVariable(
-        'errorCode',
-        'CHECK_ORDER_CREATION_FAIL_UNEXPECTED_ERROR'
-    );
+    execution.setVariable('errorCode', 'CHECK_ORDER_CREATION_FAIL_UNEXPECTED_ERROR');
     execution.setVariable('errorMessage', err.message);
 }

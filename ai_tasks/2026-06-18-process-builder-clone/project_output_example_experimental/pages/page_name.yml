@@ -1,1291 +1,1368 @@
 {
-    "_id": {
-        "stepkey": "UserTask_0b3ppo4",
-        "processkey": "ml_voltura_preliminary_checks"
-    },
-    "columns": 3,
-    "entities": [],
-    "language": "",
-    "page_name": "",
-    "page_builder": [
-        {
-            "type": "Title",
-            "title": "Controllo documenti",
-            "styles": {},
-            "sequence": 0,
-            "unique_id": "508335-title-798186",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Section",
-            "title": "",
-            "styles": {},
-            "columns": "3",
-            "sequence": 1,
-            "unique_id": "799937-section-062388",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 2,
-            "unique_id": "412940-custom_field-399828",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "pod_state",
-                "field_type": "String",
-                "field_label": "Stato del punto",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "799937-section-062388",
-                "entity_provider": "custom",
-                "external_options": null,
-                "process_variable": "",
-                "field_external_id": "pod_state",
-                "field_value_lookup": {
-                    "json_path": null,
-                    "value_key": null,
-                    "field_unique_id": null,
-                    "is_external_lookup": false
-                },
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-input-text",
-                "process_variable_value": "podPdrSupplyState",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": true,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 3,
-            "unique_id": "057575-custom_field-397729",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "pod_address",
-                "field_type": "String",
-                "field_label": "Indirizzo di fornitura",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "799937-section-062388",
-                "entity_provider": "custom",
-                "external_options": null,
-                "process_variable": "",
-                "field_external_id": "pod_address",
-                "field_value_lookup": {
-                    "json_path": null,
-                    "value_key": null,
-                    "field_unique_id": null,
-                    "is_external_lookup": false
-                },
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-input-text",
-                "process_variable_value": "podPdrAddress",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": true,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Section",
-            "title": "",
-            "styles": {},
-            "columns": "3",
-            "sequence": 4,
-            "unique_id": "199122-section-837149",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 5,
-            "unique_id": "981308-custom_field-875375",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "pod_client",
-                "field_type": "String",
-                "field_label": "Cliente volturato",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "199122-section-837149",
-                "entity_provider": "custom",
-                "external_options": null,
-                "process_variable": "",
-                "field_external_id": "pod_client",
-                "field_value_lookup": {
-                    "json_path": null,
-                    "value_key": null,
-                    "field_unique_id": null,
-                    "is_external_lookup": false
-                },
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-input-text",
-                "process_variable_value": "podCustomerName",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": true,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 6,
-            "unique_id": "218394-custom_field-434310",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "customer_code",
-                "field_type": "String",
-                "field_label": "Codice cliente volturato",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "199122-section-837149",
-                "entity_provider": "custom",
-                "external_options": null,
-                "process_variable": "",
-                "field_external_id": "customer_code",
-                "field_value_lookup": {
-                    "json_path": null,
-                    "value_key": null,
-                    "field_unique_id": null,
-                    "is_external_lookup": false
-                },
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-input-text",
-                "process_variable_value": "podCustomerCode",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": true,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 7,
-            "unique_id": "554979-custom_field-595645",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "customer_segment",
-                "field_type": "Enum",
-                "field_label": "Segmento customer care",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "199122-section-837149",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "podCustomerSegment",
-                "field_external_id": "customer_segment",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "podCustomerSegment",
-                "process_variable_options": "customerSegmentOptions",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": true,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Section",
-            "title": "",
-            "styles": {},
-            "columns": "3",
-            "sequence": 8,
-            "unique_id": "689372-section-944861",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 9,
-            "unique_id": "620885-custom_field-703364",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "contract_conditions_version",
-                "field_type": "Enum",
-                "field_label": "Versione condizioni contrattuali",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "689372-section-944861",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "contract_conditions_version",
-                "field_external_id": "contract_conditions_version",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "contract_conditions_version",
-                "process_variable_options": "contractConditionVersionOptions",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": true,
-                "read_only": false,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Section",
-            "title": "Verifica CTE",
-            "styles": {},
-            "columns": "3",
-            "sequence": 10,
-            "unique_id": "368625-section-995821",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 11,
-            "unique_id": "505765-custom_field-187879",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "conformity_cte",
-                "field_type": "Enum",
-                "field_label": "Esito controllo CTE",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "368625-section-995821",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "conformity_cte",
-                "field_external_id": "conformity_cte",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "",
-                "process_variable_options": "mainConformityOptions",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": true,
-                "read_only": false,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 12,
-            "unique_id": "444695-custom_field-440100",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "cte_nonconformity_reason",
-                "field_type": "Enum",
-                "field_label": "Motivazione",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "368625-section-995821",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "cte_nonconformity_reason",
-                "field_external_id": "cte_nonconformity_reason",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "cte_nonconformity_reason",
-                "process_variable_options": "nonConformityReasonsCTE",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "action": "hide",
-                "complex": [
+    '_id': { 'stepkey': 'UserTask_0b3ppo4', 'processkey': 'ml_voltura_preliminary_checks' },
+    'columns': 3,
+    'entities': [],
+    'language': '',
+    'page_name': '',
+    'page_builder':
+        [
+            {
+                'type': 'Title',
+                'title': 'Controllo documenti',
+                'styles': {},
+                'sequence': 0,
+                'unique_id': '508335-title-798186',
+                'validation':
                     {
-                        "type": "validation",
-                        "field": "505765-custom_field-187879",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": true
-                },
-                "required": true,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Title",
-            "title": "Non è presente la firma per accettazione nella sezione relativa le condizioni economiche",
-            "styles": {
-                "font-size": "11px"
-            },
-            "sequence": 13,
-            "unique_id": "869861-title-729187",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
-                    {
-                        "type": "validation",
-                        "field": "444695-custom_field-440100",
-                        "value": "no_signature",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
                     },
-                    {
-                        "type": "validation",
-                        "field": "505765-custom_field-187879",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Title",
-            "title": "Le condizioni economiche firmate non sono più vendibili",
-            "styles": {
-                "font-size": "11px"
             },
-            "sequence": 14,
-            "unique_id": "411105-title-258562",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
+            {
+                'type': 'Section',
+                'title': '',
+                'styles': {},
+                'columns': '3',
+                'sequence': 1,
+                'unique_id': '799937-section-062388',
+                'validation':
                     {
-                        "type": "validation",
-                        "field": "444695-custom_field-440100",
-                        "value": "wrong",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
                     },
-                    {
-                        "type": "validation",
-                        "field": "505765-custom_field-187879",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Title",
-            "title": "Nella documentazione inviata non sono presenti le Condizioni Economiche Firmate",
-            "styles": {
-                "font-size": "11px"
             },
-            "sequence": 15,
-            "unique_id": "291899-title-693631",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 2,
+                'unique_id': '412940-custom_field-399828',
+                'field_info':
                     {
-                        "type": "validation",
-                        "field": "444695-custom_field-440100",
-                        "value": "missing",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'pod_state',
+                        'field_type': 'String',
+                        'field_label': 'Stato del punto',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '799937-section-062388',
+                        'entity_provider': 'custom',
+                        'external_options': null,
+                        'process_variable': '',
+                        'field_external_id': 'pod_state',
+                        'field_value_lookup':
+                            {
+                                'json_path': null,
+                                'value_key': null,
+                                'field_unique_id': null,
+                                'is_external_lookup': false,
+                            },
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-input-text',
+                        'process_variable_value': 'podPdrSupplyState',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
                     },
+                'validation':
                     {
-                        "type": "validation",
-                        "field": "505765-custom_field-187879",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Section",
-            "title": "Verifica Documento di Identità",
-            "styles": {},
-            "columns": "3",
-            "sequence": 16,
-            "unique_id": "898818-section-343875",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 17,
-            "unique_id": "205701-custom_field-760698",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "conformity_id_doc",
-                "field_type": "Enum",
-                "field_label": "Esito controllo Documento d'Identità",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "898818-section-343875",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "conformity_id_doc",
-                "field_external_id": "conformity_id_doc",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "",
-                "process_variable_options": "mainConformityOptions",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": true
-                },
-                "required": true,
-                "read_only": false,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 18,
-            "unique_id": "466700-custom_field-244078",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "id_doc_nonconformity_reason",
-                "field_type": "Enum",
-                "field_label": "Motivazione",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "898818-section-343875",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "id_doc_nonconformity_reason",
-                "field_external_id": "id_doc_nonconformity_reason",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "id_doc_nonconformity_reason",
-                "process_variable_options": "nonConformityReasonsIdDoc",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "action": "hide",
-                "complex": [
-                    {
-                        "type": "validation",
-                        "field": "205701-custom_field-760698",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": true
-                },
-                "required": true,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Title",
-            "title": "Il documento di identità non è presente tra gli allegati inviati",
-            "styles": {
-                "font-size": "11px"
-            },
-            "sequence": 19,
-            "unique_id": "444568-title-520970",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
-                    {
-                        "type": "validation",
-                        "field": "466700-custom_field-244078",
-                        "value": "missing",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': true,
+                        'validation_message': null,
                     },
-                    {
-                        "type": "validation",
-                        "field": "205701-custom_field-760698",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Title",
-            "title": "Il documento di identità è illeggibile",
-            "styles": {
-                "font-size": "11px"
             },
-            "sequence": 20,
-            "unique_id": "193519-title-896619",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 3,
+                'unique_id': '057575-custom_field-397729',
+                'field_info':
                     {
-                        "type": "validation",
-                        "field": "466700-custom_field-244078",
-                        "value": "unreadable",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'pod_address',
+                        'field_type': 'String',
+                        'field_label': 'Indirizzo di fornitura',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '799937-section-062388',
+                        'entity_provider': 'custom',
+                        'external_options': null,
+                        'process_variable': '',
+                        'field_external_id': 'pod_address',
+                        'field_value_lookup':
+                            {
+                                'json_path': null,
+                                'value_key': null,
+                                'field_unique_id': null,
+                                'is_external_lookup': false,
+                            },
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-input-text',
+                        'process_variable_value': 'podPdrAddress',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
                     },
+                'validation':
                     {
-                        "type": "validation",
-                        "field": "205701-custom_field-760698",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Title",
-            "title": "Il documento di identità è scaduto",
-            "styles": {
-                "opacity": "",
-                "font-size": "11px"
-            },
-            "sequence": 21,
-            "unique_id": "217206-title-729543",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
-                    {
-                        "type": "validation",
-                        "field": "466700-custom_field-244078",
-                        "value": "expired",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': true,
+                        'validation_message': null,
                     },
-                    {
-                        "type": "validation",
-                        "field": "205701-custom_field-760698",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Section",
-            "title": "Verifica Atto Notarile/Contratto di Locazione",
-            "styles": {},
-            "columns": "3",
-            "sequence": 22,
-            "unique_id": "191064-section-617563",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 23,
-            "unique_id": "638188-custom_field-398892",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "conformity_loc_doc",
-                "field_type": "Enum",
-                "field_label": "Esito controllo Atto Notarile/Contratto di Locazione",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "191064-section-617563",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "conformity_loc_doc",
-                "field_external_id": "conformity_loc_doc",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "",
-                "process_variable_options": "mainConformityOptions",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
             },
-            "validation": {
-                "regex": null,
-                "complex": [],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": false
-                },
-                "required": true,
-                "read_only": false,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Field",
-            "styles": {},
-            "sequence": 24,
-            "unique_id": "345634-custom_field-914256",
-            "field_info": {
-                "group": "nogroup",
-                "entity": "custom",
-                "field_id": null,
-                "field_name": "loc_doc_nonconformity_reason",
-                "field_type": "Enum",
-                "field_label": "Motivazione",
-                "field_value": "",
-                "field_options": null,
-                "field_section": "191064-section-617563",
-                "entity_provider": "custom",
-                "external_options": {},
-                "field_value_path": "",
-                "process_variable": "loc_doc_nonconformity_reason",
-                "field_external_id": "loc_doc_nonconformity_reason",
-                "field_value_lookup": {},
-                "is_entity_external": false,
-                "is_option_external": false,
-                "field_visualization": "b2w-dropdown",
-                "process_variable_value": "loc_doc_nonconformity_reason",
-                "process_variable_options": "nonConformityReasonsLocDoc",
-                "field_visualization_allowed": [
-                    "b2w-date-picker",
-                    "b2w-dropdown",
-                    "b2w-textarea",
-                    "b2w-check-box",
-                    "b2w-input-text",
-                    "b2w-input-number"
-                ],
-                "field_visualization_properties": {}
-            },
-            "validation": {
-                "regex": null,
-                "action": "hide",
-                "complex": [
+            {
+                'type': 'Section',
+                'title': '',
+                'styles': {},
+                'columns': '3',
+                'sequence': 4,
+                'unique_id': '199122-section-837149',
+                'validation':
                     {
-                        "type": "validation",
-                        "field": "638188-custom_field-398892",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "is_custom": true,
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "is_value_object": false,
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": false,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": true,
-                    "showComplexValidationPanel": true
-                },
-                "required": true,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": null
-            }
-        },
-        {
-            "type": "Title",
-            "title": "L’atto notorio\\contratto di locazione non è presente tra gli allegati inviati",
-            "styles": {
-                "font-size": "11px"
-            },
-            "sequence": 25,
-            "unique_id": "658152-title-410570",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
-                    {
-                        "type": "validation",
-                        "field": "345634-custom_field-914256",
-                        "value": "missing",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
                     },
-                    {
-                        "type": "validation",
-                        "field": "638188-custom_field-398892",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Title",
-            "title": "Il documento di atto notorio\\contratto di locazione non è firmato",
-            "styles": {
-                "font-size": "11px"
             },
-            "sequence": 26,
-            "unique_id": "298767-title-227149",
-            "validation": {
-                "regex": "",
-                "action": "hide",
-                "complex": [
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 5,
+                'unique_id': '981308-custom_field-875375',
+                'field_info':
                     {
-                        "type": "validation",
-                        "field": "345634-custom_field-914256",
-                        "value": "no_signature",
-                        "operation": "=",
-                        "field_or_variable": "field"
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'pod_client',
+                        'field_type': 'String',
+                        'field_label': 'Cliente volturato',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '199122-section-837149',
+                        'entity_provider': 'custom',
+                        'external_options': null,
+                        'process_variable': '',
+                        'field_external_id': 'pod_client',
+                        'field_value_lookup':
+                            {
+                                'json_path': null,
+                                'value_key': null,
+                                'field_unique_id': null,
+                                'is_external_lookup': false,
+                            },
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-input-text',
+                        'process_variable_value': 'podCustomerName',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
                     },
+                'validation':
                     {
-                        "type": "validation",
-                        "field": "638188-custom_field-398892",
-                        "value": "nonconforming",
-                        "operation": "=",
-                        "field_or_variable": "field"
-                    }
-                ],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "field_or_variable": "",
-                    "isNewComplexValidation": false,
-                    "isPlusConditionVisible": true,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": true
-                },
-                "required": false,
-                "operation": "AND",
-                "read_only": false,
-                "validation_message": ""
-            }
-        },
-        {
-            "type": "Button",
-            "title": "",
-            "styles": {},
-            "sequence": 27,
-            "unique_id": "777877-button-320913",
-            "validation": {
-                "regex": "",
-                "complex": [],
-                "options": {
-                    "isExpansed": true,
-                    "isLookupOpen": false,
-                    "isNewComplexValidation": true,
-                    "isPlusConditionVisible": false,
-                    "showAddProcessVariables": true,
-                    "showModalExternalLookup": false,
-                    "showProcessVariablesPanel": false,
-                    "showComplexValidationPanel": false
-                },
-                "required": false,
-                "read_only": false,
-                "validation_message": ""
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': true,
+                        'validation_message': null,
+                    },
             },
-            "button_info": {
-                "nextLabel": "Avanti",
-                "nextStyle": {},
-                "prevLabel": "Indietro",
-                "prevStyle": {},
-                "saveLabel": "Save Label",
-                "saveStyle": {},
-                "cancelLabel": "Annulla",
-                "cancelStyle": {},
-                "isNextEnabled": true,
-                "isPrevEnabled": true,
-                "isSaveEnabled": false,
-                "isCancelEnabled": true
-            }
-        }
-    ],
-    "profile_info": "",
-    "page_unique_id": "",
-    "mongo_collection": "",
-    "generic_information": ""
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 6,
+                'unique_id': '218394-custom_field-434310',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'customer_code',
+                        'field_type': 'String',
+                        'field_label': 'Codice cliente volturato',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '199122-section-837149',
+                        'entity_provider': 'custom',
+                        'external_options': null,
+                        'process_variable': '',
+                        'field_external_id': 'customer_code',
+                        'field_value_lookup':
+                            {
+                                'json_path': null,
+                                'value_key': null,
+                                'field_unique_id': null,
+                                'is_external_lookup': false,
+                            },
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-input-text',
+                        'process_variable_value': 'podCustomerCode',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': true,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 7,
+                'unique_id': '554979-custom_field-595645',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'customer_segment',
+                        'field_type': 'Enum',
+                        'field_label': 'Segmento customer care',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '199122-section-837149',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'podCustomerSegment',
+                        'field_external_id': 'customer_segment',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': 'podCustomerSegment',
+                        'process_variable_options': 'customerSegmentOptions',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': true,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Section',
+                'title': '',
+                'styles': {},
+                'columns': '3',
+                'sequence': 8,
+                'unique_id': '689372-section-944861',
+                'validation':
+                    {
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 9,
+                'unique_id': '620885-custom_field-703364',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'contract_conditions_version',
+                        'field_type': 'Enum',
+                        'field_label': 'Versione condizioni contrattuali',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '689372-section-944861',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'contract_conditions_version',
+                        'field_external_id': 'contract_conditions_version',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': 'contract_conditions_version',
+                        'process_variable_options': 'contractConditionVersionOptions',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': true,
+                        'read_only': false,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Section',
+                'title': 'Verifica CTE',
+                'styles': {},
+                'columns': '3',
+                'sequence': 10,
+                'unique_id': '368625-section-995821',
+                'validation':
+                    {
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 11,
+                'unique_id': '505765-custom_field-187879',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'conformity_cte',
+                        'field_type': 'Enum',
+                        'field_label': 'Esito controllo CTE',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '368625-section-995821',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'conformity_cte',
+                        'field_external_id': 'conformity_cte',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': '',
+                        'process_variable_options': 'mainConformityOptions',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': true,
+                        'read_only': false,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 12,
+                'unique_id': '444695-custom_field-440100',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'cte_nonconformity_reason',
+                        'field_type': 'Enum',
+                        'field_label': 'Motivazione',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '368625-section-995821',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'cte_nonconformity_reason',
+                        'field_external_id': 'cte_nonconformity_reason',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': 'cte_nonconformity_reason',
+                        'process_variable_options': 'nonConformityReasonsCTE',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '505765-custom_field-187879',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': true,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': 'Non è presente la firma per accettazione nella sezione relativa le condizioni economiche',
+                'styles': { 'font-size': '11px' },
+                'sequence': 13,
+                'unique_id': '869861-title-729187',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '444695-custom_field-440100',
+                                    'value': 'no_signature',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '505765-custom_field-187879',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': 'Le condizioni economiche firmate non sono più vendibili',
+                'styles': { 'font-size': '11px' },
+                'sequence': 14,
+                'unique_id': '411105-title-258562',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '444695-custom_field-440100',
+                                    'value': 'wrong',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '505765-custom_field-187879',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': 'Nella documentazione inviata non sono presenti le Condizioni Economiche Firmate',
+                'styles': { 'font-size': '11px' },
+                'sequence': 15,
+                'unique_id': '291899-title-693631',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '444695-custom_field-440100',
+                                    'value': 'missing',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '505765-custom_field-187879',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Section',
+                'title': 'Verifica Documento di Identità',
+                'styles': {},
+                'columns': '3',
+                'sequence': 16,
+                'unique_id': '898818-section-343875',
+                'validation':
+                    {
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 17,
+                'unique_id': '205701-custom_field-760698',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'conformity_id_doc',
+                        'field_type': 'Enum',
+                        'field_label': "Esito controllo Documento d'Identità",
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '898818-section-343875',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'conformity_id_doc',
+                        'field_external_id': 'conformity_id_doc',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': '',
+                        'process_variable_options': 'mainConformityOptions',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': true,
+                        'read_only': false,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 18,
+                'unique_id': '466700-custom_field-244078',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'id_doc_nonconformity_reason',
+                        'field_type': 'Enum',
+                        'field_label': 'Motivazione',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '898818-section-343875',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'id_doc_nonconformity_reason',
+                        'field_external_id': 'id_doc_nonconformity_reason',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': 'id_doc_nonconformity_reason',
+                        'process_variable_options': 'nonConformityReasonsIdDoc',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '205701-custom_field-760698',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': true,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': 'Il documento di identità non è presente tra gli allegati inviati',
+                'styles': { 'font-size': '11px' },
+                'sequence': 19,
+                'unique_id': '444568-title-520970',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '466700-custom_field-244078',
+                                    'value': 'missing',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '205701-custom_field-760698',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': 'Il documento di identità è illeggibile',
+                'styles': { 'font-size': '11px' },
+                'sequence': 20,
+                'unique_id': '193519-title-896619',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '466700-custom_field-244078',
+                                    'value': 'unreadable',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '205701-custom_field-760698',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': 'Il documento di identità è scaduto',
+                'styles': { 'opacity': '', 'font-size': '11px' },
+                'sequence': 21,
+                'unique_id': '217206-title-729543',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '466700-custom_field-244078',
+                                    'value': 'expired',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '205701-custom_field-760698',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Section',
+                'title': 'Verifica Atto Notarile/Contratto di Locazione',
+                'styles': {},
+                'columns': '3',
+                'sequence': 22,
+                'unique_id': '191064-section-617563',
+                'validation':
+                    {
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 23,
+                'unique_id': '638188-custom_field-398892',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'conformity_loc_doc',
+                        'field_type': 'Enum',
+                        'field_label': 'Esito controllo Atto Notarile/Contratto di Locazione',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '191064-section-617563',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'conformity_loc_doc',
+                        'field_external_id': 'conformity_loc_doc',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': '',
+                        'process_variable_options': 'mainConformityOptions',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'complex': [],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': true,
+                        'read_only': false,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Field',
+                'styles': {},
+                'sequence': 24,
+                'unique_id': '345634-custom_field-914256',
+                'field_info':
+                    {
+                        'group': 'nogroup',
+                        'entity': 'custom',
+                        'field_id': null,
+                        'field_name': 'loc_doc_nonconformity_reason',
+                        'field_type': 'Enum',
+                        'field_label': 'Motivazione',
+                        'field_value': '',
+                        'field_options': null,
+                        'field_section': '191064-section-617563',
+                        'entity_provider': 'custom',
+                        'external_options': {},
+                        'field_value_path': '',
+                        'process_variable': 'loc_doc_nonconformity_reason',
+                        'field_external_id': 'loc_doc_nonconformity_reason',
+                        'field_value_lookup': {},
+                        'is_entity_external': false,
+                        'is_option_external': false,
+                        'field_visualization': 'b2w-dropdown',
+                        'process_variable_value': 'loc_doc_nonconformity_reason',
+                        'process_variable_options': 'nonConformityReasonsLocDoc',
+                        'field_visualization_allowed':
+                            [
+                                'b2w-date-picker',
+                                'b2w-dropdown',
+                                'b2w-textarea',
+                                'b2w-check-box',
+                                'b2w-input-text',
+                                'b2w-input-number',
+                            ],
+                        'field_visualization_properties': {},
+                    },
+                'validation':
+                    {
+                        'regex': null,
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '638188-custom_field-398892',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'is_custom': true,
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'is_value_object': false,
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': false,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': true,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': true,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': null,
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': "L’atto notorio\\contratto di locazione non è presente tra gli allegati inviati",
+                'styles': { 'font-size': '11px' },
+                'sequence': 25,
+                'unique_id': '658152-title-410570',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '345634-custom_field-914256',
+                                    'value': 'missing',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '638188-custom_field-398892',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Title',
+                'title': "Il documento di atto notorio\\contratto di locazione non è firmato",
+                'styles': { 'font-size': '11px' },
+                'sequence': 26,
+                'unique_id': '298767-title-227149',
+                'validation':
+                    {
+                        'regex': '',
+                        'action': 'hide',
+                        'complex':
+                            [
+                                {
+                                    'type': 'validation',
+                                    'field': '345634-custom_field-914256',
+                                    'value': 'no_signature',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                                {
+                                    'type': 'validation',
+                                    'field': '638188-custom_field-398892',
+                                    'value': 'nonconforming',
+                                    'operation': '=',
+                                    'field_or_variable': 'field',
+                                },
+                            ],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'field_or_variable': '',
+                                'isNewComplexValidation': false,
+                                'isPlusConditionVisible': true,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': true,
+                            },
+                        'required': false,
+                        'operation': 'AND',
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+            },
+            {
+                'type': 'Button',
+                'title': '',
+                'styles': {},
+                'sequence': 27,
+                'unique_id': '777877-button-320913',
+                'validation':
+                    {
+                        'regex': '',
+                        'complex': [],
+                        'options':
+                            {
+                                'isExpansed': true,
+                                'isLookupOpen': false,
+                                'isNewComplexValidation': true,
+                                'isPlusConditionVisible': false,
+                                'showAddProcessVariables': true,
+                                'showModalExternalLookup': false,
+                                'showProcessVariablesPanel': false,
+                                'showComplexValidationPanel': false,
+                            },
+                        'required': false,
+                        'read_only': false,
+                        'validation_message': '',
+                    },
+                'button_info':
+                    {
+                        'nextLabel': 'Avanti',
+                        'nextStyle': {},
+                        'prevLabel': 'Indietro',
+                        'prevStyle': {},
+                        'saveLabel': 'Save Label',
+                        'saveStyle': {},
+                        'cancelLabel': 'Annulla',
+                        'cancelStyle': {},
+                        'isNextEnabled': true,
+                        'isPrevEnabled': true,
+                        'isSaveEnabled': false,
+                        'isCancelEnabled': true,
+                    },
+            },
+        ],
+    'profile_info': '',
+    'page_unique_id': '',
+    'mongo_collection': '',
+    'generic_information': '',
 }

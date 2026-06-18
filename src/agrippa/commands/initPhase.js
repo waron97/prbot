@@ -1,17 +1,17 @@
-import inquirer from 'inquirer';
 import search from '@inquirer/search';
-import { readConfig, loadEffectiveEnv } from '../lib/config.js';
-import {
-    listWorkflows,
-    getPhasesByWorkflow,
-    getPhaseResults,
-    initPhaseRemote,
-    getPhaseConfigurators,
-    deleteConfigurator,
-    createConfigurator,
-} from '../lib/api.js';
+import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
+import {
+    createConfigurator,
+    deleteConfigurator,
+    getPhaseConfigurators,
+    getPhaseResults,
+    getPhasesByWorkflow,
+    initPhaseRemote,
+    listWorkflows,
+} from '../lib/api.js';
+import { loadEffectiveEnv, readConfig } from '../lib/config.js';
 
 const CODE_TEMPLATE = `logs = []
 debug_logs = []
@@ -72,7 +72,8 @@ async function initPhase() {
     loadEffectiveEnv(config);
 
     const ripUrl = process.env.RIP_URL;
-    if (!ripUrl) throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (!ripUrl)
+        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
     console.log('Fetching workflows...');
     const token = await getToken();
@@ -86,9 +87,7 @@ async function initPhase() {
     const workflow = await search({
         message: 'Select a workflow:',
         source: (input) => {
-            const filtered = input
-                ? workflows.filter((w) => fuzzyMatch(w.name, input))
-                : workflows;
+            const filtered = input ? workflows.filter((w) => fuzzyMatch(w.name, input)) : workflows;
             return filtered.map((w) => ({ name: w.name, value: w }));
         },
     });
@@ -104,9 +103,7 @@ async function initPhase() {
     const phase = await search({
         message: 'Select a phase:',
         source: (input) => {
-            const filtered = input
-                ? phases.filter((p) => fuzzyMatch(p.name, input))
-                : phases;
+            const filtered = input ? phases.filter((p) => fuzzyMatch(p.name, input)) : phases;
             return filtered.map((p) => ({ name: p.name, value: p }));
         },
     });
@@ -156,7 +153,9 @@ async function initPhase() {
     if (results.length > 0) {
         console.log(`  ${results.length} configurator(s) created: ${vars.join(', ')}`);
     }
-    console.log(`Run 'agrippa pull' in workspaces that track this workflow to fetch the updated code.`);
+    console.log(
+        `Run 'agrippa pull' in workspaces that track this workflow to fetch the updated code.`
+    );
 }
 
 export { initPhase };

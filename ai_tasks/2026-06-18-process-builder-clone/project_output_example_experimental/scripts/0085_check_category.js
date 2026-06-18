@@ -3,9 +3,7 @@ try {
     // Input gathering
     // ----------------------------
 
-    var jsonResponse = JSON.parse(
-        execution.getVariable('getCategoriesResponse')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('getCategoriesResponse'));
     var outgoingAsset = JSON.parse(execution.getVariable('outgoingAsset'));
     var productPage = execution.getVariable('productPage', 1);
 
@@ -41,38 +39,24 @@ try {
     try {
         body = JSON.parse(jsonResponse.body);
     } catch (err) {
-        throw new Error(
-            'Categories returned non-parsable response: ' + err.message
-        );
+        throw new Error('Categories returned non-parsable response: ' + err.message);
     }
 
-    var powerCategoryRes = arrayFind(
-        body.catalog.categories,
-        function (category) {
-            return category.name === 'LUCE RESIDENZIALE';
-        }
-    );
+    var powerCategoryRes = arrayFind(body.catalog.categories, function (category) {
+        return category.name === 'LUCE RESIDENZIALE';
+    });
 
-    var powerCategoryBus = arrayFind(
-        body.catalog.categories,
-        function (category) {
-            return category.name === 'LUCE BUSINESS';
-        }
-    );
+    var powerCategoryBus = arrayFind(body.catalog.categories, function (category) {
+        return category.name === 'LUCE BUSINESS';
+    });
 
-    var gasCategoryRes = arrayFind(
-        body.catalog.categories,
-        function (category) {
-            return category.name === 'GAS RESIDENZIALE';
-        }
-    );
+    var gasCategoryRes = arrayFind(body.catalog.categories, function (category) {
+        return category.name === 'GAS RESIDENZIALE';
+    });
 
-    var gasCategoryBus = arrayFind(
-        body.catalog.categories,
-        function (category) {
-            return category.name === 'GAS BUSINESS';
-        }
-    );
+    var gasCategoryBus = arrayFind(body.catalog.categories, function (category) {
+        return category.name === 'GAS BUSINESS';
+    });
 
     if (!powerCategoryRes || !powerCategoryBus) {
         throw new Error('Category not found: power');
@@ -142,10 +126,7 @@ try {
     execution.setVariable('category_id_gas_res', gasCategoryRes._id);
     execution.setVariable('category_id_gas_bus', gasCategoryBus._id);
 
-    execution.setVariable(
-        'searchProductPayload',
-        JSON.stringify(searchProductPayload)
-    );
+    execution.setVariable('searchProductPayload', JSON.stringify(searchProductPayload));
 } catch (err) {
     execution.setVariable('isAlive', false);
     execution.setVariable('errorMessage', err.message);

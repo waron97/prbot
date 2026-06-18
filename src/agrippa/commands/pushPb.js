@@ -1,8 +1,14 @@
 import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
-import { updateProcess, createPage, updatePage, publishProcess } from '../lib/pbApi.js';
-import { recompose, enumeratePages, stableStringify, localChecksum, MANIFEST_FILE } from '../lib/pbProject.js';
-import { projectReader, listPageFiles } from '../lib/pbWorkspace.js';
+import { createPage, publishProcess, updatePage, updateProcess } from '../lib/pbApi.js';
+import {
+    enumeratePages,
+    localChecksum,
+    MANIFEST_FILE,
+    recompose,
+    stableStringify,
+} from '../lib/pbProject.js';
+import { listPageFiles, projectReader } from '../lib/pbWorkspace.js';
 
 function stepkeyOf(wrapper) {
     return wrapper?.page?._id?.stepkey ?? wrapper?.name;

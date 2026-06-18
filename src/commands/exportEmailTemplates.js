@@ -1,20 +1,20 @@
 import fs from 'fs/promises';
 import path from 'path';
-import fetch from 'node-fetch';
+import { confirm, select } from '@inquirer/prompts';
 import search from '@inquirer/search';
-import { select, confirm } from '@inquirer/prompts';
-import { getToken } from '../lib/auth.js';
-import { execGit } from '../lib/git.js';
+import fetch from 'node-fetch';
 import { resolveAddonsPath } from '../lib/addons.js';
+import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
-import { log, isSilent } from '../lib/logger.js';
-import { verbot } from './ver.js';
+import { execGit } from '../lib/git.js';
+import { isSilent, log } from '../lib/logger.js';
 import {
-    readEmailTemplateMappings,
-    detectEmailRenames,
     computeMigrationVersion,
+    detectEmailRenames,
     generateEmailPreMigrateScript,
+    readEmailTemplateMappings,
 } from '../lib/premigrate.js';
+import { verbot } from './ver.js';
 
 async function getWorkflows(token) {
     const url = `${process.env.RIP_URL}/symple.workflow/*`;
@@ -93,9 +93,7 @@ async function getModuleChoices() {
     const ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
     const configDir = path.join(ADDONS_PATH, 'config');
     const entries = await fs.readdir(configDir, { withFileTypes: true });
-    return entries
-        .filter((e) => e.isDirectory())
-        .map((e) => ({ name: e.name, value: e.name }));
+    return entries.filter((e) => e.isDirectory()).map((e) => ({ name: e.name, value: e.name }));
 }
 
 async function resolveManifestPath(module, ADDONS_PATH) {
@@ -150,7 +148,9 @@ async function exportEmailTemplates(opts) {
     const templates = (await getEmailTemplates(workflowId, token))
         .filter((t) => t.template_code)
         .filter((t) => {
-            return !excludes.some((ex) => ex === String(t.id) || ex === t.name || ex === t.template_code);
+            return !excludes.some(
+                (ex) => ex === String(t.id) || ex === t.name || ex === t.template_code
+            );
         });
 
     if (!templates.length) {
@@ -187,7 +187,9 @@ async function exportEmailTemplates(opts) {
     let preMigratePath = null;
 
     if (renames.length > 0) {
-        log(`Renamed XML IDs (${renames.length}): ${renames.map((r) => `${r.oldXmlId} → ${r.newXmlId}`).join(', ')}`);
+        log(
+            `Renamed XML IDs (${renames.length}): ${renames.map((r) => `${r.oldXmlId} → ${r.newXmlId}`).join(', ')}`
+        );
 
         let shouldGenerate = opts.autoPremigrate;
         if (!shouldGenerate && !isSilent()) {
@@ -200,10 +202,18 @@ async function exportEmailTemplates(opts) {
         if (shouldGenerate) {
             const manifestPath = await resolveManifestPath(module, ADDONS_PATH);
             if (!manifestPath) {
-                log(`Warning: __manifest__.py not found for ${module}, skipping pre-migrate generation`);
+                log(
+                    `Warning: __manifest__.py not found for ${module}, skipping pre-migrate generation`
+                );
             } else {
                 const version = await computeMigrationVersion(manifestPath, bumpLevel);
-                const migrationDir = path.join(ADDONS_PATH, 'config', module, 'migrations', version);
+                const migrationDir = path.join(
+                    ADDONS_PATH,
+                    'config',
+                    module,
+                    'migrations',
+                    version
+                );
                 preMigratePath = path.join(migrationDir, 'pre-migrate.py');
                 await fs.mkdir(migrationDir, { recursive: true });
                 await fs.writeFile(preMigratePath, generateEmailPreMigrateScript(renames, module));

@@ -3,9 +3,7 @@ try {
     // Input gathering
     // ----------------------------
 
-    var jsonResponse = JSON.parse(
-        execution.getVariable('searchProductResponse')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('searchProductResponse'));
 
     // ----------------------------
     // Output variable initialization

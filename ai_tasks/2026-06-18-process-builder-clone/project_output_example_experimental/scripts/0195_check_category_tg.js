@@ -3,9 +3,7 @@ try {
     // Input gathering
     // ----------------------------
 
-    var jsonResponse = JSON.parse(
-        execution.getVariable('getCategoriesResponse')
-    );
+    var jsonResponse = JSON.parse(execution.getVariable('getCategoriesResponse'));
 
     // ----------------------------
     // Output variable initialization
@@ -39,9 +37,7 @@ try {
     try {
         body = JSON.parse(jsonResponse.body);
     } catch (err) {
-        throw new Error(
-            'Categories returned non-parsable response: ' + err.message
-        );
+        throw new Error('Categories returned non-parsable response: ' + err.message);
     }
 
     var category = arrayFind(body.catalog.categories, function (category) {

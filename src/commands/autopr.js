@@ -78,7 +78,8 @@ async function fetchActivePr(branch) {
     const res = await fetch(apiUrl, { headers: devopsHeaders() });
     const data = await res.json();
     if (!res.ok) throw new Error(`DevOps PR fetch failed: ${JSON.stringify(data)}`);
-    if (!data.value || data.value.length === 0) throw new Error(`No active PR found for branch: ${branch}`);
+    if (!data.value || data.value.length === 0)
+        throw new Error(`No active PR found for branch: ${branch}`);
     return data.value[0];
 }
 
@@ -251,7 +252,9 @@ async function autoprAmend(options) {
     const content = readFileSync(changelogPath, 'utf-8');
     const existing = findLineByPrNumber(content, prNumber);
     if (!existing) {
-        console.log(`Warning: no changelog line found for PR #${prNumber} — skipping changelog update`);
+        console.log(
+            `Warning: no changelog line found for PR #${prNumber} — skipping changelog update`
+        );
         return;
     }
     const lines = content.split('\n');

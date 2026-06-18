@@ -1,14 +1,14 @@
 import { existsSync, readFileSync } from 'fs';
 import path from 'path';
-import { parse } from 'yaml';
 import { select } from '@inquirer/prompts';
+import { parse } from 'yaml';
 import { CONFIG_DIR } from '../config.js';
 import { setSilent } from '../lib/logger.js';
-import { exportWorkflow } from './exportWorkflow.js';
-import { exportPb } from './exportPb.js';
-import { exportImperex } from './exportImperex.js';
 import { exportEmailTemplates } from './exportEmailTemplates.js';
+import { exportImperex } from './exportImperex.js';
 import { exportLrp } from './exportLrp.js';
+import { exportPb } from './exportPb.js';
+import { exportWorkflow } from './exportWorkflow.js';
 
 const ROUTINES_FILE = path.join(CONFIG_DIR, 'routines.yaml');
 const WORKSPACE_FILE = 'agrippa.yaml';
@@ -84,7 +84,9 @@ async function routine() {
     const routines = loadRoutines();
 
     if (!routines.length) {
-        console.log('No routines defined. Create ~/.config/prbot/routines.yaml or add routines: to agrippa.yaml.');
+        console.log(
+            'No routines defined. Create ~/.config/prbot/routines.yaml or add routines: to agrippa.yaml.'
+        );
         return;
     }
 

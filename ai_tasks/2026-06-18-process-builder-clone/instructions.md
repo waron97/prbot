@@ -22,6 +22,7 @@ The idea, like with odoo-based workflows, is to have the user edit these files o
 Actually publishing is deferred to another task, but for now, please prepare the utilities and validate them by making sure that you're able to reconstruct the original payload from the cloned files with 0 information loss.
 
 External sources you may use:
+
 - ~/codebase/sorgenia/b2w has processbuilder and processbuilder-runtime repos
 - ~/codebase/sorgenia/sorgenia_workspace contains an agentic workflow that is able to work on process_builder objects but does so in a different way, its desired deliverable is a single insert.sql that would be run against the db to insert a newly-created wizard; this isn't what we're trying to do but there may be good notions there
 

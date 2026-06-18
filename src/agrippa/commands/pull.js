@@ -1,13 +1,19 @@
-import inquirer from 'inquirer';
 import { dirname } from 'path';
-import { readConfig, writeConfig, loadEffectiveEnv } from '../lib/config.js';
-import { getPhasesByIds, getPhasesByWorkflow, listMfas } from '../lib/api.js';
-import { getProcess } from '../lib/pbApi.js';
+import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
+import { describeWorkflow, getPhasesByIds, getPhasesByWorkflow, listMfas } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
-import { readCodeFile, writeCodeFile, fileExists, toSlug } from '../lib/workspace.js';
+import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
+import { getProcess } from '../lib/pbApi.js';
 import { localChecksum } from '../lib/pbProject.js';
 import { projectReader } from '../lib/pbWorkspace.js';
+import {
+    fileExists,
+    readCodeFile,
+    toSlug,
+    writeCodeFile,
+    writeWorkflowDoc,
+} from '../lib/workspace.js';
 import { pullPbEntry } from './pullPb.js';
 
 async function pull() {
@@ -15,7 +21,8 @@ async function pull() {
     loadEffectiveEnv(config);
 
     const ripUrl = process.env.RIP_URL;
-    if (!ripUrl) throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (!ripUrl)
+        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
     // Stale-file check
     const stale = config.workspace.filter((e) => !fileExists(e.path));
@@ -37,6 +44,10 @@ async function pull() {
     }
 
     const token = await getToken();
+
+    // workflow_ids whose phase code changed this run -> their workflow.yml is
+    // refreshed (the graph fetch is skipped for untouched workflows).
+    const changedWorkflowIds = new Set();
 
     // ── pull existing tracked entries ─────────────────────────────────────────
     // process_builder wizards are refreshed separately (different checksum model);
@@ -79,8 +90,11 @@ async function pull() {
             } else {
                 for (const entry of selected) {
                     writeCodeFile(entry.path, entry.remoteCode);
+                    if (entry.object_type === 'phase' && entry.workflow_id) {
+                        changedWorkflowIds.add(entry.workflow_id);
+                    }
                     const idx = config.workspace.findIndex(
-                        (e) => e.id === entry.id && e.object_type === entry.object_type,
+                        (e) => e.id === entry.id && e.object_type === entry.object_type
                     );
                     if (idx !== -1) {
                         config.workspace[idx].checksum_at_pull = computeChecksum(entry.remoteCode);
@@ -98,7 +112,7 @@ async function pull() {
     await pullPbEntries(token, config);
 
     // ── discover new phases on tracked workflows ──────────────────────────────
-    await discoverNewPhases(token, ripUrl, config);
+    await discoverNewPhases(token, ripUrl, config, changedWorkflowIds);
 }
 
 // Refresh tracked wizards from upstream. Pull concern (inverted from push):
@@ -110,7 +124,8 @@ async function pull() {
 async function pullPbEntries(token, config) {
     const entries = config.workspace.filter((e) => e.object_type === 'process_builder');
     if (!entries.length) return;
-    if (!process.env.PB_URL) throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (!process.env.PB_URL)
+        throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
     console.log('Checking process-builder wizards...');
     const classified = [];
@@ -150,7 +165,7 @@ async function pullPbEntries(token, config) {
     for (const entry of selected) {
         const res = await pullPbEntry(token, entry, '.backup', backupTs);
         const idx = config.workspace.findIndex(
-            (e) => e.object_type === 'process_builder' && e.guid === entry.guid,
+            (e) => e.object_type === 'process_builder' && e.guid === entry.guid
         );
         if (idx !== -1) {
             config.workspace[idx].checksum_at_pull = res.newChecksum;
@@ -164,11 +179,15 @@ async function pullPbEntries(token, config) {
     console.log(`\nPulled ${selected.length} wizard(s). Local backups in .backup/${backupTs}/`);
 }
 
-async function discoverNewPhases(token, ripUrl, config) {
+async function discoverNewPhases(token, ripUrl, config, changedWorkflowIds = new Set()) {
     // Build map of workflow_id → { workflow_name, basePath } from existing phase entries
     const workflows = new Map();
     for (const entry of config.workspace) {
-        if (entry.object_type === 'phase' && entry.workflow_id && !workflows.has(entry.workflow_id)) {
+        if (
+            entry.object_type === 'phase' &&
+            entry.workflow_id &&
+            !workflows.has(entry.workflow_id)
+        ) {
             workflows.set(entry.workflow_id, {
                 name: entry.workflow_name,
                 basePath: dirname(entry.path),
@@ -179,12 +198,13 @@ async function discoverNewPhases(token, ripUrl, config) {
     if (!workflows.size) return;
 
     const trackedIds = new Set(
-        config.workspace.filter((e) => e.object_type === 'phase').map((e) => e.id),
+        config.workspace.filter((e) => e.object_type === 'phase').map((e) => e.id)
     );
 
     let newCount = 0;
     for (const [wfId, { name: wfName, basePath }] of workflows) {
         const phases = await getPhasesByWorkflow(token, ripUrl, wfId, { fromCode: true });
+        let wfChanged = changedWorkflowIds.has(wfId);
         for (const phase of phases) {
             if (trackedIds.has(phase.id)) continue;
             const filePath = `${basePath}/${toSlug(phase.name)}.py`;
@@ -200,6 +220,19 @@ async function discoverNewPhases(token, ripUrl, config) {
             });
             console.log(`  new phase: ${filePath}`);
             newCount++;
+            wfChanged = true;
+        }
+
+        // Refresh the read-only workflow graph only when this workflow's code
+        // changed this run, or when its doc is missing (one-time backfill).
+        // Skips the per-workflow graph fetch for untouched workflows.
+        if (wfChanged || !fileExists(`${basePath}/workflow.yml`)) {
+            try {
+                const structure = await describeWorkflow(token, ripUrl, wfId);
+                writeWorkflowDoc(basePath, structure);
+            } catch (err) {
+                console.warn(`  could not refresh workflow.yml for ${wfName}: ${err.message}`);
+            }
         }
     }
 

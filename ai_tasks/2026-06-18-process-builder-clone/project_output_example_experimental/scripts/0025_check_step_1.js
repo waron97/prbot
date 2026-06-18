@@ -27,8 +27,7 @@ try {
         number = number + ''; // Convert to string
         return number.length >= width
             ? number
-            : new Array(width - number.length + 1).join(paddingCharacter) +
-                  number;
+            : new Array(width - number.length + 1).join(paddingCharacter) + number;
     }
 
     function formatDateES5(d) {
@@ -55,10 +54,7 @@ try {
     }
 
     function validate() {
-        if (
-            (meter.type === 'ce' || meter.type === 'cottimo') &&
-            assetType === 'pod'
-        ) {
+        if ((meter.type === 'ce' || meter.type === 'cottimo') && assetType === 'pod') {
             if (start_date.split('-')[2] !== '01') {
                 return backWithMessage(
                     'La data di inizio voltura deve essere impostata al primo giorno del mese'

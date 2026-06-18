@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { parse, stringify } from 'yaml';
 import { configDotenv } from 'dotenv';
+import { parse, stringify } from 'yaml';
 import { CONFIG_FILE } from '../../config.js';
 
 const WORKSPACE_FILE = 'agrippa.yaml';
