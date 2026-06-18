@@ -208,23 +208,29 @@ agrippa init
 
 ### `agrippa clone`
 
-Clones all `from_code` phases for a selected workflow, or a single MFA, into the workspace. Writes files to disk and registers them in `agrippa.yaml`.
+Clones all `from_code` phases for a selected workflow, a single MFA, or a **process-builder wizard**, into the workspace. Writes files to disk and registers them in `agrippa.yaml`. With no flag, prompts for the object type (MFA / Phase / Process Builder).
+
+A wizard is downloaded and **decomposed** into editable files (`structure.yaml`, `process.yaml`, `scripts/`, `pages/`, manifest); see [`agrippa pb`](#agrippa-pb) and [`agrippa-pb.md`](agrippa-pb.md).
 
 ```bash
 agrippa clone
 agrippa clone --phase
 agrippa clone --mfa
 agrippa clone --phase --id 123 --path my-workflow/
+agrippa clone --pb                          # select a wizard
+agrippa clone --pb --name ml_review_billing --path my-wizard/
 ```
 
 Options:
 
-| Flag            | Description                                              |
-| --------------- | -------------------------------------------------------- |
-| `--phase`       | Clone a phase (select a workflow)                        |
-| `--mfa`         | Clone an MFA record                                      |
-| `--id <id>`     | Skip selection, clone by ID                              |
-| `--path <path>` | Destination path (base dir for phases, file path for MFA)|
+| Flag                   | Description                                                    |
+| ---------------------- | ------------------------------------------------------------- |
+| `--phase`              | Clone a phase (select a workflow)                             |
+| `--mfa`                | Clone an MFA record                                           |
+| `--pb`                 | Clone a process-builder wizard                                |
+| `--id <id>`            | Skip selection, clone by ID (phase/mfa)                       |
+| `--name <document_id>` | Skip selection, clone a wizard by `document_id` (with `--pb`) |
+| `--path <path>`        | Destination path (base dir for phases/wizard, file for MFA)   |
 
 ### `agrippa pull`
 
@@ -232,16 +238,22 @@ Fetches remote code for all tracked entries and shows what changed. Classifies e
 
 After pulling, also checks tracked workflows for newly added `from_code` phases and auto-clones any not yet present locally.
 
+Tracked **process-builder wizards** are also refreshed from upstream: the local project is re-decomposed from the latest payload (orphan script/page files pruned), with the same `fast-forward`/`conflict` classification (based on the wizard's upstream `updated_date` vs. the last pulled state). The current local state is backed up to `.backup/<timestamp>/<path>/local.json` first.
+
 ```bash
 agrippa pull
 ```
 
 ### `agrippa push`
 
-Pushes local file changes back to RIP. Backs up current remote code to `.backup/<timestamp>/` before overwriting. Same conflict detection as pull, with the concern inverted.
+Pushes local file changes back to RIP (phases/MFAs) and to the Process Builder API (wizards). Backs up current remote state to `.backup/<timestamp>/` before overwriting. Same conflict detection as pull, with the concern inverted.
+
+Pushing a wizard saves it as a **draft**; publish it so live consumers see the change with `--publish` (auto) or answer the prompt. Page edits (`pages/`) are saved independently of the whole-wizard save, mirroring the UI.
 
 ```bash
-agrippa push
+agrippa push                 # prompts whether to publish each pushed wizard
+agrippa push --publish       # auto-publish pushed wizards
+agrippa push --skip-publish  # never publish (no prompt)
 ```
 
 ### `agrippa diff [path]`
@@ -267,5 +279,28 @@ Removes entries from `agrippa.yaml` whose local files no longer exist on disk.
 
 ```bash
 agrippa repair
+```
+
+### `agrippa pb`
+
+Local editing helpers for a **cloned process-builder wizard** (no network — they edit the decomposed files in place). Each operates on **one** wizard, resolved by `--pb <document_id>`, single-entry auto-select, or a fuzzy prompt. After structural edits, run `pb format` to assign geometry, then `agrippa push`.
+
+These commands exist mainly so an **AI agent** can add/remove/connect blocks without hand-editing the multi-thousand-line `structure.yaml`. Human users typically edit blocks in the UI instead. Full agent-facing guide: [`agrippa-pb.md`](agrippa-pb.md).
+
+| Command         | Purpose                                                                              |
+| --------------- | ------------------------------------------------------------------------------------ |
+| `pb format`     | Auto-lay-out the diagram (elkjs, left→right) and rewrite node/edge geometry          |
+| `pb add`        | Add a node (`--type`, `--name`, `--parent`); scaffolds script/page files             |
+| `pb rm`         | Remove a node (`--id`), its edges, and its script/page files                         |
+| `pb connect`    | Add a flow (`--from`, `--to`, `--condition`, `--default`); enforces the gateway rule |
+| `pb disconnect` | Remove a flow (`--id`, or `--from`/`--to`)                                            |
+| `pb ls`         | List nodes and edges with their ids (discover targets without reading the YAML)      |
+| `pb preview`    | Render the diagram to an SVG (`--out`) for a quick visual check                       |
+
+```bash
+agrippa pb ls --pb ml_review_billing
+agrippa pb add --type scriptTask --name "Check pod" --pb ml_review_billing
+agrippa pb connect --from ScriptTask_x --to ExclusiveGateway_y --pb ml_review_billing
+agrippa pb format --pb ml_review_billing
 ```
 
