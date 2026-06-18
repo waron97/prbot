@@ -109,66 +109,65 @@ end_date: null
 ```
 
 ### `structure.yaml` (editable graph — the heart)
+
+> Final shape (see implementation.md "Revision 1"): **edges nest under their source node**,
+> **geometry `{x,y,width,height}` + waypoints live inline on nodes/edges**, and **subProcess
+> children nest recursively**. `source` is implicit (the containing node). Internally the model
+> is flat; `pbProject` nests on decompose / flattens on recompose.
+
 ```yaml
 process:
   id: PB_PROCESS_NAME_VALUE        # the <process id> attr value as-is
   name: PB_PROCESS_NAME_VALUE
-  isExecutable: true
+  isExecutable: "true"
   documentation: Check Init
+errors: []
 nodes:
-  - id: StartEvent_1
-    type: startEvent
-    layout: { x: 100, y: 200, w: 36, h: 36 }
-  - id: ScriptTask_0jxkwfv
+  - id: ScriptTask_0m0bvsq
     type: scriptTask
-    name: Initialize Variables
-    scriptFormat: javascript
-    activiti: { async: false, exclusive: false, autoStoreVariables: false }
-    script: scripts/0010_initialize_variables.js
-    layout: { x: 240, y: 190, w: 100, h: 80 }
+    name: Init Variables
+    attrs: { scriptFormat: javascript, activiti:async: "false", activiti:exclusive: "false" }
+    script: scripts/0010_init-variables.js
+    layout: { x: 588, y: 78, width: 84, height: 84 }
+    edges:                                   # outgoing only; source implicit
+      - id: SequenceFlow_0ba03og
+        target: ExclusiveGateway_0rfhfmz
+        waypoints: [ [ 672, 120 ], [ 725, 120 ] ]
   - id: ServiceTask_1b93zug
     type: serviceTask
     name: Template
     class: com.symphony.action.TemplateDelegate
-    activiti: { async: false, exclusive: false }
-    fields:                        # preserves order; string vs expression distinguished
-      - { name: method,    string: "GET" }
-      - { name: name,      string: "symple.cloud_genericTemplate" }
-      - { name: resultKey, string: "template" }
-      - { name: value }            # empty <activiti:field/> -> no value key
+    fields:                                  # order kept; string vs expression distinguished
+      - { name: method, string: "GET" }
+      - { name: value }                      # empty <activiti:field/> -> no value key
     layout: { ... }
-  - id: UserTask_dclfc6y
-    type: userTask
-    name: Seleziona PUNTO
-    formKey: select_pod
-    page: pages/select_pod.yml
-    layout: { ... }
-  - id: ExclusiveGateway_1
-    type: exclusiveGateway
-    name: isAlive?
-    default: SequenceFlow_err      # optional
-    layout: { ... }
-  - id: SubProcess_1
+    edges: [ ... ]
+  - id: SubProcess_1hgsdba
     type: subProcess
-    parent: null
-    multiInstance: { loopCardinality: "${n}", completionCondition: "${...}" }
-    layout: { ..., isExpanded: true }
-  # endEvent, boundaryEvent (attachedTo, errorRef), etc.
-edges:
-  - id: SequenceFlow_018oae7
-    source: StartEvent_1
-    target: ScriptTask_0jxkwfv
-    condition: null                # or a JS string for conditional flows
-    waypoints: [[136,218],[240,230]]
-errors:
-  - { id: Error_1, errorCode: "ERR_X", name: "..." }
+    multiInstance:
+      attrs: { isSequential: "true" }
+      loopCardinality: { value: "${numPagesToFetch}", attrs: { xsi:type: tFormalExpression } }
+      completionCondition: { value: "${nrOfCompletedInstances == numPagesToFetch}", attrs: { ... } }
+    layout: { ... }
+    edges: [ ... ]                           # edges leaving the subprocess
+    nodes:                                   # recursive: inner blocks + their edges
+      - id: ScriptTask_07dhbok
+        type: scriptTask
+        name: Prep fetch next
+        layout: { ... }
+        edges: [ { id: SequenceFlow_1qaj0jg, target: ServiceTask_12j7ob7 } ]
+      # ServiceTask_12j7ob7 (Fetch Next Page), ScriptTask_0vayzkg (Parse next page), ...
+annotations: []
+associations: []
 ```
 
 Notes:
-- `incoming`/`outgoing` are reconstructed from `edges` — never stored (avoids a second source of truth).
-- `layout`/`waypoints` are kept so the visual designer round-trips. Even under bar A they are
-  preserved; future "auto-layout on add-node" can fill geometry for newly created nodes.
-- `parent` lets nodes live inside a `subProcess`; edges carry the same scoping implicitly via refs.
+- `incoming`/`outgoing` are reconstructed from edges — never stored (avoids a second source of truth).
+- Conditional edges carry `condition: "${...}"` (the JS condition). `default` gateway flow and
+  any rare attrs are preserved via the generic `attrs` bag.
+- `layout`/`waypoints` round-trip the diagram and feed the future auto-formatter. The manifest
+  keeps the *full* parsed diagram (incl. annotation/association shapes, labels, plane ids) as the
+  authoritative fallback; structure.yaml geometry overrides it on recompose.
 
 ### `pages/<formKey>.yml` (editable UI form)
 The `page` object verbatim as YAML (`_id`, `columns`, `page_name`, `entities`, `page_builder[]`).

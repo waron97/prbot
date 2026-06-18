@@ -105,6 +105,75 @@ agrippa clone --pb --name <document_id> --path <dir>
 - [x] phase 4 — round-trip harness green on all 5 fixtures (and live)
 - [x] phase 5 — workspace tracking + docs
 
+## Revision 1 — representation changes (post first commit)
+
+Per user feedback, the graph representation changed (still 0-loss, all 5 fixtures + live green):
+
+1. **Edges are nested under their source node**, not a top-level `edges:` array. Each node
+   carries `edges: [{id, target, condition?, name?, waypoints}]`; `source` is implicit (the
+   containing node). Internally the model stays flat (`buildProcess` unchanged); `pbProject`
+   nests on decompose and flattens on recompose (`nestNodes`/`flattenNodes`).
+2. **Diagram geometry is decomposed into structure.yaml**, not kept as a verbatim blob. Each
+   node gets `layout: {x, y, width, height}`; each edge gets `waypoints: [[x,y],...]` (rendered
+   inline via a flow-style YAML pass). This sets up the future auto-formatter. The manifest
+   still holds the *full* parsed diagram (incl. annotation/association shapes, labels, plane
+   ids) as the authoritative fallback; structure.yaml layout/waypoints **override** it on
+   recompose (same overlay pattern as process.yaml). `pbModel` now parses/builds `<bpmndi>`
+   structurally (`parseDiagram`/`buildDiagramXml`) and compares it semantically
+   (`compareDiagram`: sort shapes/edges by bpmnElement, coords→Number, waypoint order kept).
+3. **Embedded subProcess children nest recursively**: a `subProcess` node holds its own
+   `nodes:` (each with its own `edges:`), mirroring the BPMN scope. Verified on
+   `ml_voltura_preliminary_checks` (`SubProcess_1hgsdba`: SP Start → Prep fetch next → Fetch
+   Next Page → Parse next page → EG Err → End), `multiInstanceLoopCharacteristics` preserved.
+
+## Revision 2 — `transaction` block type
+
+A full live sweep over all 282 wizards (decompose → write to disk → recompose → compare)
+surfaced constructs absent from the 5 example fixtures. Added support for **`transaction`**
+(Activiti's transactional subprocess) by modeling it exactly like `subProcess`: a `CONTAINER_TAGS`
+set `{subProcess, transaction}` now drives parse-recursion, multiInstance parsing, nested-node
+serialization, and rebuild. Fixed `in_order_muse` (its `transaction` block — and the sequence
+flow leaving it — were being dropped). Sweep: **270/282 round-trip 0-loss**.
+
+### Known unsupported constructs (intentionally not handled)
+
+The remaining 12 failing wizards are incomplete/never-finished, ported from an old system, or
+empty shells — confirmed not worth supporting. Listed here so the gap is explicit, not silent:
+
+| construct | wizards | status |
+|---|---|---|
+| `built_page = null` (empty shell) | ml_gas_activation_charges, PB_SRG_OM_TASK_VC | draft |
+| `parallelGateway` | PB_SRG_OM_TASK_ORDERITEM_CCQ, ...PRECHECK | published / modified |
+| `callActivity` (+activiti:in/out) | in_order_muse_ver_Two | published |
+| `intermediateCatchEvent` (+timer/message defs) | ml_modify_iva_rate_long_running_process | draft |
+| `activiti:field` with both string+expression | dl_indemnities, Workshop | published / draft |
+| `errorEventDefinition` extra @id/child | voltura_new, PB_SRG_OM_ACTION_OI_SOSPENDI, ForceCreditCheck(OLD), ml_short_prescription_to_delete | published / modified |
+
+If any becomes relevant, each is a small targeted add (most mirror an existing type); a generic
+"preserve unknown elements verbatim in the manifest" pass would cover all at once.
+
+## Revision 3 — diagram regenerated from structure.yaml (no manifest reference)
+
+Earlier the manifest held the full parsed diagram and recompose used it as the base, with
+structure.yaml only *overriding* geometry. That made the manifest a hidden second source of
+truth that would go stale on structural edits (add a node → no shape; delete a node → orphan
+shape). Per the agrippa principle that local files are authoritative, the diagram is now
+**regenerated purely from structure.yaml**:
+
+- `structure.yaml` carries all geometry: node `layout {x,y,width,height}` (+ `expanded` for
+  subprocess shapes), edge `waypoints`, and annotations/associations carry their own
+  `layout`/`waypoints` too.
+- The manifest **no longer stores the diagram at all** (`buildDiagram(model, geo)` builds
+  `<bpmndi>` from the structure graph + geometry; DI element ids are derived as `<id>_di`).
+- BPMNLabel boxes and the original (arbitrary) DI ids are **not** preserved — renderers
+  auto-place labels, and the ids carry no behavior. `compareDiagram` now compares *geometry
+  only* (per-bpmnElement bounds + isExpanded, ordered waypoints), ignoring ids/labels.
+
+Full sweep after the change: **271/283 round-trip 0-loss**, and crucially **zero diagram-level
+failures** — every remaining failure is a `<process>`-level unsupported construct (the known
+dead/incomplete set). Trade-off accepted by the user: if a regenerated diagram ever displeases
+the designer, handle it then; referencing prior state contradicts agrippa-based development.
+
 ## Deferred (future tasks, by design)
 
 - **Publishing** the recomposed payload (POST/PATCH to `PB_URL`) — out of scope here.

@@ -5,7 +5,7 @@ import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { listProcesses, getProcess } from '../lib/pbApi.js';
-import { decompose, recompose, comparePayload, toSlug } from '../lib/pbProject.js';
+import { decompose, recompose, comparePayload } from '../lib/pbProject.js';
 import { writeProject, projectReader } from '../lib/pbWorkspace.js';
 
 async function clonePb(opts) {
@@ -54,7 +54,7 @@ async function clonePb(opts) {
                 type: 'input',
                 name: 'inputPath',
                 message: 'Destination directory:',
-                default: toSlug(chosen.document_id),
+                default: chosen.document_id,
             },
         ]);
         dest = inputPath;

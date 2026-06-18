@@ -1,11 +1,12 @@
-// Process-builder model: BPMN <process> XML  <->  editable graph model.
+// Process-builder model: BPMN XML  <->  editable graph model.
 //
-// We rebuild only the <process> logic subtree from the model; the <bpmndi>
-// diagram (geometry) and the <definitions> namespace wrapper are preserved
-// verbatim in the manifest. The 0-loss bar is semantic (behavioral): two
+// The <process> logic subtree and the <bpmndi> diagram are both parsed into a
+// structured model and rebuilt from it (the <definitions> namespace wrapper is
+// carried in the manifest). The 0-loss bar is semantic (behavioral): two
 // processes are equal iff their *normalized* <process> trees deep-equal
-// (whitespace-, attribute-order-, and sibling-order-insensitive), with CDATA
-// and attribute values compared exactly. See normalizeProcessTree / compareXml.
+// (whitespace-, attribute-order-, and sibling-order-insensitive, CDATA + attr
+// values exact) and their diagrams match structurally. See compareProcess /
+// compareDiagram.
 
 import { XMLParser, XMLBuilder } from 'fast-xml-parser';
 
@@ -69,6 +70,10 @@ function textChild(text) {
 
 // ---------- node classification ----------
 
+// Container nodes hold their own nested flow elements (and may loop).
+// `transaction` is Activiti's transactional subprocess — modeled like subProcess.
+const CONTAINER_TAGS = new Set(['subProcess', 'transaction']);
+
 const NODE_TAGS = new Set([
     'startEvent',
     'endEvent',
@@ -77,6 +82,7 @@ const NODE_TAGS = new Set([
     'userTask',
     'exclusiveGateway',
     'subProcess',
+    'transaction',
     'boundaryEvent',
 ]);
 
@@ -90,6 +96,7 @@ const PROMOTED_ATTRS = {
     startEvent: ['@_id', '@_name'],
     endEvent: ['@_id', '@_name'],
     process_root: ['@_id', '@_name', '@_isExecutable'],
+    association: ['@_id', '@_sourceRef', '@_targetRef'],
 };
 
 // Collect the non-promoted attributes into a plain map (prefix stripped),
@@ -131,8 +138,8 @@ function allAttrs(node) {
     return out;
 }
 
-function parseMultiInstance(node) {
-    const mi = node.subProcess?.find((k) => tagOf(k) === 'multiInstanceLoopCharacteristics');
+function parseMultiInstance(node, tag) {
+    const mi = node[tag]?.find((k) => tagOf(k) === 'multiInstanceLoopCharacteristics');
     if (!mi) return undefined;
     const out = { attrs: allAttrs(mi) };
     const card = mi.multiInstanceLoopCharacteristics.find((k) => tagOf(k) === 'loopCardinality');
@@ -207,6 +214,9 @@ function parseFlowChildren(children, parentId, model) {
             const extra = extraAttrs(attrs, tag);
             if (Object.keys(extra).length) n.attrs = extra;
 
+            const docEl = child[tag]?.find((k) => tagOf(k) === 'documentation');
+            if (docEl) n.documentation = textOf(docEl, 'documentation');
+
             if (tag === 'scriptTask') {
                 const scriptEl = child.scriptTask?.find((k) => tagOf(k) === 'script');
                 n.script = scriptEl ? cdataOf(scriptEl, 'script') ?? '' : '';
@@ -222,14 +232,14 @@ function parseFlowChildren(children, parentId, model) {
             } else if (tag === 'endEvent') {
                 const eed = parseErrorEventDef(child, tag);
                 if (eed) n.errorEventDefinition = eed;
-            } else if (tag === 'subProcess') {
-                const mi = parseMultiInstance(child);
+            } else if (CONTAINER_TAGS.has(tag)) {
+                const mi = parseMultiInstance(child, tag);
                 if (mi) n.multiInstance = mi;
             }
             model.nodes.push(n);
 
-            if (tag === 'subProcess') {
-                parseFlowChildren(child.subProcess, n.id, model);
+            if (CONTAINER_TAGS.has(tag)) {
+                parseFlowChildren(child[tag], n.id, model);
             }
         }
     }
@@ -266,13 +276,96 @@ function parseProcess(builtPage) {
     };
     parseFlowChildren(procNode.process, null, model);
 
-    return { ns, model, diagramXml: extractDiagram(builtPage) };
+    return { ns, model, diagram: parseDiagram(builtPage) };
 }
 
-// Extract the <bpmndi:BPMNDiagram>...</bpmndi:BPMNDiagram> block verbatim.
-function extractDiagram(builtPage) {
-    const m = builtPage.match(/<bpmndi:BPMNDiagram[\s\S]*<\/bpmndi:BPMNDiagram>/);
-    return m ? m[0] : null;
+// ---------- diagram (bpmndi) parse / build ----------
+//
+// Parsed into a structured object so node bounds and edge waypoints can be
+// surfaced (and edited) in structure.yaml. Coordinates are kept as numbers.
+
+function num(v) {
+    const n = Number(v);
+    return Number.isNaN(n) ? v : n;
+}
+
+function parseLabel(labelNode) {
+    const b = labelNode['bpmndi:BPMNLabel'].find((k) => tagOf(k) === 'omgdc:Bounds');
+    return { attrs: allAttrs(labelNode), bounds: b ? mapBounds(allAttrs(b)) : null };
+}
+function mapBounds(a) {
+    const out = {};
+    for (const [k, v] of Object.entries(a)) out[k] = num(v);
+    return out;
+}
+
+function parseDiagram(builtPage) {
+    const tree = parser.parse(builtPage);
+    const defNode = tree.find((n) => tagOf(n) === 'definitions');
+    const dia = defNode.definitions.find((n) => tagOf(n) === 'bpmndi:BPMNDiagram');
+    if (!dia) return null;
+    const plane = dia['bpmndi:BPMNDiagram'].find((n) => tagOf(n) === 'bpmndi:BPMNPlane');
+
+    const shapes = [];
+    const edges = [];
+    for (const c of plane['bpmndi:BPMNPlane']) {
+        const tg = tagOf(c);
+        if (tg === 'bpmndi:BPMNShape') {
+            const bounds = c['bpmndi:BPMNShape'].find((x) => tagOf(x) === 'omgdc:Bounds');
+            const label = c['bpmndi:BPMNShape'].find((x) => tagOf(x) === 'bpmndi:BPMNLabel');
+            shapes.push({
+                attrs: allAttrs(c),
+                bounds: bounds ? mapBounds(allAttrs(bounds)) : null,
+                label: label ? parseLabel(label) : null,
+            });
+        } else if (tg === 'bpmndi:BPMNEdge') {
+            const wps = c['bpmndi:BPMNEdge']
+                .filter((x) => tagOf(x) === 'omgdi:waypoint')
+                .map((w) => mapBounds(allAttrs(w)));
+            const label = c['bpmndi:BPMNEdge'].find((x) => tagOf(x) === 'bpmndi:BPMNLabel');
+            edges.push({ attrs: allAttrs(c), waypoints: wps, label: label ? parseLabel(label) : null });
+        }
+    }
+    return { attrs: allAttrs(dia), plane: { attrs: allAttrs(plane) }, shapes, edges };
+}
+
+function boundsAttrs(b) {
+    return { '@_x': String(b.x), '@_y': String(b.y), '@_width': String(b.width), '@_height': String(b.height) };
+}
+
+// Rebuild <bpmndi> purely from structure.yaml geometry (model graph + geo maps).
+// DI element ids are derived (`<id>_di`); the manifest is never consulted. Labels
+// are omitted (renderers auto-place them); only positions, sizes, waypoints and
+// subprocess expand-state are authoritative — see compareDiagram.
+function buildDiagram(model, geo) {
+    if (!geo) return null;
+    const shapeEls = [];
+    const pushShape = (id) => {
+        const b = geo.bounds[id];
+        if (!b) return;
+        const attrs = { '@_id': `${id}_di`, '@_bpmnElement': id };
+        if (geo.expanded[id] !== undefined) attrs['@_isExpanded'] = String(geo.expanded[id]);
+        shapeEls.push(el('bpmndi:BPMNShape', attrs, [el('omgdc:Bounds', boundsAttrs(b), [])]));
+    };
+    for (const n of model.nodes) pushShape(n.id);
+    for (const a of model.annotations || []) pushShape(a.id);
+
+    const edgeEls = [];
+    const pushEdge = (id) => {
+        const wps = geo.waypoints[id];
+        if (!wps) return;
+        const pts = wps.map(([x, y]) => el('omgdi:waypoint', { '@_x': String(x), '@_y': String(y) }, []));
+        edgeEls.push(el('bpmndi:BPMNEdge', { '@_id': `${id}_di`, '@_bpmnElement': id }, pts));
+    };
+    for (const e of model.edges) pushEdge(e.id);
+    for (const a of model.associations || []) pushEdge(a.id);
+
+    if (!shapeEls.length && !edgeEls.length) return null;
+    const plane = el('bpmndi:BPMNPlane', { '@_id': 'BPMNPlane_1', '@_bpmnElement': model.process.id }, [
+        ...shapeEls,
+        ...edgeEls,
+    ]);
+    return builder.build([el('bpmndi:BPMNDiagram', { '@_id': 'BPMNDiagram_1' }, [plane])]).trim();
 }
 
 // ---------- build: model -> <process> preserveOrder children ----------
@@ -307,13 +400,21 @@ function buildFlowChildren(model, parentId) {
         return c;
     };
 
+    // documentation (any node) + incoming/outgoing
+    const baseKids = (n) => {
+        const c = [];
+        if (n.documentation != null) c.push(el('documentation', {}, [textChild(n.documentation)]));
+        c.push(...flowChildren(n.id));
+        return c;
+    };
+
     for (const n of model.nodes.filter((x) => (x.parent ?? null) === parentId)) {
         const attrs = { '@_id': n.id };
         if (n.name !== undefined) attrs['@_name'] = n.name;
 
         if (n.type === 'scriptTask') {
             Object.assign(attrs, restoreAttr(n.attrs));
-            const kids = flowChildren(n.id);
+            const kids = baseKids(n);
             kids.push(el('script', {}, [cdataChild(n.script ?? '')]));
             children.push(el('scriptTask', attrs, kids));
         } else if (n.type === 'serviceTask') {
@@ -332,21 +433,21 @@ function buildFlowChildren(model, parentId) {
                 });
                 kids.push(el('extensionElements', {}, fieldEls));
             }
-            kids.push(...flowChildren(n.id));
+            kids.push(...baseKids(n));
             children.push(el('serviceTask', attrs, kids));
         } else if (n.type === 'userTask') {
             if (n.formKey !== undefined) attrs['@_activiti:formKey'] = n.formKey;
             Object.assign(attrs, restoreAttr(n.attrs));
-            children.push(el('userTask', attrs, flowChildren(n.id)));
+            children.push(el('userTask', attrs, baseKids(n)));
         } else if (n.type === 'exclusiveGateway') {
             Object.assign(attrs, restoreAttr(n.attrs));
-            children.push(el('exclusiveGateway', attrs, flowChildren(n.id)));
+            children.push(el('exclusiveGateway', attrs, baseKids(n)));
         } else if (n.type === 'startEvent') {
             Object.assign(attrs, restoreAttr(n.attrs));
-            children.push(el('startEvent', attrs, flowChildren(n.id)));
+            children.push(el('startEvent', attrs, baseKids(n)));
         } else if (n.type === 'endEvent') {
             Object.assign(attrs, restoreAttr(n.attrs));
-            const kids = flowChildren(n.id);
+            const kids = baseKids(n);
             if (n.errorEventDefinition) {
                 kids.push(el('errorEventDefinition', restoreAttr(n.errorEventDefinition), []));
             }
@@ -354,14 +455,14 @@ function buildFlowChildren(model, parentId) {
         } else if (n.type === 'boundaryEvent') {
             if (n.attachedToRef !== undefined) attrs['@_attachedToRef'] = n.attachedToRef;
             Object.assign(attrs, restoreAttr(n.attrs));
-            const kids = flowChildren(n.id);
+            const kids = baseKids(n);
             if (n.errorEventDefinition) {
                 kids.push(el('errorEventDefinition', restoreAttr(n.errorEventDefinition), []));
             }
             children.push(el('boundaryEvent', attrs, kids));
-        } else if (n.type === 'subProcess') {
+        } else if (CONTAINER_TAGS.has(n.type)) {
             Object.assign(attrs, restoreAttr(n.attrs));
-            const kids = flowChildren(n.id);
+            const kids = baseKids(n);
             if (n.multiInstance) {
                 const mi = n.multiInstance;
                 const miKids = [];
@@ -380,7 +481,7 @@ function buildFlowChildren(model, parentId) {
                 kids.push(el('multiInstanceLoopCharacteristics', restoreAttr(mi.attrs), miKids));
             }
             kids.push(...buildFlowChildren(model, n.id)); // nested
-            children.push(el('subProcess', attrs, kids));
+            children.push(el(n.type, attrs, kids)); // subProcess | transaction
         }
     }
 
@@ -420,8 +521,10 @@ function buildFlowChildren(model, parentId) {
     return children;
 }
 
-// Build the full built_page string from { ns, model, diagramXml }.
-function buildProcess({ ns, model, diagramXml }) {
+// Build the full built_page string from { ns, model, geo }. The <bpmndi> block
+// is regenerated solely from `geo` (structure.yaml geometry) — never a manifest.
+function buildProcess({ ns, model, geo }) {
+    const diagramXml = buildDiagram(model, geo);
     const procAttrs = { '@_id': model.process.id };
     if (model.process.name !== undefined) procAttrs['@_name'] = model.process.name;
     if (model.process.isExecutable !== undefined) procAttrs['@_isExecutable'] = model.process.isExecutable;
@@ -434,8 +537,8 @@ function buildProcess({ ns, model, diagramXml }) {
         .map(([k, v]) => `${k.replace(/^@_/, '')}="${v}"`)
         .join(' ');
 
-    // Whitespace between elements is insignificant in XML; the diagram block is
-    // spliced verbatim. The <process> is compact (format:false) to keep CDATA exact.
+    // Whitespace between elements is insignificant in XML. The <process> is
+    // compact (format:false) to keep CDATA exact; the diagram is regenerated.
     const parts = [
         '<?xml version="1.0" encoding="UTF-8"?>',
         `<definitions ${defAttrs}>`,
@@ -517,11 +620,46 @@ function compareProcess(builtPageA, builtPageB) {
     return diff(normalizeProcessTree(builtPageA), normalizeProcessTree(builtPageB));
 }
 
+// Reduce a parsed diagram to its *semantic* geometry, keyed by bpmnElement:
+// per-shape bounds (+ subprocess isExpanded), per-edge ordered waypoints.
+// Arbitrary DI element ids, label boxes, and plane/diagram ids are ignored —
+// they are regenerated, not preserved (structure.yaml is the source of truth).
+function diagramGeometry(builtPage) {
+    const d = parseDiagram(builtPage);
+    if (!d) return null;
+    const shapes = {};
+    const edges = {};
+    for (const s of d.shapes) {
+        const be = s.attrs.bpmnElement;
+        if (be == null || !s.bounds) continue;
+        const g = {
+            x: Number(s.bounds.x),
+            y: Number(s.bounds.y),
+            width: Number(s.bounds.width),
+            height: Number(s.bounds.height),
+        };
+        if (s.attrs.isExpanded !== undefined) g.isExpanded = String(s.attrs.isExpanded);
+        shapes[be] = g;
+    }
+    for (const e of d.edges) {
+        const be = e.attrs.bpmnElement;
+        if (be == null) continue;
+        edges[be] = (e.waypoints || []).map((w) => [Number(w.x), Number(w.y)]);
+    }
+    return { shapes, edges };
+}
+
+// Compare the bpmndi diagrams of two built_page strings, by geometry only.
+function compareDiagram(builtPageA, builtPageB) {
+    return diff(diagramGeometry(builtPageA), diagramGeometry(builtPageB));
+}
+
 export {
     parseProcess,
     buildProcess,
-    extractDiagram,
+    parseDiagram,
     normalizeProcessTree,
     compareProcess,
+    compareDiagram,
     diff,
 };
