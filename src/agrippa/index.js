@@ -26,11 +26,13 @@ program
 
 program
     .command('clone')
-    .description('Clone a phase or MFA from RIP into this workspace')
+    .description('Clone a phase, MFA, or process-builder wizard into this workspace')
     .option('--phase', 'Clone a phase (select a workflow)')
     .option('--mfa', 'Clone a Model Function Access record')
-    .option('--id <id>', 'Record ID to clone')
-    .option('--path <path>', 'Destination path (file for MFA, base dir for workflow)')
+    .option('--pb', 'Clone a process-builder wizard')
+    .option('--id <id>', 'Record ID to clone (phase/mfa)')
+    .option('--name <document_id>', 'Process-builder document_id to clone (with --pb)')
+    .option('--path <path>', 'Destination path (file for MFA, base dir for workflow/pb)')
     .action((opts) => clone(opts).catch((err) => { console.error(`Error: ${err.message}`); process.exit(1); }));
 
 program

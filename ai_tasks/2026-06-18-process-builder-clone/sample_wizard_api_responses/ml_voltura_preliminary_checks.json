@@ -1,0 +1,1779 @@
+{
+    "guid": "f32659ef-72d8-42c2-b78a-fe277e94fdd3",
+    "created_date": "2025-03-30T14:21:36.756726",
+    "updated_date": "2026-05-27T12:53:17.363765",
+    "system_record": false,
+    "created_by": "aron.winkler@rapsodoo.com",
+    "modified_by": "sara.moretti@hoverture.com",
+    "sequence_data": "PBD-0000000058",
+    "error": false,
+    "document_id": "ml_voltura_preliminary_checks",
+    "execute_save": true,
+    "end_date": null,
+    "start_date": "2025-03-30",
+    "version": 1,
+    "progressbar_enabled": false,
+    "is_linear": false,
+    "process_name": "ML - Verifiche Preliminari Voltura",
+    "built_page": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.omg.org/spec/BPMN/20100524/MODEL\" xmlns:activiti=\"http://activiti.org/bpmn\" xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\" xmlns:omgdc=\"http://www.omg.org/spec/DD/20100524/DC\" xmlns:omgdi=\"http://www.omg.org/spec/DD/20100524/DI\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" targetNamespace=\"http://www.activiti.org/processdef\">\n  <process id=\"PB_PROCESS_NAME_VALUE\" name=\"PB_PROCESS_NAME_VALUE\" isExecutable=\"true\">\n    <documentation>Prepare check pod</documentation>\n    <startEvent id=\"StartEvent_1\" name=\"start\">\n      <outgoing>SequenceFlow_0ljapsf</outgoing>\n    </startEvent>\n    <serviceTask id=\"ServiceTask_13b65do\" name=\"Get Template\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.TemplateDelegate\">\n      <extensionElements>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[GET]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"name\">\n          <activiti:string><![CDATA[symple.cloud_genericTemplate]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:string><![CDATA[template]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"processKey\">\n          <activiti:string><![CDATA[symple.cloud_genericTemplate]]></activiti:string>\n        </activiti:field>\n      </extensionElements>\n      <incoming>SequenceFlow_0ljapsf</incoming>\n      <outgoing>SequenceFlow_1pvb8fs</outgoing>\n    </serviceTask>\n    <endEvent id=\"EndEvent_1i4b61q\" name=\"end\">\n      <incoming>SequenceFlow_1pdd6h9</incoming>\n    </endEvent>\n    <sequenceFlow id=\"SequenceFlow_0ljapsf\" sourceRef=\"StartEvent_1\" targetRef=\"ServiceTask_13b65do\"/>\n    <sequenceFlow id=\"SequenceFlow_1pvb8fs\" sourceRef=\"ServiceTask_13b65do\" targetRef=\"ScriptTask_0m0bvsq\"/>\n    <scriptTask id=\"ScriptTask_0m0bvsq\" name=\"Init Variables\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_1pvb8fs</incoming>\n      <outgoing>SequenceFlow_0ba03og</outgoing>\n      <script><![CDATA[try {\n    var isAlive = true;\n    var errorCode = '0';\n    var errorMessage = '';\n\n    execution.setVariable('showToast', false);\n    execution.setVariable('toastMessage', '');\n\n    //Get template information stored in symphony in template\n    var jsonTemplate = JSON.parse(execution.getVariable('template'));\n\n    //Store the endpoint read from the template in a symphony variable to use it in the next steps\n    execution.setVariable('meteringEndpoint', jsonTemplate.meteringEndpoint);\n    execution.setVariable('keyCloakEndpoint', jsonTemplate.keyCloakEndpoint);\n    execution.setVariable(\n        'keyCloakHeaders',\n        JSON.stringify(jsonTemplate.keyCloakHeaders)\n    );\n    execution.setVariable('keyCloakBody', jsonTemplate.keyCloakBody);\n    execution.setVariable('odooEndpoint', jsonTemplate.odooEndpoint);\n    execution.setVariable('pollingEndpoint', jsonTemplate.pollingEndpoint);\n    execution.setVariable('b2wEndpoint', jsonTemplate.b2wEndpoint);\n    execution.setVariable('tenantId', jsonTemplate.tenantId);\n    execution.setVariable('orgToken', jsonTemplate.orgToken);\n    execution.setVariable(\n        'meteringKeyCloakEndpoint',\n        jsonTemplate.meteringKeyCloakEndpoint\n    );\n    execution.setVariable(\n        'meteringKeyCloakHeaders',\n        JSON.stringify(jsonTemplate.meteringKeyCloakHeaders)\n    );\n    execution.setVariable(\n        'meteringKeyCloakBody',\n        jsonTemplate.meteringKeyCloakBody\n    );\n    execution.setVariable('status', 'SUCCESS');\n\n    var accessToken = execution.getVariable('X-Auth-Request-Access-Token');\n\n    if (!accessToken) {\n        var request = JSON.parse(execution.getVariable('request'));\n        accessToken = request['X-Auth-Request-Access-Token'];\n    }\n\n    execution.setVariable('token', accessToken);\n    execution.setVariable('cartB2WEndpoint', jsonTemplate.cartB2WEndpoint);\n\n    execution.setVariable('isAlive', isAlive);\n    execution.setVariable('errorCode', errorCode);\n    execution.setVariable('errorMessage', errorMessage);\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorCode', 'INIT_FAILED');\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_0ba03og\" sourceRef=\"ScriptTask_0m0bvsq\" targetRef=\"ExclusiveGateway_0rfhfmz\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_0rfhfmz\" name=\"EG init vars\" default=\"SequenceFlow_07sfv3v\">\n      <incoming>SequenceFlow_0ba03og</incoming>\n      <outgoing>SequenceFlow_07sfv3v</outgoing>\n      <outgoing>SequenceFlow_182niau</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_07sfv3v\" sourceRef=\"ExclusiveGateway_0rfhfmz\" targetRef=\"ServiceTask_1xbep11\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_1itsbol\" name=\"ERR\">\n      <incoming>SequenceFlow_182niau</incoming>\n      <incoming>SequenceFlow_068ciey</incoming>\n      <incoming>SequenceFlow_1fqhhjz</incoming>\n      <incoming>SequenceFlow_0aihp6f</incoming>\n      <incoming>SequenceFlow_0g87vn6</incoming>\n      <incoming>SequenceFlow_1otl3z0</incoming>\n      <incoming>SequenceFlow_13nbzbo</incoming>\n      <incoming>SequenceFlow_1p9hbtj</incoming>\n      <incoming>SequenceFlow_0f406qe</incoming>\n      <outgoing>SequenceFlow_1y5bccm</outgoing>\n    </exclusiveGateway>\n    <endEvent id=\"EndEvent_10kxftu\" name=\"end in error\">\n      <incoming>SequenceFlow_1y5bccm</incoming>\n    </endEvent>\n    <sequenceFlow id=\"SequenceFlow_182niau\" name=\"err\" sourceRef=\"ExclusiveGateway_0rfhfmz\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <sequenceFlow id=\"SequenceFlow_1y5bccm\" sourceRef=\"ExclusiveGateway_1itsbol\" targetRef=\"EndEvent_10kxftu\"/>\n    <userTask id=\"UserTask_176nfh6\" name=\"POD PDR input\" activiti:formKey=\"pod_input\">\n      <incoming>SequenceFlow_0a7vjo0</incoming>\n      <outgoing>SequenceFlow_0gwojtv</outgoing>\n    </userTask>\n    <sequenceFlow id=\"SequenceFlow_0gwojtv\" sourceRef=\"UserTask_176nfh6\" targetRef=\"ScriptTask_1nhv9x3\"/>\n    <serviceTask id=\"ServiceTask_14367yp\" name=\"Search POD or PDR\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n      <extensionElements>\n        <activiti:field name=\"endpoint\">\n          <activiti:expression><![CDATA[${searchUrl}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[GET]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"headers\">\n          <activiti:expression><![CDATA[[{'Authorization': 'Bearer ${token}'}]]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"body\">\n          <activiti:string><![CDATA[{}]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:string><![CDATA[search_response]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"retries\">\n          <activiti:string><![CDATA[3]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"retryInterval\">\n          <activiti:string><![CDATA[5000]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"fixIpActive\"/>\n        <activiti:field name=\"saveFileAs\"/>\n      </extensionElements>\n      <incoming>SequenceFlow_0729s3r</incoming>\n      <outgoing>SequenceFlow_0gpald0</outgoing>\n    </serviceTask>\n    <sequenceFlow id=\"SequenceFlow_0gpald0\" sourceRef=\"ServiceTask_14367yp\" targetRef=\"ScriptTask_19xewl1\"/>\n    <scriptTask id=\"ScriptTask_19xewl1\" name=\"check search\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_0gpald0</incoming>\n      <outgoing>SequenceFlow_1kofs72</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var searchPdrResponse = JSON.parse(\n        execution.getVariable('search_response')\n    );\n\n    var pod_pdr_code = execution.getVariable('pod_pdr_code');\n    var isEle;\n\n    if (pod_pdr_code.indexOf('IT') === 0) {\n        isEle = true;\n    } else {\n        isEle = false;\n    }\n\n    var stateCodeSuccesss = execution.getVariable('state_code_ok');\n    var stateCodeErrorPod = execution.getVariable('state_code_invalid_pod');\n    var stateCodeErrorPdr = execution.getVariable('state_code_invalid_pdr');\n\n    // ----------------------------\n    // Local variable initialization\n    // ----------------------------\n\n    var searchOk = false;\n\n    var podPdrSupplyState = '';\n    var podPdrAddress = '';\n    var podPdrClientId = null;\n    var servicePointId = null;\n    var stateCode = stateCodeSuccesss;\n\n    // ----------------------------\n    // Logical Helpers\n    // ----------------------------\n\n    function arrayIncludes(arr, item) {\n        for (var i = 0; i < arr.length; i++) {\n            if (arr[i] == item) {\n                return true;\n            }\n        }\n        return false;\n    }\n\n    function handleInvalidState() {\n        searchOk = false;\n        stateCode = isEle ? stateCodeErrorPod : stateCodeErrorPdr;\n    }\n\n    function handleNotFound() {\n        searchOk = false;\n        stateCode = isEle ? stateCodeErrorPod : stateCodeErrorPdr;\n    }\n\n    function handleOk() {\n        // temporarily set success state code,\n        // but this can be overridden later if attachment\n        // conformity is not met\n        searchOk = true;\n        stateCode = stateCodeSuccesss;\n    }\n\n    function processPodResponse() {\n        var pods;\n        var pod;\n\n        if (searchPdrResponse.code !== 200) {\n            return handleNotFound();\n        }\n\n        try {\n            pods = JSON.parse(searchPdrResponse.body);\n        } catch (err) {\n            return handleNotFound();\n        }\n\n        if (pods && pods.length > 0) {\n            pod = pods[0];\n        } else {\n            return handleNotFound();\n        }\n\n        // 'active' / 'inactive' / 'activating' / 'deactivating' / 'refused'\n        var stateLabels = {\n            active: 'Attivo',\n            activating: 'In attivazione',\n            inactive: 'Cessato',\n            deactivating: 'In cessazione',\n            refused: 'Rifiutato',\n        };\n        var supplyState = pod.supply_state;\n        podPdrSupplyState = stateLabels[supplyState] || supplyState;\n\n        podPdrAddress = pod.address;\n        podPdrClientId = pod.client_id;\n        servicePointId = pod.service_point_id;\n\n        if (!podPdrSupplyState || !podPdrClientId) {\n            return handleInvalidState();\n        }\n\n        if (arrayIncludes(['active', 'deactivating'], supplyState)) {\n            return handleOk();\n        }\n\n        return handleInvalidState();\n    }\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    processPodResponse();\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable('searchOk', searchOk);\n    execution.setVariable('podPdrAddress', podPdrAddress);\n    execution.setVariable('podPdrClientId', podPdrClientId);\n    execution.setVariable('podPdrSupplyState', podPdrSupplyState);\n    execution.setVariable('state_code', stateCode);\n    execution.setVariable('servicePointId', servicePointId)\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_1kofs72\" name=\"&#10;\" sourceRef=\"ScriptTask_19xewl1\" targetRef=\"ExclusiveGateway_1rxxxa1\"/>\n    <serviceTask id=\"ServiceTask_037iore\" name=\"GET Client\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n      <extensionElements>\n        <activiti:field name=\"endpoint\">\n          <activiti:expression><![CDATA[${odooEndpoint}res.partner/${podPdrClientId}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[GET]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"headers\">\n          <activiti:expression><![CDATA[[{'Authorization': 'Bearer ${token}'}, {'Content-Type':'application/json'}]]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"body\">\n          <activiti:string><![CDATA[{}]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:string><![CDATA[get_client_response]]></activiti:string>\n        </activiti:field>\n      </extensionElements>\n      <incoming>SequenceFlow_0pfzr26</incoming>\n      <outgoing>SequenceFlow_1tuuh2i</outgoing>\n    </serviceTask>\n    <sequenceFlow id=\"SequenceFlow_1tuuh2i\" sourceRef=\"ServiceTask_037iore\" targetRef=\"ScriptTask_1htprns\"/>\n    <scriptTask id=\"ScriptTask_1htprns\" name=\"Get Client Response\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_1tuuh2i</incoming>\n      <outgoing>SequenceFlow_1skzr20</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var getClientResponse = JSON.parse(\n        execution.getVariable('get_client_response')\n    );\n\n    var partnerSelectionsResult = JSON.parse(\n        execution.getVariable('partnerSelectionsResult')\n    );\n\n    // ----------------------------\n    // Local variable initialization\n    // ----------------------------\n\n    var podCustomerSegment = '';\n    var podCustomerName = '';\n    var podCustomerCode = '';\n    var customerSegmentOptions = [];\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    var client;\n\n    try {\n        client = JSON.parse(getClientResponse.body);\n    } catch (err) {\n        throw new Error('Failed to load client data: ' + err.message);\n    }\n\n    if (partnerSelectionsResult.code === 200) {\n        var body = JSON.parse(partnerSelectionsResult.body);\n        customerSegmentOptions = body.economic_segment || [];\n    }\n\n    podCustomerSegment = client['economic_segment'] || '';\n    podCustomerName = client['name'] || '';\n    podCustomerCode = client['user_sequence'] || '';\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable('podCustomerSegment', podCustomerSegment);\n    execution.setVariable('podCustomerName', podCustomerName);\n    execution.setVariable('podCustomerCode', podCustomerCode);\n    execution.setVariable(\n        'customerSegmentOptions',\n        JSON.stringify(customerSegmentOptions)\n    );\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_1skzr20\" sourceRef=\"ScriptTask_1htprns\" targetRef=\"ExclusiveGateway_1a6lkz0\"/>\n    <userTask id=\"UserTask_0b3ppo4\" name=\"Check Allegati\" activiti:formKey=\"page_2\">\n      <incoming>SequenceFlow_19m8fzt</incoming>\n      <outgoing>SequenceFlow_0dlsjlz</outgoing>\n    </userTask>\n    <scriptTask id=\"ScriptTask_0n7uqw8\" name=\"Check conformity\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_074w2cb</incoming>\n      <outgoing>SequenceFlow_0c8lkxo</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var conformityCte = execution.getVariable('conformity_cte');\n    var conformityIdDoc = execution.getVariable('conformity_id_doc');\n    var conformityLocDoc = execution.getVariable('conformity_loc_doc');\n\n    var stateCodeOk = execution.getVariable('state_code_ok');\n    var stateCodeErr = execution.getVariable('state_code_non_conforming');\n\n    // ----------------------------\n    // Local variable initialization\n    // ----------------------------\n\n    var stateCode = stateCodeOk;\n    var conformityOk = false;\n\n    // ----------------------------\n    // Logical Helpers\n    // ----------------------------\n\n    function allConforming() {\n        var CONFORMING = 'conforming';\n        return (\n            conformityCte === CONFORMING &&\n            conformityIdDoc === CONFORMING &&\n            conformityLocDoc === CONFORMING\n        );\n    }\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    if (!conformityCte || !conformityIdDoc || !conformityLocDoc) {\n        // not supposed to happen\n        throw new Error('Node reached with incomplete conformity information.');\n    }\n\n    if (allConforming()) {\n        stateCode = stateCodeOk;\n        conformityOk = true;\n    } else {\n        stateCode = stateCodeErr;\n        conformityOk = false;\n    }\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable('state_code', stateCode);\n    execution.setVariable('conformityOk', conformityOk);\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <userTask id=\"UserTask_1h01e7t\" name=\"Recap\" default=\"SequenceFlow_0a71ye8\" activiti:formKey=\"recap\">\n      <incoming>SequenceFlow_12iqoej</incoming>\n      <outgoing>SequenceFlow_0a71ye8</outgoing>\n    </userTask>\n    <sequenceFlow id=\"SequenceFlow_0a71ye8\" sourceRef=\"UserTask_1h01e7t\" targetRef=\"ExclusiveGateway_0y2zlm7\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_1mw9v6a\" name=\"back handler\" default=\"SequenceFlow_074w2cb\">\n      <incoming>SequenceFlow_0dlsjlz</incoming>\n      <outgoing>SequenceFlow_1w4vbs7</outgoing>\n      <outgoing>SequenceFlow_074w2cb</outgoing>\n    </exclusiveGateway>\n    <exclusiveGateway id=\"ExclusiveGateway_1a6lkz0\" name=\"EG client\" default=\"SequenceFlow_17e96dk\">\n      <incoming>SequenceFlow_1skzr20</incoming>\n      <outgoing>SequenceFlow_068ciey</outgoing>\n      <outgoing>SequenceFlow_17e96dk</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_068ciey\" name=\"err\" sourceRef=\"ExclusiveGateway_1a6lkz0\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <exclusiveGateway id=\"ExclusiveGateway_007jjao\">\n      <incoming>SequenceFlow_1w4vbs7</incoming>\n      <incoming>SequenceFlow_0yhy7iq</incoming>\n      <incoming>SequenceFlow_1eh5w0v</incoming>\n      <outgoing>SequenceFlow_0a7vjo0</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0a7vjo0\" sourceRef=\"ExclusiveGateway_007jjao\" targetRef=\"UserTask_176nfh6\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_1suxiy4\" name=\"EG conform\" default=\"SequenceFlow_04kwmfq\">\n      <incoming>SequenceFlow_0c8lkxo</incoming>\n      <outgoing>SequenceFlow_04kwmfq</outgoing>\n    </exclusiveGateway>\n    <exclusiveGateway id=\"ExclusiveGateway_0y2zlm7\" name=\"back handler\" default=\"SequenceFlow_1pdd6h9\">\n      <incoming>SequenceFlow_0a71ye8</incoming>\n      <outgoing>SequenceFlow_1pdd6h9</outgoing>\n      <outgoing>SequenceFlow_0z16n9b</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_1pdd6h9\" sourceRef=\"ExclusiveGateway_0y2zlm7\" targetRef=\"EndEvent_1i4b61q\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_141b2bk\">\n      <incoming>SequenceFlow_0z16n9b</incoming>\n      <incoming>SequenceFlow_0nkai8p</incoming>\n      <outgoing>SequenceFlow_19m8fzt</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0z16n9b\" name=\"back\" sourceRef=\"ExclusiveGateway_0y2zlm7\" targetRef=\"ExclusiveGateway_141b2bk\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${goback}]]></conditionExpression>\n    </sequenceFlow>\n    <scriptTask id=\"ScriptTask_1fon3xn\" name=\"Prep options\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_0p4ppuh</incoming>\n      <outgoing>SequenceFlow_08lwxt9</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var contractConditions = JSON.parse(\n        execution.getVariable('contractConditions')\n    );\n\n    // ----------------------------\n    // Local variable initialization\n    // ----------------------------\n\n    var mainConformityOptions;\n    var nonConformityReasonsCTE;\n    var nonConformityReasonsIdDoc;\n    var nonConformityReasonsLocDoc;\n\n    var formInitialCteConformity = 'conforming';\n    var formInitialIdDocConformity = 'conforming';\n    var formInitialLocDocConformity = 'conforming';\n\n    var contractConditionVersionOptions;\n\n    // ----------------------------\n    // Logical helpers\n    // ----------------------------\n\n    function arrayMap(arr, fn) {\n        var mapped = [];\n        for (var i = 0; i < arr.length; i++) {\n            mapped.push(fn(arr[i], i, arr));\n        }\n        return mapped;\n    }\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    mainConformityOptions = [\n        { text: 'Conforme', value: 'conforming' },\n        { text: 'Non conforme', value: 'nonconforming' },\n    ];\n\n    nonConformityReasonsCTE = [\n        { text: 'Firma non presente', value: 'no_signature' },\n        { text: 'Sbagliata', value: 'wrong' },\n        { text: 'Non presente', value: 'missing' },\n    ];\n\n    nonConformityReasonsIdDoc = [\n        { text: 'Non presente', value: 'missing' },\n        { text: 'Illeggibile', value: 'unreadable' },\n        { text: 'Scaduto', value: 'expired' },\n    ];\n\n    nonConformityReasonsLocDoc = [\n        { text: 'Non presente', value: 'missing' },\n        { text: 'Firma non presente', value: 'no_signature' },\n    ];\n\n    contractConditionVersionOptions = arrayMap(\n        contractConditions,\n        function (contractCondition) {\n            return {\n                text: contractCondition.name,\n                value: contractCondition.name,\n            };\n        }\n    );\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable(\n        'mainConformityOptions',\n        JSON.stringify(mainConformityOptions)\n    );\n\n    execution.setVariable(\n        'nonConformityReasonsCTE',\n        JSON.stringify(nonConformityReasonsCTE)\n    );\n    execution.setVariable(\n        'nonConformityReasonsIdDoc',\n        JSON.stringify(nonConformityReasonsIdDoc)\n    );\n    execution.setVariable(\n        'nonConformityReasonsLocDoc',\n        JSON.stringify(nonConformityReasonsLocDoc)\n    );\n\n    execution.setVariable('conformity_cte', formInitialCteConformity);\n    execution.setVariable('conformity_id_doc', formInitialIdDocConformity);\n    execution.setVariable('conformity_loc_doc', formInitialLocDocConformity);\n\n    execution.setVariable(\n        'contractConditionVersionOptions',\n        JSON.stringify(contractConditionVersionOptions)\n    );\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_04kwmfq\" sourceRef=\"ExclusiveGateway_1suxiy4\" targetRef=\"ScriptTask_1ovwvn2\"/>\n    <sequenceFlow id=\"SequenceFlow_1w4vbs7\" name=\"back\" sourceRef=\"ExclusiveGateway_1mw9v6a\" targetRef=\"ExclusiveGateway_007jjao\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${goback}]]></conditionExpression>\n    </sequenceFlow>\n    <sequenceFlow id=\"SequenceFlow_0dlsjlz\" sourceRef=\"UserTask_0b3ppo4\" targetRef=\"ExclusiveGateway_1mw9v6a\"/>\n    <sequenceFlow id=\"SequenceFlow_074w2cb\" sourceRef=\"ExclusiveGateway_1mw9v6a\" targetRef=\"ScriptTask_0n7uqw8\"/>\n    <sequenceFlow id=\"SequenceFlow_0c8lkxo\" sourceRef=\"ScriptTask_0n7uqw8\" targetRef=\"ExclusiveGateway_1suxiy4\"/>\n    <sequenceFlow id=\"SequenceFlow_17e96dk\" sourceRef=\"ExclusiveGateway_1a6lkz0\" targetRef=\"ScriptTask_1ygc5if\"/>\n    <sequenceFlow id=\"SequenceFlow_08lwxt9\" sourceRef=\"ScriptTask_1fon3xn\" targetRef=\"ExclusiveGateway_1nqvpu7\"/>\n    <sequenceFlow id=\"SequenceFlow_19m8fzt\" sourceRef=\"ExclusiveGateway_141b2bk\" targetRef=\"UserTask_0b3ppo4\"/>\n    <userTask id=\"UserTask_10z41k0\" name=\"Recap invalid POD\" activiti:formKey=\"recap_invalid_pod\">\n      <incoming>SequenceFlow_09j6968</incoming>\n      <outgoing>SequenceFlow_1jtva0u</outgoing>\n    </userTask>\n    <endEvent id=\"EndEvent_1don8o8\" name=\"exit after invalid pod\">\n      <incoming>SequenceFlow_0gmrrmo</incoming>\n    </endEvent>\n    <sequenceFlow id=\"SequenceFlow_1jtva0u\" sourceRef=\"UserTask_10z41k0\" targetRef=\"ExclusiveGateway_1aq83jo\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_1aq83jo\" name=\"back handler\" default=\"SequenceFlow_0gmrrmo\">\n      <incoming>SequenceFlow_1jtva0u</incoming>\n      <outgoing>SequenceFlow_0gmrrmo</outgoing>\n      <outgoing>SequenceFlow_0yhy7iq</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0gmrrmo\" sourceRef=\"ExclusiveGateway_1aq83jo\" targetRef=\"EndEvent_1don8o8\"/>\n    <sequenceFlow id=\"SequenceFlow_0yhy7iq\" name=\"goback\" sourceRef=\"ExclusiveGateway_1aq83jo\" targetRef=\"ExclusiveGateway_007jjao\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${goback}]]></conditionExpression>\n    </sequenceFlow>\n    <exclusiveGateway id=\"ExclusiveGateway_0nfdzq5\">\n      <incoming>SequenceFlow_1kmze27</incoming>\n      <outgoing>SequenceFlow_0kdxgmw</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0kdxgmw\" sourceRef=\"ExclusiveGateway_0nfdzq5\" targetRef=\"ExclusiveGateway_0plqrgp\"/>\n    <scriptTask id=\"ScriptTask_1ovwvn2\" name=\"Prep save\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_04kwmfq</incoming>\n      <outgoing>SequenceFlow_1eskab8</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var podPdrCode = execution.getVariable('pod_pdr_code');\n    var assetType = execution.getVariable('assetType');\n    var podPdrClientId = execution.getVariable('podPdrClientId');\n\n    var contractConditionsVersion = execution.getVariable(\n        'contract_conditions_version'\n    );\n\n    var conformityCte = execution.getVariable('conformity_cte');\n    var conformityIdDoc = execution.getVariable('conformity_id_doc');\n    var conformityLocDoc = execution.getVariable('conformity_loc_doc');\n\n    var nonConformityReasonCte = execution.getVariable(\n        'cte_nonconformity_reason'\n    );\n    var nonConformityReasonIdDoc = execution.getVariable(\n        'id_doc_nonconformity_reason'\n    );\n    var nonConformityReasonLocDoc = execution.getVariable(\n        'loc_doc_nonconformity_reason'\n    );\n\n    // ----------------------------\n    // Local variable initialization\n    // ----------------------------\n\n    var cteReasonMap = {\n        no_signature:\n            'Non è presente la firma per accettazione nella sezione relativa le condizioni economiche',\n        wrong: 'Le condizioni economiche firmate non sono più vendibili',\n        missing:\n            'Nella documentazione inviata non sono presenti le Condizioni Economiche Firmate',\n    };\n\n    var idDocReasonMap = {\n        missing:\n            'Il documento di identità non è presente tra gli allegati inviati',\n        unreadable: 'Il documento di identità è illeggibile',\n        expired: 'Il documento di identità è scaduto',\n    };\n\n    var locDocReasonMap = {\n        missing:\n            \"L'atto notorio\\\\contratto di locazione non è presente tra gli allegati inviati\",\n        no_signature:\n            'Il documento di atto notorio\\\\contratto di locazione non è firmato',\n    };\n\n    var _reasons = [];\n\n    if (\n        conformityCte === 'nonconforming' &&\n        nonConformityReasonCte &&\n        cteReasonMap[nonConformityReasonCte]\n    ) {\n        _reasons.push(cteReasonMap[nonConformityReasonCte]);\n    }\n    if (\n        conformityIdDoc === 'nonconforming' &&\n        nonConformityReasonIdDoc &&\n        idDocReasonMap[nonConformityReasonIdDoc]\n    ) {\n        _reasons.push(idDocReasonMap[nonConformityReasonIdDoc]);\n    }\n    if (\n        conformityLocDoc === 'nonconforming' &&\n        nonConformityReasonLocDoc &&\n        locDocReasonMap[nonConformityReasonLocDoc]\n    ) {\n        _reasons.push(locDocReasonMap[nonConformityReasonLocDoc]);\n    }\n\n    var contract_end_reason = '';\n    if (_reasons.length > 0) {\n        var _lowered = _reasons.map(function (r) {\n            return r.toLowerCase();\n        });\n        _lowered[0] =\n            _lowered[0].charAt(0).toUpperCase() + _lowered[0].slice(1);\n        contract_end_reason = _lowered.join(', ');\n    }\n\n    var saveDataBody;\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    saveDataBody = {\n        pb_id: execution.getProcessInstanceId(),\n        process_name: 'ml_voltura_preliminary_checks',\n        res_id: execution.getVariable('case_id'),\n        payload: JSON.stringify({\n            podPdrClientId: podPdrClientId,\n            podPdrCode: podPdrCode,\n            assetType: assetType,\n            contractConditionsVersion: contractConditionsVersion,\n            conformityCte: conformityCte,\n            conformityIdDoc: conformityIdDoc,\n            conformityLocDoc: conformityLocDoc,\n            nonConformityReasonCte: nonConformityReasonCte,\n            nonConformityReasonIdDoc: nonConformityReasonIdDoc,\n            nonConformityReasonsLocDoc: nonConformityReasonLocDoc,\n            contract_end_reason: contract_end_reason,\n        }),\n    };\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable('saveDataBody', JSON.stringify(saveDataBody));\n    execution.setVariable('contract_end_reason', contract_end_reason);\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_1eskab8\" sourceRef=\"ScriptTask_1ovwvn2\" targetRef=\"ServiceTask_0abnl7n\"/>\n    <serviceTask id=\"ServiceTask_0abnl7n\" name=\"Save to Staging\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n      <extensionElements>\n        <activiti:field name=\"endpoint\">\n          <activiti:expression><![CDATA[${odooEndpoint}symple.pb.process.data]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[POST]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"headers\">\n          <activiti:expression><![CDATA[[{'Authorization': 'Bearer ${token}'}, {'Content-Type':'application/json'}]]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"body\">\n          <activiti:expression><![CDATA[${saveDataBody}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:string><![CDATA[saveDataResponse]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"fixIpActive\"/>\n        <activiti:field name=\"saveFileAs\"/>\n      </extensionElements>\n      <incoming>SequenceFlow_1eskab8</incoming>\n      <outgoing>SequenceFlow_1rf3cg2</outgoing>\n    </serviceTask>\n    <sequenceFlow id=\"SequenceFlow_1rf3cg2\" sourceRef=\"ServiceTask_0abnl7n\" targetRef=\"ScriptTask_14e642i\"/>\n    <scriptTask id=\"ScriptTask_14e642i\" name=\"Check save\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_1rf3cg2</incoming>\n      <outgoing>SequenceFlow_1ef5x4q</outgoing>\n      <script><![CDATA[try{ \n\tvar jsonResponse = JSON.parse(execution.getVariable('saveDataResponse'));\n\tif(jsonResponse.code != 200){\t\t\n\t\texecution.setVariable(\"isAlive\",false);\n\t\texecution.setVariable('errorCode','SAVE_DATA_FAIL');\n\t}\n\t\n}catch(err){ \n\texecution.setVariable(\"isAlive\",false);\n\texecution.setVariable('errorCode','SAVE_DATA_GENERIC_FAIL');\n\texecution.setVariable('errorMessage',err.message); \n}]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_1ef5x4q\" sourceRef=\"ScriptTask_14e642i\" targetRef=\"ExclusiveGateway_0epvij3\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_0epvij3\" name=\"EG save\" default=\"SequenceFlow_1kmze27\">\n      <incoming>SequenceFlow_1ef5x4q</incoming>\n      <outgoing>SequenceFlow_1kmze27</outgoing>\n      <outgoing>SequenceFlow_1fqhhjz</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_1kmze27\" sourceRef=\"ExclusiveGateway_0epvij3\" targetRef=\"ExclusiveGateway_0nfdzq5\"/>\n    <sequenceFlow id=\"SequenceFlow_1fqhhjz\" name=\"err\" sourceRef=\"ExclusiveGateway_0epvij3\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <scriptTask id=\"ScriptTask_1ygc5if\" name=\"Prep first fetch contracts\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_17e96dk</incoming>\n      <outgoing>SequenceFlow_0j853jg</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Output variable initialization\n    // ----------------------------\n\n    var fetchContractsBody = JSON.stringify({\n        page: 1,\n        size: 20,\n        filters: [\n            {\n                field: 'tags',\n                type: 'in',\n                value: 'condizioni_contrattuali',\n            },\n        ],\n        sorters: [\n            {\n                field: 'created_date',\n                dir: 'desc',\n            },\n        ],\n    });\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable('fetchContractsBody', fetchContractsBody);\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_0j853jg\" sourceRef=\"ScriptTask_1ygc5if\" targetRef=\"ServiceTask_1jyfc72\"/>\n    <serviceTask id=\"ServiceTask_1jyfc72\" name=\"GET first page contracts\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n      <extensionElements>\n        <activiti:field name=\"endpoint\">\n          <activiti:expression><![CDATA[${b2wEndpoint}api/document-management/v1/search-files]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[POST]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"headers\">\n          <activiti:expression><![CDATA[[{'Authorization': 'Bearer ${token}'}, {'Content-Type':'application/json'}]]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"body\">\n          <activiti:expression><![CDATA[${fetchContractsBody}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:expression><![CDATA[fetchContractsResponse]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"fixIpActive\"/>\n        <activiti:field name=\"saveFileAs\"/>\n      </extensionElements>\n      <incoming>SequenceFlow_0j853jg</incoming>\n      <outgoing>SequenceFlow_0oct0nz</outgoing>\n    </serviceTask>\n    <sequenceFlow id=\"SequenceFlow_0oct0nz\" sourceRef=\"ServiceTask_1jyfc72\" targetRef=\"ScriptTask_0dvgt7e\"/>\n    <scriptTask id=\"ScriptTask_0dvgt7e\" name=\"Parse first contracts\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_0oct0nz</incoming>\n      <outgoing>SequenceFlow_1smlb7c</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var fetchContractsResponse = JSON.parse(\n        execution.getVariable('fetchContractsResponse')\n    );\n\n    // ----------------------------\n    // Output variable initialization\n    // ----------------------------\n\n    var contractConditions;\n    var needsNextPage;\n    var numPagesToFetch;\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    if (fetchContractsResponse.code != 200) {\n        throw new Error('GET contracts first page returned non-200 response');\n    }\n\n    var body;\n\n    try {\n        body = JSON.parse(fetchContractsResponse.body);\n    } catch (err) {\n        throw new Error(\n            'Unable to parse contracts page 1 body: ' + err.message\n        );\n    }\n\n    contractConditions = body.response;\n    numPagesToFetch = parseInt(body.last_page - 1); // becomes double for some reason\n    needsNextPage = numPagesToFetch > 0;\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable(\n        'contractConditions',\n        JSON.stringify(contractConditions)\n    );\n    execution.setVariable('numPagesToFetch', numPagesToFetch);\n    execution.setVariable('needsNextPage', needsNextPage);\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_1smlb7c\" sourceRef=\"ScriptTask_0dvgt7e\" targetRef=\"ExclusiveGateway_057cp9x\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_1aru1vo\" name=\"EG pagination\" default=\"SequenceFlow_1dqc6y7\">\n      <incoming>SequenceFlow_1j5qjun</incoming>\n      <outgoing>SequenceFlow_109gg01</outgoing>\n      <outgoing>SequenceFlow_1dqc6y7</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_109gg01\" name=\"Next\" sourceRef=\"ExclusiveGateway_1aru1vo\" targetRef=\"SubProcess_1hgsdba\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${needsNextPage}]]></conditionExpression>\n    </sequenceFlow>\n    <exclusiveGateway id=\"ExclusiveGateway_1rrl13g\">\n      <incoming>SequenceFlow_1bgsav8</incoming>\n      <incoming>SequenceFlow_1dqc6y7</incoming>\n      <outgoing>SequenceFlow_0p4ppuh</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0p4ppuh\" sourceRef=\"ExclusiveGateway_1rrl13g\" targetRef=\"ScriptTask_1fon3xn\"/>\n    <subProcess id=\"SubProcess_1hgsdba\" name=\"Fetch all contract version pages\">\n      <incoming>SequenceFlow_109gg01</incoming>\n      <outgoing>SequenceFlow_1bgsav8</outgoing>\n      <multiInstanceLoopCharacteristics isSequential=\"true\">\n        <loopCardinality xsi:type=\"tFormalExpression\">${numPagesToFetch}</loopCardinality>\n        <completionCondition xsi:type=\"tFormalExpression\">${nrOfCompletedInstances == numPagesToFetch}</completionCondition>\n      </multiInstanceLoopCharacteristics>\n      <startEvent id=\"StartEvent_1i1kiwa\" name=\"SP Start\">\n        <outgoing>SequenceFlow_0out7yw</outgoing>\n      </startEvent>\n      <sequenceFlow id=\"SequenceFlow_0out7yw\" sourceRef=\"StartEvent_1i1kiwa\" targetRef=\"ScriptTask_07dhbok\"/>\n      <scriptTask id=\"ScriptTask_07dhbok\" name=\"Prep fetch next\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n        <incoming>SequenceFlow_0out7yw</incoming>\n        <outgoing>SequenceFlow_1qaj0jg</outgoing>\n        <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var loopCounter = execution.getVariable('loopCounter');\n\n    // ----------------------------\n    // Output variable initialization\n    // ----------------------------\n\n    var fetchContractsBody;\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    var pageToFetch = 2 + loopCounter;\n\n    fetchContractsBody = {\n        page: pageToFetch,\n        size: 20,\n        filters: [\n            {\n                field: 'tags',\n                type: 'in',\n                value: 'condizioni_contrattuali',\n            },\n        ],\n        sorters: [\n            {\n                field: 'created_date',\n                dir: 'desc',\n            },\n        ],\n    };\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable(\n        'fetchContractsBody',\n        JSON.stringify(fetchContractsBody)\n    );\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n      </scriptTask>\n      <sequenceFlow id=\"SequenceFlow_1qaj0jg\" sourceRef=\"ScriptTask_07dhbok\" targetRef=\"ServiceTask_12j7ob7\"/>\n      <serviceTask id=\"ServiceTask_12j7ob7\" name=\"Fetch Next Page\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n        <extensionElements>\n          <activiti:field name=\"endpoint\">\n            <activiti:expression><![CDATA[${b2wEndpoint}api/document-management/v1/search-files]]></activiti:expression>\n          </activiti:field>\n          <activiti:field name=\"method\">\n            <activiti:expression><![CDATA[POST]]></activiti:expression>\n          </activiti:field>\n          <activiti:field name=\"headers\">\n            <activiti:expression><![CDATA[[{'Authorization': 'Bearer ${token}'}, {'Content-Type':'application/json'}]]]></activiti:expression>\n          </activiti:field>\n          <activiti:field name=\"body\">\n            <activiti:expression><![CDATA[${fetchContractsBody}]]></activiti:expression>\n          </activiti:field>\n          <activiti:field name=\"resultKey\">\n            <activiti:expression><![CDATA[fetchContractsResponse]]></activiti:expression>\n          </activiti:field>\n          <activiti:field name=\"fixIpActive\"/>\n          <activiti:field name=\"saveFileAs\"/>\n        </extensionElements>\n        <incoming>SequenceFlow_1qaj0jg</incoming>\n        <outgoing>SequenceFlow_1gubvd6</outgoing>\n      </serviceTask>\n      <sequenceFlow id=\"SequenceFlow_1gubvd6\" sourceRef=\"ServiceTask_12j7ob7\" targetRef=\"ScriptTask_0vayzkg\"/>\n      <scriptTask id=\"ScriptTask_0vayzkg\" name=\"Parse next page\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n        <incoming>SequenceFlow_1gubvd6</incoming>\n        <outgoing>SequenceFlow_0r8tz1j</outgoing>\n        <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var fetchContractsResponse = JSON.parse(\n        execution.getVariable('fetchContractsResponse')\n    );\n\n    var prevContractConditions = JSON.parse(\n        execution.getVariable('contractConditions')\n    );\n\n    // ----------------------------\n    // Output variable initialization\n    // ----------------------------\n\n    var contractConditions = prevContractConditions;\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    if (fetchContractsResponse.code != 200) {\n        throw new Error('GET contracts first page returned non-200 response');\n    }\n\n    var body;\n\n    try {\n        body = JSON.parse(fetchContractsResponse.body);\n    } catch (err) {\n        throw new Error(\n            'Unable to parse contracts page 1 body: ' + err.message\n        );\n    }\n\n    contractConditions = contractConditions.concat(body.response);\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable(\n        'contractConditions',\n        JSON.stringify(contractConditions)\n    );\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n      </scriptTask>\n      <exclusiveGateway id=\"ExclusiveGateway_1m5h3tj\" name=\"EG Err\" default=\"SequenceFlow_11gbito\">\n        <incoming>SequenceFlow_0r8tz1j</incoming>\n        <outgoing>SequenceFlow_11gbito</outgoing>\n        <outgoing>SequenceFlow_0lqb809</outgoing>\n      </exclusiveGateway>\n      <sequenceFlow id=\"SequenceFlow_0r8tz1j\" sourceRef=\"ScriptTask_0vayzkg\" targetRef=\"ExclusiveGateway_1m5h3tj\"/>\n      <endEvent id=\"EndEvent_1awk57v\" name=\"End\">\n        <incoming>SequenceFlow_11gbito</incoming>\n      </endEvent>\n      <sequenceFlow id=\"SequenceFlow_11gbito\" sourceRef=\"ExclusiveGateway_1m5h3tj\" targetRef=\"EndEvent_1awk57v\"/>\n      <sequenceFlow id=\"SequenceFlow_0lqb809\" name=\"err\" sourceRef=\"ExclusiveGateway_1m5h3tj\" targetRef=\"EndEvent_1no7wfo\">\n        <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n      </sequenceFlow>\n      <endEvent id=\"EndEvent_1no7wfo\" name=\"End Err\">\n        <incoming>SequenceFlow_0lqb809</incoming>\n        <errorEventDefinition errorRef=\"Error_1uq55vw\"/>\n      </endEvent>\n    </subProcess>\n    <sequenceFlow id=\"SequenceFlow_1bgsav8\" sourceRef=\"SubProcess_1hgsdba\" targetRef=\"ExclusiveGateway_1rrl13g\"/>\n    <sequenceFlow id=\"SequenceFlow_1dqc6y7\" sourceRef=\"ExclusiveGateway_1aru1vo\" targetRef=\"ExclusiveGateway_1rrl13g\"/>\n    <boundaryEvent id=\"BoundaryEvent_1i7v9ke\" attachedToRef=\"SubProcess_1hgsdba\">\n      <outgoing>SequenceFlow_0aihp6f</outgoing>\n      <errorEventDefinition/>\n    </boundaryEvent>\n    <sequenceFlow id=\"SequenceFlow_0aihp6f\" sourceRef=\"BoundaryEvent_1i7v9ke\" targetRef=\"ExclusiveGateway_1itsbol\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_057cp9x\" name=\"EG first page\" default=\"SequenceFlow_1j5qjun\">\n      <incoming>SequenceFlow_1smlb7c</incoming>\n      <outgoing>SequenceFlow_1j5qjun</outgoing>\n      <outgoing>SequenceFlow_0g87vn6</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_1j5qjun\" sourceRef=\"ExclusiveGateway_057cp9x\" targetRef=\"ExclusiveGateway_1aru1vo\"/>\n    <sequenceFlow id=\"SequenceFlow_0g87vn6\" name=\"ERR\" sourceRef=\"ExclusiveGateway_057cp9x\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <scriptTask id=\"ScriptTask_1nhv9x3\" name=\"Asset Type\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_0gwojtv</incoming>\n      <outgoing>SequenceFlow_1prpgns</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var pod_pdr_code = execution.getVariable('pod_pdr_code');\n    var baseUrl = execution.getVariable('odooEndpoint');\n\n    // ----------------------------\n    // Output variable initialization\n    // ----------------------------\n\n    var assetType;\n    var searchUrl;\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    if (pod_pdr_code.indexOf('IT') === 0) {\n        assetType = 'pod';\n        searchUrl =\n            baseUrl + 'res.partner.pod/search_pod?pod_code=' + pod_pdr_code;\n    } else {\n        assetType = 'pdr';\n        searchUrl =\n            baseUrl + 'res.partner.pdr/search_pdr?pdr_code=' + pod_pdr_code;\n    }\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable('assetType', assetType);\n    execution.setVariable('searchUrl', searchUrl);\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_1prpgns\" sourceRef=\"ScriptTask_1nhv9x3\" targetRef=\"ExclusiveGateway_0mntlh0\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_0xknwjr\" name=\"EG err\" default=\"SequenceFlow_0j5yut0\">\n      <incoming>SequenceFlow_0coqfwb</incoming>\n      <outgoing>SequenceFlow_0j5yut0</outgoing>\n      <outgoing>SequenceFlow_15udx6d</outgoing>\n    </exclusiveGateway>\n    <exclusiveGateway id=\"ExclusiveGateway_0x4cx9j\">\n      <incoming>SequenceFlow_15udx6d</incoming>\n      <outgoing>SequenceFlow_09j6968</outgoing>\n    </exclusiveGateway>\n    <exclusiveGateway id=\"ExclusiveGateway_0c6kmne\">\n      <incoming>SequenceFlow_0j5yut0</incoming>\n      <outgoing>SequenceFlow_14mb4k2</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0j5yut0\" sourceRef=\"ExclusiveGateway_0xknwjr\" targetRef=\"ExclusiveGateway_0c6kmne\"/>\n    <sequenceFlow id=\"SequenceFlow_14mb4k2\" sourceRef=\"ExclusiveGateway_0c6kmne\" targetRef=\"ServiceTask_1oleqnn\"/>\n    <sequenceFlow id=\"SequenceFlow_09j6968\" sourceRef=\"ExclusiveGateway_0x4cx9j\" targetRef=\"UserTask_10z41k0\"/>\n    <sequenceFlow id=\"SequenceFlow_15udx6d\" name=\"ERR\" sourceRef=\"ExclusiveGateway_0xknwjr\" targetRef=\"ExclusiveGateway_0x4cx9j\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!searchOk}]]></conditionExpression>\n    </sequenceFlow>\n    <exclusiveGateway id=\"ExclusiveGateway_0plqrgp\" name=\"eg err\" default=\"SequenceFlow_12iqoej\">\n      <incoming>SequenceFlow_0kdxgmw</incoming>\n      <outgoing>SequenceFlow_12iqoej</outgoing>\n      <outgoing>SequenceFlow_1otl3z0</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_12iqoej\" sourceRef=\"ExclusiveGateway_0plqrgp\" targetRef=\"UserTask_1h01e7t\"/>\n    <sequenceFlow id=\"SequenceFlow_1otl3z0\" name=\"err\" sourceRef=\"ExclusiveGateway_0plqrgp\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <serviceTask id=\"ServiceTask_1oleqnn\" name=\"partner selections\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n      <extensionElements>\n        <activiti:field name=\"endpoint\">\n          <activiti:expression><![CDATA[${odooEndpoint}ir.model/get_selections?model=res.partner&_lang_=it_IT]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[GET]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"headers\">\n          <activiti:expression><![CDATA[[{'Authorization': 'Bearer ${token}'}]]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"body\">\n          <activiti:string><![CDATA[{}]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:string><![CDATA[partnerSelectionsResult]]></activiti:string>\n        </activiti:field>\n      </extensionElements>\n      <incoming>SequenceFlow_14mb4k2</incoming>\n      <outgoing>SequenceFlow_0pfzr26</outgoing>\n    </serviceTask>\n    <sequenceFlow id=\"SequenceFlow_0pfzr26\" sourceRef=\"ServiceTask_1oleqnn\" targetRef=\"ServiceTask_037iore\"/>\n    <serviceTask id=\"ServiceTask_1xbep11\" name=\"Call keycloak\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n      <extensionElements>\n        <activiti:field name=\"endpoint\">\n          <activiti:expression><![CDATA[${keyCloakEndpoint}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[POST]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"headers\">\n          <activiti:expression><![CDATA[${keyCloakHeaders}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"body\">\n          <activiti:expression><![CDATA[${keyCloakBody}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:string><![CDATA[keyCloakResult]]></activiti:string>\n        </activiti:field>\n      </extensionElements>\n      <incoming>SequenceFlow_07sfv3v</incoming>\n      <outgoing>SequenceFlow_169yez2</outgoing>\n    </serviceTask>\n    <sequenceFlow id=\"SequenceFlow_169yez2\" sourceRef=\"ServiceTask_1xbep11\" targetRef=\"ScriptTask_1etsxnq\"/>\n    <scriptTask id=\"ScriptTask_1etsxnq\" name=\"Check keycloak\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_169yez2</incoming>\n      <outgoing>SequenceFlow_0xtdngx</outgoing>\n      <script><![CDATA[try{ \n\tvar isAlive = true;\n\tvar errorCode = '0';\n\tvar errorMessage = '';\n\n\tvar jsonKeyCloakResult = JSON.parse(execution.getVariable('keyCloakResult'));\n\n\tif(jsonKeyCloakResult.code == 200){\n\t\tvar data = JSON.parse(jsonKeyCloakResult.body);\n\t\tvar accessToken = data['access_token'];\n\t\texecution.setVariable('token',accessToken);\n\t}else{\n\t\tisAlive = false;\n\t\terrorCode = jsonKeyCloakResult.code;\n\t\terrorMessage = jsonKeyCloakResult.body;\n\t}\n\n\texecution.setVariable('isAlive',isAlive);\n\texecution.setVariable('errorCode',errorCode);\n\texecution.setVariable('errorMessage',errorMessage);\n\n}catch(err){ \n\n\tvar symphonyCustomResponse = {\n\t\t'code': 'GEN_ERROR',\n\t\t'message': err.message\n\t}\n\t\n\texecution.setVariable(\"symphonyCustomResponse\",JSON.stringify(symphonyCustomResponse));\n\texecution.setVariable(\"isAlive\",false);\n\texecution.setVariable('errorCode','CHECK_AUTH_TOKEN_FAILED');\n\texecution.setVariable('errorMessage',err.message);\n}]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_0xtdngx\" sourceRef=\"ScriptTask_1etsxnq\" targetRef=\"ExclusiveGateway_0axed5d\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_0axed5d\" name=\"EG check keycloak\" default=\"SequenceFlow_1eh5w0v\">\n      <incoming>SequenceFlow_0xtdngx</incoming>\n      <outgoing>SequenceFlow_1eh5w0v</outgoing>\n      <outgoing>SequenceFlow_13nbzbo</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_1eh5w0v\" sourceRef=\"ExclusiveGateway_0axed5d\" targetRef=\"ExclusiveGateway_007jjao\"/>\n    <sequenceFlow id=\"SequenceFlow_13nbzbo\" name=\"error\" sourceRef=\"ExclusiveGateway_0axed5d\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <exclusiveGateway id=\"ExclusiveGateway_1rxxxa1\" name=\"eg err\" default=\"SequenceFlow_0coqfwb\">\n      <incoming>SequenceFlow_1kofs72</incoming>\n      <outgoing>SequenceFlow_0coqfwb</outgoing>\n      <outgoing>SequenceFlow_11sann0</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0coqfwb\" sourceRef=\"ExclusiveGateway_1rxxxa1\" targetRef=\"ExclusiveGateway_0xknwjr\"/>\n    <endEvent id=\"EndEvent_1o4knou\" name=\"end err\">\n      <incoming>SequenceFlow_12cakww</incoming>\n    </endEvent>\n    <sequenceFlow id=\"SequenceFlow_11sann0\" name=\"err\" sourceRef=\"ExclusiveGateway_1rxxxa1\" targetRef=\"ExclusiveGateway_1fcablw\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <exclusiveGateway id=\"ExclusiveGateway_1fcablw\">\n      <incoming>SequenceFlow_11sann0</incoming>\n      <incoming>SequenceFlow_0wsj56s</incoming>\n      <outgoing>SequenceFlow_12cakww</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_12cakww\" sourceRef=\"ExclusiveGateway_1fcablw\" targetRef=\"EndEvent_1o4knou\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_0mntlh0\" name=\"eg err\" default=\"SequenceFlow_0729s3r\">\n      <incoming>SequenceFlow_1prpgns</incoming>\n      <outgoing>SequenceFlow_0729s3r</outgoing>\n      <outgoing>SequenceFlow_0wsj56s</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0729s3r\" sourceRef=\"ExclusiveGateway_0mntlh0\" targetRef=\"ServiceTask_14367yp\"/>\n    <sequenceFlow id=\"SequenceFlow_0wsj56s\" name=\"err\" sourceRef=\"ExclusiveGateway_0mntlh0\" targetRef=\"ExclusiveGateway_1fcablw\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <exclusiveGateway id=\"ExclusiveGateway_1nqvpu7\">\n      <incoming>SequenceFlow_08lwxt9</incoming>\n      <outgoing>SequenceFlow_19k1dyg</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_19k1dyg\" sourceRef=\"ExclusiveGateway_1nqvpu7\" targetRef=\"ScriptTask_0ubaq77\"/>\n    <scriptTask id=\"ScriptTask_0ubaq77\" name=\"prep write case\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_19k1dyg</incoming>\n      <outgoing>SequenceFlow_0b7o332</outgoing>\n      <script><![CDATA[try {\n    // ----------------------------\n    // Input gathering\n    // ----------------------------\n\n    var servicePointId = execution.getVariable('servicePointId');\n\n    // ----------------------------\n    // Output variable initialization\n    // ----------------------------\n\n    var updateCasePayload;\n\n    // ----------------------------\n    // Logical Helpers\n    // ----------------------------\n\n    // ----------------------------\n    // Main Execution\n    // ----------------------------\n\n    updateCasePayload = {\n        service_point_ids: [servicePointId],\n    };\n\n    // ----------------------------\n    // Output\n    // ----------------------------\n\n    execution.setVariable(\n        'updateCasePayload',\n        JSON.stringify(updateCasePayload)\n    );\n} catch (err) {\n    execution.setVariable('isAlive', false);\n    execution.setVariable('errorCode', 'ERR_PREP_CASE_WRITE');\n    execution.setVariable('errorMessage', err.message);\n}\n]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_0b7o332\" sourceRef=\"ScriptTask_0ubaq77\" targetRef=\"ExclusiveGateway_05oc3pd\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_05oc3pd\" name=\"eg err\" default=\"SequenceFlow_10jtvac\">\n      <incoming>SequenceFlow_0b7o332</incoming>\n      <outgoing>SequenceFlow_10jtvac</outgoing>\n      <outgoing>SequenceFlow_0f406qe</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_10jtvac\" sourceRef=\"ExclusiveGateway_05oc3pd\" targetRef=\"ServiceTask_01frnr3\"/>\n    <serviceTask id=\"ServiceTask_01frnr3\" name=\"write case\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:class=\"com.symphony.action.CallDelegate\">\n      <extensionElements>\n        <activiti:field name=\"endpoint\">\n          <activiti:expression><![CDATA[${odooEndpoint}helpdesk.ticket/${case_id}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"method\">\n          <activiti:string><![CDATA[PUT]]></activiti:string>\n        </activiti:field>\n        <activiti:field name=\"headers\">\n          <activiti:expression><![CDATA[[{'Authorization': 'Bearer ${token}'}, {'Content-Type': 'application/json'}]]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"body\">\n          <activiti:expression><![CDATA[${updateCasePayload}]]></activiti:expression>\n        </activiti:field>\n        <activiti:field name=\"resultKey\">\n          <activiti:string><![CDATA[updateCaseResponse]]></activiti:string>\n        </activiti:field>\n      </extensionElements>\n      <incoming>SequenceFlow_10jtvac</incoming>\n      <outgoing>SequenceFlow_0i5tibq</outgoing>\n    </serviceTask>\n    <sequenceFlow id=\"SequenceFlow_0i5tibq\" sourceRef=\"ServiceTask_01frnr3\" targetRef=\"ScriptTask_0w7wy5x\"/>\n    <scriptTask id=\"ScriptTask_0w7wy5x\" name=\"check write\" scriptFormat=\"javascript\" activiti:async=\"false\" activiti:exclusive=\"false\" activiti:autoStoreVariables=\"false\">\n      <incoming>SequenceFlow_0i5tibq</incoming>\n      <outgoing>SequenceFlow_1nqw0ul</outgoing>\n      <script><![CDATA[try{ \n  // your code here \n }catch(err){ \n  execution.setVariable(\"isAlive\",false); \n}]]></script>\n    </scriptTask>\n    <sequenceFlow id=\"SequenceFlow_1nqw0ul\" sourceRef=\"ScriptTask_0w7wy5x\" targetRef=\"ExclusiveGateway_1hqcyqv\"/>\n    <exclusiveGateway id=\"ExclusiveGateway_1hqcyqv\" name=\"eg err\" default=\"SequenceFlow_0nkai8p\">\n      <incoming>SequenceFlow_1nqw0ul</incoming>\n      <outgoing>SequenceFlow_0nkai8p</outgoing>\n      <outgoing>SequenceFlow_1p9hbtj</outgoing>\n    </exclusiveGateway>\n    <sequenceFlow id=\"SequenceFlow_0nkai8p\" sourceRef=\"ExclusiveGateway_1hqcyqv\" targetRef=\"ExclusiveGateway_141b2bk\"/>\n    <sequenceFlow id=\"SequenceFlow_1p9hbtj\" name=\"err\" sourceRef=\"ExclusiveGateway_1hqcyqv\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n    <sequenceFlow id=\"SequenceFlow_0f406qe\" name=\"err\" sourceRef=\"ExclusiveGateway_05oc3pd\" targetRef=\"ExclusiveGateway_1itsbol\">\n      <conditionExpression xsi:type=\"tFormalExpression\"><![CDATA[${!isAlive}]]></conditionExpression>\n    </sequenceFlow>\n  </process>\n  <error id=\"Error_1uq55vw\" name=\"err_contracts_fetch_fail\"/>\n  <signal id=\"Signal_10dchzv\" name=\"Signal_1g21vi7\"/>\n  <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">\n    <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"PB_PROCESS_NAME_VALUE\">\n      <bpmndi:BPMNShape id=\"_BPMNShape_StartEvent_2\" bpmnElement=\"StartEvent_1\">\n        <omgdc:Bounds x=\"333\" y=\"102\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"340\" y=\"145\" width=\"22\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ServiceTask_13b65do_di\" bpmnElement=\"ServiceTask_13b65do\">\n        <omgdc:Bounds x=\"458\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"EndEvent_1i4b61q_di\" bpmnElement=\"EndEvent_1i4b61q\">\n        <omgdc:Bounds x=\"6862\" y=\"102\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6871\" y=\"145\" width=\"19\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0ljapsf_di\" bpmnElement=\"SequenceFlow_0ljapsf\">\n        <omgdi:waypoint x=\"369\" y=\"120\"/>\n        <omgdi:waypoint x=\"458\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1pvb8fs_di\" bpmnElement=\"SequenceFlow_1pvb8fs\">\n        <omgdi:waypoint x=\"542\" y=\"120\"/>\n        <omgdi:waypoint x=\"588\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_0m0bvsq_di\" bpmnElement=\"ScriptTask_0m0bvsq\">\n        <omgdc:Bounds x=\"588\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0ba03og_di\" bpmnElement=\"SequenceFlow_0ba03og\">\n        <omgdi:waypoint x=\"672\" y=\"120\"/>\n        <omgdi:waypoint x=\"725\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0rfhfmz_di\" bpmnElement=\"ExclusiveGateway_0rfhfmz\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"725\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"722\" y=\"152\" width=\"58\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_07sfv3v_di\" bpmnElement=\"SequenceFlow_07sfv3v\">\n        <omgdi:waypoint x=\"775\" y=\"120\"/>\n        <omgdi:waypoint x=\"828\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1itsbol_di\" bpmnElement=\"ExclusiveGateway_1itsbol\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"6515\" y=\"-325\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6528\" y=\"-349\" width=\"24\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"EndEvent_10kxftu_di\" bpmnElement=\"EndEvent_10kxftu\">\n        <omgdc:Bounds x=\"6632\" y=\"-318\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6622\" y=\"-348\" width=\"57\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_182niau_di\" bpmnElement=\"SequenceFlow_182niau\">\n        <omgdi:waypoint x=\"750\" y=\"95\"/>\n        <omgdi:waypoint x=\"750\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6515\" y=\"-300\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"2888\" y=\"-560\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1y5bccm_di\" bpmnElement=\"SequenceFlow_1y5bccm\">\n        <omgdi:waypoint x=\"6565\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6632\" y=\"-300\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"UserTask_176nfh6_di\" bpmnElement=\"UserTask_176nfh6\">\n        <omgdc:Bounds x=\"1378\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0gwojtv_di\" bpmnElement=\"SequenceFlow_0gwojtv\">\n        <omgdi:waypoint x=\"1462\" y=\"120\"/>\n        <omgdi:waypoint x=\"1528\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_14367yp_di\" bpmnElement=\"ServiceTask_14367yp\">\n        <omgdc:Bounds x=\"1738\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0gpald0_di\" bpmnElement=\"SequenceFlow_0gpald0\">\n        <omgdi:waypoint x=\"1822\" y=\"120\"/>\n        <omgdi:waypoint x=\"1858\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_19xewl1_di\" bpmnElement=\"ScriptTask_19xewl1\">\n        <omgdc:Bounds x=\"1858\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1kofs72_di\" bpmnElement=\"SequenceFlow_1kofs72\">\n        <omgdi:waypoint x=\"1942\" y=\"120\"/>\n        <omgdi:waypoint x=\"1985\" y=\"120\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"1960\" y=\"102\" width=\"7\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_037iore_di\" bpmnElement=\"ServiceTask_037iore\">\n        <omgdc:Bounds x=\"2448\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1tuuh2i_di\" bpmnElement=\"SequenceFlow_1tuuh2i\">\n        <omgdi:waypoint x=\"2532\" y=\"120\"/>\n        <omgdi:waypoint x=\"2608\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_1htprns_di\" bpmnElement=\"ScriptTask_1htprns\">\n        <omgdc:Bounds x=\"2608\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1skzr20_di\" bpmnElement=\"SequenceFlow_1skzr20\">\n        <omgdi:waypoint x=\"2692\" y=\"120\"/>\n        <omgdi:waypoint x=\"2745\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"UserTask_0b3ppo4_di\" bpmnElement=\"UserTask_0b3ppo4\">\n        <omgdc:Bounds x=\"5448\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ScriptTask_0n7uqw8_di\" bpmnElement=\"ScriptTask_0n7uqw8\">\n        <omgdc:Bounds x=\"5688\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"UserTask_1h01e7t_di\" bpmnElement=\"UserTask_1h01e7t\">\n        <omgdc:Bounds x=\"6638\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0a71ye8_di\" bpmnElement=\"SequenceFlow_0a71ye8\">\n        <omgdi:waypoint x=\"6722\" y=\"120\"/>\n        <omgdi:waypoint x=\"6745\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1mw9v6a_di\" bpmnElement=\"ExclusiveGateway_1mw9v6a\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"5585\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"5580\" y=\"65\" width=\"64\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1a6lkz0_di\" bpmnElement=\"ExclusiveGateway_1a6lkz0\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"2745\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"2747\" y=\"155\" width=\"45\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_068ciey_di\" bpmnElement=\"SequenceFlow_068ciey\">\n        <omgdi:waypoint x=\"2770\" y=\"95\"/>\n        <omgdi:waypoint x=\"2770\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6515\" y=\"-300\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"3302\" y=\"-137\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_007jjao_di\" bpmnElement=\"ExclusiveGateway_007jjao\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"1265\" y=\"95\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0a7vjo0_di\" bpmnElement=\"SequenceFlow_0a7vjo0\">\n        <omgdi:waypoint x=\"1315\" y=\"120\"/>\n        <omgdi:waypoint x=\"1378\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1suxiy4_di\" bpmnElement=\"ExclusiveGateway_1suxiy4\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"5845\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"5840\" y=\"155\" width=\"59\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0y2zlm7_di\" bpmnElement=\"ExclusiveGateway_0y2zlm7\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"6745\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6739\" y=\"65\" width=\"64\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1pdd6h9_di\" bpmnElement=\"SequenceFlow_1pdd6h9\">\n        <omgdi:waypoint x=\"6795\" y=\"120\"/>\n        <omgdi:waypoint x=\"6862\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_141b2bk_di\" bpmnElement=\"ExclusiveGateway_141b2bk\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"5365\" y=\"95\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0z16n9b_di\" bpmnElement=\"SequenceFlow_0z16n9b\">\n        <omgdi:waypoint x=\"6770\" y=\"145\"/>\n        <omgdi:waypoint x=\"6770\" y=\"230\"/>\n        <omgdi:waypoint x=\"5390\" y=\"230\"/>\n        <omgdi:waypoint x=\"5390\" y=\"145\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6287\" y=\"212\" width=\"24\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_1fon3xn_di\" bpmnElement=\"ScriptTask_1fon3xn\">\n        <omgdc:Bounds x=\"4418\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_04kwmfq_di\" bpmnElement=\"SequenceFlow_04kwmfq\">\n        <omgdi:waypoint x=\"5895\" y=\"120\"/>\n        <omgdi:waypoint x=\"5958\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1w4vbs7_di\" bpmnElement=\"SequenceFlow_1w4vbs7\">\n        <omgdi:waypoint x=\"5610\" y=\"145\"/>\n        <omgdi:waypoint x=\"5610\" y=\"320\"/>\n        <omgdi:waypoint x=\"1290\" y=\"320\"/>\n        <omgdi:waypoint x=\"1290\" y=\"145\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"4110\" y=\"302\" width=\"24\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0dlsjlz_di\" bpmnElement=\"SequenceFlow_0dlsjlz\">\n        <omgdi:waypoint x=\"5532\" y=\"120\"/>\n        <omgdi:waypoint x=\"5585\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_074w2cb_di\" bpmnElement=\"SequenceFlow_074w2cb\">\n        <omgdi:waypoint x=\"5635\" y=\"120\"/>\n        <omgdi:waypoint x=\"5688\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0c8lkxo_di\" bpmnElement=\"SequenceFlow_0c8lkxo\">\n        <omgdi:waypoint x=\"5772\" y=\"120\"/>\n        <omgdi:waypoint x=\"5845\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_17e96dk_di\" bpmnElement=\"SequenceFlow_17e96dk\">\n        <omgdi:waypoint x=\"2795\" y=\"120\"/>\n        <omgdi:waypoint x=\"2848\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_08lwxt9_di\" bpmnElement=\"SequenceFlow_08lwxt9\">\n        <omgdi:waypoint x=\"4502\" y=\"120\"/>\n        <omgdi:waypoint x=\"4545\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_19m8fzt_di\" bpmnElement=\"SequenceFlow_19m8fzt\">\n        <omgdi:waypoint x=\"5415\" y=\"120\"/>\n        <omgdi:waypoint x=\"5448\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"UserTask_10z41k0_di\" bpmnElement=\"UserTask_10z41k0\">\n        <omgdc:Bounds x=\"2358\" y=\"-172\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"EndEvent_1don8o8_di\" bpmnElement=\"EndEvent_1don8o8\">\n        <omgdc:Bounds x=\"2622\" y=\"-148\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"2603\" y=\"-105\" width=\"77\" height=\"27\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1jtva0u_di\" bpmnElement=\"SequenceFlow_1jtva0u\">\n        <omgdi:waypoint x=\"2442\" y=\"-130\"/>\n        <omgdi:waypoint x=\"2505\" y=\"-130\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1aq83jo_di\" bpmnElement=\"ExclusiveGateway_1aq83jo\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"2505\" y=\"-155\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"2499\" y=\"-185\" width=\"64\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0gmrrmo_di\" bpmnElement=\"SequenceFlow_0gmrrmo\">\n        <omgdi:waypoint x=\"2555\" y=\"-130\"/>\n        <omgdi:waypoint x=\"2622\" y=\"-130\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0yhy7iq_di\" bpmnElement=\"SequenceFlow_0yhy7iq\">\n        <omgdi:waypoint x=\"2530\" y=\"-105\"/>\n        <omgdi:waypoint x=\"2530\" y=\"350\"/>\n        <omgdi:waypoint x=\"1290\" y=\"350\"/>\n        <omgdi:waypoint x=\"1290\" y=\"145\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"3012\" y=\"-13\" width=\"36\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0nfdzq5_di\" bpmnElement=\"ExclusiveGateway_0nfdzq5\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"6425\" y=\"95\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0kdxgmw_di\" bpmnElement=\"SequenceFlow_0kdxgmw\">\n        <omgdi:waypoint x=\"6475\" y=\"120\"/>\n        <omgdi:waypoint x=\"6515\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_1ovwvn2_di\" bpmnElement=\"ScriptTask_1ovwvn2\">\n        <omgdc:Bounds x=\"5958\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1eskab8_di\" bpmnElement=\"SequenceFlow_1eskab8\">\n        <omgdi:waypoint x=\"6042\" y=\"120\"/>\n        <omgdi:waypoint x=\"6088\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_0abnl7n_di\" bpmnElement=\"ServiceTask_0abnl7n\">\n        <omgdc:Bounds x=\"6088\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1rf3cg2_di\" bpmnElement=\"SequenceFlow_1rf3cg2\">\n        <omgdi:waypoint x=\"6172\" y=\"120\"/>\n        <omgdi:waypoint x=\"6208\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_14e642i_di\" bpmnElement=\"ScriptTask_14e642i\">\n        <omgdc:Bounds x=\"6208\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1ef5x4q_di\" bpmnElement=\"SequenceFlow_1ef5x4q\">\n        <omgdi:waypoint x=\"6292\" y=\"120\"/>\n        <omgdi:waypoint x=\"6335\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0epvij3_di\" bpmnElement=\"ExclusiveGateway_0epvij3\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"6335\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6339\" y=\"152\" width=\"43\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1kmze27_di\" bpmnElement=\"SequenceFlow_1kmze27\">\n        <omgdi:waypoint x=\"6385\" y=\"120\"/>\n        <omgdi:waypoint x=\"6425\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1fqhhjz_di\" bpmnElement=\"SequenceFlow_1fqhhjz\">\n        <omgdi:waypoint x=\"6360\" y=\"95\"/>\n        <omgdi:waypoint x=\"6360\" y=\"-170\"/>\n        <omgdi:waypoint x=\"6540\" y=\"-170\"/>\n        <omgdi:waypoint x=\"6540\" y=\"-275\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6363\" y=\"43\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_1ygc5if_di\" bpmnElement=\"ScriptTask_1ygc5if\">\n        <omgdc:Bounds x=\"2848\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0j853jg_di\" bpmnElement=\"SequenceFlow_0j853jg\">\n        <omgdi:waypoint x=\"2932\" y=\"120\"/>\n        <omgdi:waypoint x=\"2988\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_1jyfc72_di\" bpmnElement=\"ServiceTask_1jyfc72\">\n        <omgdc:Bounds x=\"2988\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0oct0nz_di\" bpmnElement=\"SequenceFlow_0oct0nz\">\n        <omgdi:waypoint x=\"3072\" y=\"120\"/>\n        <omgdi:waypoint x=\"3128\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_0dvgt7e_di\" bpmnElement=\"ScriptTask_0dvgt7e\">\n        <omgdc:Bounds x=\"3128\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1smlb7c_di\" bpmnElement=\"SequenceFlow_1smlb7c\">\n        <omgdi:waypoint x=\"3212\" y=\"120\"/>\n        <omgdi:waypoint x=\"3255\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1aru1vo_di\" bpmnElement=\"ExclusiveGateway_1aru1vo\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"3335\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"3326\" y=\"152\" width=\"70\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_109gg01_di\" bpmnElement=\"SequenceFlow_109gg01\">\n        <omgdi:waypoint x=\"3384\" y=\"121\"/>\n        <omgdi:waypoint x=\"3500\" y=\"121\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"3434\" y=\"103\" width=\"23\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1rrl13g_di\" bpmnElement=\"ExclusiveGateway_1rrl13g\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"4345\" y=\"95\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0p4ppuh_di\" bpmnElement=\"SequenceFlow_0p4ppuh\">\n        <omgdi:waypoint x=\"4395\" y=\"120\"/>\n        <omgdi:waypoint x=\"4418\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"SubProcess_1hgsdba_di\" bpmnElement=\"SubProcess_1hgsdba\" isExpanded=\"true\">\n        <omgdc:Bounds x=\"3500\" y=\"-60\" width=\"750\" height=\"360\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1bgsav8_di\" bpmnElement=\"SequenceFlow_1bgsav8\">\n        <omgdi:waypoint x=\"4250\" y=\"120\"/>\n        <omgdi:waypoint x=\"4345\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"StartEvent_1i1kiwa_di\" bpmnElement=\"StartEvent_1i1kiwa\">\n        <omgdc:Bounds x=\"3540\" y=\"79\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"3538\" y=\"122\" width=\"41\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1dqc6y7_di\" bpmnElement=\"SequenceFlow_1dqc6y7\">\n        <omgdi:waypoint x=\"3360\" y=\"95\"/>\n        <omgdi:waypoint x=\"3360\" y=\"-150\"/>\n        <omgdi:waypoint x=\"4370\" y=\"-150\"/>\n        <omgdi:waypoint x=\"4370\" y=\"95\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0out7yw_di\" bpmnElement=\"SequenceFlow_0out7yw\">\n        <omgdi:waypoint x=\"3576\" y=\"97\"/>\n        <omgdi:waypoint x=\"3628\" y=\"97\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_07dhbok_di\" bpmnElement=\"ScriptTask_07dhbok\">\n        <omgdc:Bounds x=\"3628\" y=\"55\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1qaj0jg_di\" bpmnElement=\"SequenceFlow_1qaj0jg\">\n        <omgdi:waypoint x=\"3712\" y=\"97\"/>\n        <omgdi:waypoint x=\"3798\" y=\"97\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_12j7ob7_di\" bpmnElement=\"ServiceTask_12j7ob7\">\n        <omgdc:Bounds x=\"3798\" y=\"55\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1gubvd6_di\" bpmnElement=\"SequenceFlow_1gubvd6\">\n        <omgdi:waypoint x=\"3882\" y=\"97\"/>\n        <omgdi:waypoint x=\"3958\" y=\"97\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_0vayzkg_di\" bpmnElement=\"ScriptTask_0vayzkg\">\n        <omgdc:Bounds x=\"3958\" y=\"55\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1m5h3tj_di\" bpmnElement=\"ExclusiveGateway_1m5h3tj\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"4105\" y=\"72\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"4113\" y=\"132\" width=\"34\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0r8tz1j_di\" bpmnElement=\"SequenceFlow_0r8tz1j\">\n        <omgdi:waypoint x=\"4042\" y=\"97\"/>\n        <omgdi:waypoint x=\"4105\" y=\"97\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"EndEvent_1awk57v_di\" bpmnElement=\"EndEvent_1awk57v\">\n        <omgdc:Bounds x=\"4192\" y=\"79\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"4200\" y=\"122\" width=\"20\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_11gbito_di\" bpmnElement=\"SequenceFlow_11gbito\">\n        <omgdi:waypoint x=\"4155\" y=\"97\"/>\n        <omgdi:waypoint x=\"4192\" y=\"97\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0lqb809_di\" bpmnElement=\"SequenceFlow_0lqb809\">\n        <omgdi:waypoint x=\"4130\" y=\"72\"/>\n        <omgdi:waypoint x=\"4130\" y=\"28\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"4108\" y=\"45\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"EndEvent_102omws_di\" bpmnElement=\"EndEvent_1no7wfo\">\n        <omgdc:Bounds x=\"4112\" y=\"-8\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"4111\" y=\"-32\" width=\"38\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"BoundaryEvent_00uxbax_di\" bpmnElement=\"BoundaryEvent_1i7v9ke\">\n        <omgdc:Bounds x=\"4112\" y=\"-78\" width=\"36\" height=\"36\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0aihp6f_di\" bpmnElement=\"SequenceFlow_0aihp6f\">\n        <omgdi:waypoint x=\"4130\" y=\"-78\"/>\n        <omgdi:waypoint x=\"4130\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6515\" y=\"-300\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_057cp9x_di\" bpmnElement=\"ExclusiveGateway_057cp9x\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"3255\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"3248\" y=\"152\" width=\"65\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1j5qjun_di\" bpmnElement=\"SequenceFlow_1j5qjun\">\n        <omgdi:waypoint x=\"3305\" y=\"120\"/>\n        <omgdi:waypoint x=\"3335\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0g87vn6_di\" bpmnElement=\"SequenceFlow_0g87vn6\">\n        <omgdi:waypoint x=\"3280\" y=\"95\"/>\n        <omgdi:waypoint x=\"3280\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6515\" y=\"-300\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"3283\" y=\"-105\" width=\"24\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_1nhv9x3_di\" bpmnElement=\"ScriptTask_1nhv9x3\">\n        <omgdc:Bounds x=\"1528\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1prpgns_di\" bpmnElement=\"SequenceFlow_1prpgns\">\n        <omgdi:waypoint x=\"1612\" y=\"120\"/>\n        <omgdi:waypoint x=\"1645\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0xknwjr_di\" bpmnElement=\"ExclusiveGateway_0xknwjr\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"2075\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"2084\" y=\"152\" width=\"33\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0x4cx9j_di\" bpmnElement=\"ExclusiveGateway_0x4cx9j\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"2265\" y=\"-155\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0c6kmne_di\" bpmnElement=\"ExclusiveGateway_0c6kmne\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"2225\" y=\"95\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0j5yut0_di\" bpmnElement=\"SequenceFlow_0j5yut0\">\n        <omgdi:waypoint x=\"2125\" y=\"120\"/>\n        <omgdi:waypoint x=\"2225\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_14mb4k2_di\" bpmnElement=\"SequenceFlow_14mb4k2\">\n        <omgdi:waypoint x=\"2275\" y=\"120\"/>\n        <omgdi:waypoint x=\"2318\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_09j6968_di\" bpmnElement=\"SequenceFlow_09j6968\">\n        <omgdi:waypoint x=\"2315\" y=\"-130\"/>\n        <omgdi:waypoint x=\"2358\" y=\"-130\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_15udx6d_di\" bpmnElement=\"SequenceFlow_15udx6d\">\n        <omgdi:waypoint x=\"2100\" y=\"95\"/>\n        <omgdi:waypoint x=\"2100\" y=\"-130\"/>\n        <omgdi:waypoint x=\"2265\" y=\"-130\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"2103\" y=\"-20\" width=\"24\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0plqrgp_di\" bpmnElement=\"ExclusiveGateway_0plqrgp\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"6515\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6526\" y=\"152\" width=\"30\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_12iqoej_di\" bpmnElement=\"SequenceFlow_12iqoej\">\n        <omgdi:waypoint x=\"6565\" y=\"120\"/>\n        <omgdi:waypoint x=\"6638\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1otl3z0_di\" bpmnElement=\"SequenceFlow_1otl3z0\">\n        <omgdi:waypoint x=\"6540\" y=\"95\"/>\n        <omgdi:waypoint x=\"6540\" y=\"-275\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"6548\" y=\"-93\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_1oleqnn_di\" bpmnElement=\"ServiceTask_1oleqnn\">\n        <omgdc:Bounds x=\"2318\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0pfzr26_di\" bpmnElement=\"SequenceFlow_0pfzr26\">\n        <omgdi:waypoint x=\"2402\" y=\"120\"/>\n        <omgdi:waypoint x=\"2448\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_1xbep11_di\" bpmnElement=\"ServiceTask_1xbep11\">\n        <omgdc:Bounds x=\"828\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_169yez2_di\" bpmnElement=\"SequenceFlow_169yez2\">\n        <omgdi:waypoint x=\"912\" y=\"120\"/>\n        <omgdi:waypoint x=\"968\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_1etsxnq_di\" bpmnElement=\"ScriptTask_1etsxnq\">\n        <omgdc:Bounds x=\"968\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0xtdngx_di\" bpmnElement=\"SequenceFlow_0xtdngx\">\n        <omgdi:waypoint x=\"1052\" y=\"120\"/>\n        <omgdi:waypoint x=\"1135\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0axed5d_di\" bpmnElement=\"ExclusiveGateway_0axed5d\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"1135\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"1136\" y=\"152\" width=\"49\" height=\"27\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1eh5w0v_di\" bpmnElement=\"SequenceFlow_1eh5w0v\">\n        <omgdi:waypoint x=\"1185\" y=\"120\"/>\n        <omgdi:waypoint x=\"1265\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_13nbzbo_di\" bpmnElement=\"SequenceFlow_13nbzbo\">\n        <omgdi:waypoint x=\"1160\" y=\"95\"/>\n        <omgdi:waypoint x=\"1160\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6515\" y=\"-300\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"1163\" y=\"-105\" width=\"24\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1rxxxa1_di\" bpmnElement=\"ExclusiveGateway_1rxxxa1\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"1985\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"1995\" y=\"155\" width=\"29\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0coqfwb_di\" bpmnElement=\"SequenceFlow_0coqfwb\">\n        <omgdi:waypoint x=\"2035\" y=\"120\"/>\n        <omgdi:waypoint x=\"2075\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"EndEvent_1o4knou_di\" bpmnElement=\"EndEvent_1o4knou\">\n        <omgdc:Bounds x=\"1992\" y=\"-168\" width=\"36\" height=\"36\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"1993\" y=\"-198\" width=\"35\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_11sann0_di\" bpmnElement=\"SequenceFlow_11sann0\">\n        <omgdi:waypoint x=\"2010\" y=\"95\"/>\n        <omgdi:waypoint x=\"2010\" y=\"-45\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"2018\" y=\"-2\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1fcablw_di\" bpmnElement=\"ExclusiveGateway_1fcablw\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"1985\" y=\"-95\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_12cakww_di\" bpmnElement=\"SequenceFlow_12cakww\">\n        <omgdi:waypoint x=\"2010\" y=\"-95\"/>\n        <omgdi:waypoint x=\"2010\" y=\"-132\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_0mntlh0_di\" bpmnElement=\"ExclusiveGateway_0mntlh0\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"1645\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"1656\" y=\"152\" width=\"29\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0729s3r_di\" bpmnElement=\"SequenceFlow_0729s3r\">\n        <omgdi:waypoint x=\"1695\" y=\"120\"/>\n        <omgdi:waypoint x=\"1738\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0wsj56s_di\" bpmnElement=\"SequenceFlow_0wsj56s\">\n        <omgdi:waypoint x=\"1670\" y=\"95\"/>\n        <omgdi:waypoint x=\"1670\" y=\"-70\"/>\n        <omgdi:waypoint x=\"1985\" y=\"-70\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"1678\" y=\"10\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1nqvpu7_di\" bpmnElement=\"ExclusiveGateway_1nqvpu7\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"4545\" y=\"95\" width=\"50\" height=\"50\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_19k1dyg_di\" bpmnElement=\"SequenceFlow_19k1dyg\">\n        <omgdi:waypoint x=\"4595\" y=\"120\"/>\n        <omgdi:waypoint x=\"4638\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_0ubaq77_di\" bpmnElement=\"ScriptTask_0ubaq77\">\n        <omgdc:Bounds x=\"4638\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0b7o332_di\" bpmnElement=\"SequenceFlow_0b7o332\">\n        <omgdi:waypoint x=\"4722\" y=\"120\"/>\n        <omgdi:waypoint x=\"4765\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_05oc3pd_di\" bpmnElement=\"ExclusiveGateway_05oc3pd\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"4765\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"4776\" y=\"152\" width=\"29\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_10jtvac_di\" bpmnElement=\"SequenceFlow_10jtvac\">\n        <omgdi:waypoint x=\"4815\" y=\"120\"/>\n        <omgdi:waypoint x=\"4858\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ServiceTask_01frnr3_di\" bpmnElement=\"ServiceTask_01frnr3\">\n        <omgdc:Bounds x=\"4858\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0i5tibq_di\" bpmnElement=\"SequenceFlow_0i5tibq\">\n        <omgdi:waypoint x=\"4942\" y=\"120\"/>\n        <omgdi:waypoint x=\"5038\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ScriptTask_0w7wy5x_di\" bpmnElement=\"ScriptTask_0w7wy5x\">\n        <omgdc:Bounds x=\"5038\" y=\"78\" width=\"84\" height=\"84\"/>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1nqw0ul_di\" bpmnElement=\"SequenceFlow_1nqw0ul\">\n        <omgdi:waypoint x=\"5122\" y=\"120\"/>\n        <omgdi:waypoint x=\"5205\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNShape id=\"ExclusiveGateway_1hqcyqv_di\" bpmnElement=\"ExclusiveGateway_1hqcyqv\" isMarkerVisible=\"true\">\n        <omgdc:Bounds x=\"5205\" y=\"95\" width=\"50\" height=\"50\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"5216\" y=\"152\" width=\"29\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0nkai8p_di\" bpmnElement=\"SequenceFlow_0nkai8p\">\n        <omgdi:waypoint x=\"5255\" y=\"120\"/>\n        <omgdi:waypoint x=\"5365\" y=\"120\"/>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_1p9hbtj_di\" bpmnElement=\"SequenceFlow_1p9hbtj\">\n        <omgdi:waypoint x=\"5230\" y=\"95\"/>\n        <omgdi:waypoint x=\"5230\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6515\" y=\"-300\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"5238\" y=\"-105\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id=\"SequenceFlow_0f406qe_di\" bpmnElement=\"SequenceFlow_0f406qe\">\n        <omgdi:waypoint x=\"4790\" y=\"95\"/>\n        <omgdi:waypoint x=\"4790\" y=\"-300\"/>\n        <omgdi:waypoint x=\"6515\" y=\"-300\"/>\n        <bpmndi:BPMNLabel>\n          <omgdc:Bounds x=\"4798\" y=\"-105\" width=\"14\" height=\"14\"/>\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNEdge>\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</definitions>",
+    "icon": "login",
+    "favorite": null,
+    "active": true,
+    "process_structure": {
+        "_id": "ml_voltura_preliminary_checks",
+        "icon": "login",
+        "name": "ML - Verifiche Preliminari Voltura",
+        "validTo": null,
+        "version": 1,
+        "favorite": null,
+        "instances": null,
+        "is_linear": false,
+        "validFrom": "2025-03-30",
+        "description": null,
+        "execute_save": true,
+        "processSteps": [
+            {
+                "name": "POD PDR input",
+                "order": 0,
+                "active": true,
+                "stepKey": "pod_input",
+                "isLastStep": false,
+                "isFirstStep": true
+            },
+            {
+                "name": "Check Allegati",
+                "order": 1,
+                "active": false,
+                "stepKey": "page_2",
+                "isLastStep": false,
+                "isFirstStep": false
+            },
+            {
+                "name": "Recap",
+                "order": 2,
+                "active": false,
+                "stepKey": "recap",
+                "isLastStep": true,
+                "isFirstStep": false
+            },
+            {
+                "name": "Recap invalid POD",
+                "active": false,
+                "stepKey": "recap_invalid_pod",
+                "isLastStep": true,
+                "isFirstStep": false
+            }
+        ],
+        "isProgressEnabled": false
+    },
+    "short_description": null,
+    "status": "published",
+    "owner_group": null,
+    "pages": [
+        {
+            "guid": "2c4f9078-e4e0-457e-ad15-952f8caa250e",
+            "created_date": "2025-03-31T09:39:17.445326",
+            "updated_date": "2026-05-27T08:59:29.756892",
+            "system_record": false,
+            "created_by": "aron.winkler@rapsodoo.com",
+            "modified_by": "sara.moretti@hoverture.com",
+            "sequence_data": "PBP-0000000163",
+            "name": "UserTask_0b3ppo4",
+            "page": {
+                "_id": {
+                    "stepkey": "UserTask_0b3ppo4",
+                    "processkey": "ml_voltura_preliminary_checks"
+                },
+                "columns": 3,
+                "entities": [],
+                "language": "",
+                "page_name": "",
+                "page_builder": [
+                    {
+                        "type": "Title",
+                        "title": "Controllo documenti",
+                        "styles": {},
+                        "sequence": 0,
+                        "unique_id": "508335-title-798186",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Section",
+                        "title": "",
+                        "styles": {},
+                        "columns": "3",
+                        "sequence": 1,
+                        "unique_id": "799937-section-062388",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 2,
+                        "unique_id": "412940-custom_field-399828",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "pod_state",
+                            "field_type": "String",
+                            "field_label": "Stato del punto",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "799937-section-062388",
+                            "entity_provider": "custom",
+                            "external_options": null,
+                            "process_variable": "",
+                            "field_external_id": "pod_state",
+                            "field_value_lookup": {
+                                "json_path": null,
+                                "value_key": null,
+                                "field_unique_id": null,
+                                "is_external_lookup": false
+                            },
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-input-text",
+                            "process_variable_value": "podPdrSupplyState",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": true,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 3,
+                        "unique_id": "057575-custom_field-397729",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "pod_address",
+                            "field_type": "String",
+                            "field_label": "Indirizzo di fornitura",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "799937-section-062388",
+                            "entity_provider": "custom",
+                            "external_options": null,
+                            "process_variable": "",
+                            "field_external_id": "pod_address",
+                            "field_value_lookup": {
+                                "json_path": null,
+                                "value_key": null,
+                                "field_unique_id": null,
+                                "is_external_lookup": false
+                            },
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-input-text",
+                            "process_variable_value": "podPdrAddress",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": true,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Section",
+                        "title": "",
+                        "styles": {},
+                        "columns": "3",
+                        "sequence": 4,
+                        "unique_id": "199122-section-837149",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 5,
+                        "unique_id": "981308-custom_field-875375",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "pod_client",
+                            "field_type": "String",
+                            "field_label": "Cliente volturato",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "199122-section-837149",
+                            "entity_provider": "custom",
+                            "external_options": null,
+                            "process_variable": "",
+                            "field_external_id": "pod_client",
+                            "field_value_lookup": {
+                                "json_path": null,
+                                "value_key": null,
+                                "field_unique_id": null,
+                                "is_external_lookup": false
+                            },
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-input-text",
+                            "process_variable_value": "podCustomerName",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": true,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 6,
+                        "unique_id": "218394-custom_field-434310",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "customer_code",
+                            "field_type": "String",
+                            "field_label": "Codice cliente volturato",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "199122-section-837149",
+                            "entity_provider": "custom",
+                            "external_options": null,
+                            "process_variable": "",
+                            "field_external_id": "customer_code",
+                            "field_value_lookup": {
+                                "json_path": null,
+                                "value_key": null,
+                                "field_unique_id": null,
+                                "is_external_lookup": false
+                            },
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-input-text",
+                            "process_variable_value": "podCustomerCode",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": true,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 7,
+                        "unique_id": "554979-custom_field-595645",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "customer_segment",
+                            "field_type": "Enum",
+                            "field_label": "Segmento customer care",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "199122-section-837149",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "podCustomerSegment",
+                            "field_external_id": "customer_segment",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "podCustomerSegment",
+                            "process_variable_options": "customerSegmentOptions",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": true,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Section",
+                        "title": "",
+                        "styles": {},
+                        "columns": "3",
+                        "sequence": 8,
+                        "unique_id": "689372-section-944861",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 9,
+                        "unique_id": "620885-custom_field-703364",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "contract_conditions_version",
+                            "field_type": "Enum",
+                            "field_label": "Versione condizioni contrattuali",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "689372-section-944861",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "contract_conditions_version",
+                            "field_external_id": "contract_conditions_version",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "contract_conditions_version",
+                            "process_variable_options": "contractConditionVersionOptions",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": true,
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Section",
+                        "title": "Verifica CTE",
+                        "styles": {},
+                        "columns": "3",
+                        "sequence": 10,
+                        "unique_id": "368625-section-995821",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 11,
+                        "unique_id": "505765-custom_field-187879",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "conformity_cte",
+                            "field_type": "Enum",
+                            "field_label": "Esito controllo CTE",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "368625-section-995821",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "conformity_cte",
+                            "field_external_id": "conformity_cte",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "",
+                            "process_variable_options": "mainConformityOptions",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": true,
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 12,
+                        "unique_id": "444695-custom_field-440100",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "cte_nonconformity_reason",
+                            "field_type": "Enum",
+                            "field_label": "Motivazione",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "368625-section-995821",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "cte_nonconformity_reason",
+                            "field_external_id": "cte_nonconformity_reason",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "cte_nonconformity_reason",
+                            "process_variable_options": "nonConformityReasonsCTE",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "505765-custom_field-187879",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": true,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "Non è presente la firma per accettazione nella sezione relativa le condizioni economiche",
+                        "styles": {
+                            "font-size": "11px"
+                        },
+                        "sequence": 13,
+                        "unique_id": "869861-title-729187",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "444695-custom_field-440100",
+                                    "value": "no_signature",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "505765-custom_field-187879",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "Le condizioni economiche firmate non sono più vendibili",
+                        "styles": {
+                            "font-size": "11px"
+                        },
+                        "sequence": 14,
+                        "unique_id": "411105-title-258562",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "444695-custom_field-440100",
+                                    "value": "wrong",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "505765-custom_field-187879",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "Nella documentazione inviata non sono presenti le Condizioni Economiche Firmate",
+                        "styles": {
+                            "font-size": "11px"
+                        },
+                        "sequence": 15,
+                        "unique_id": "291899-title-693631",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "444695-custom_field-440100",
+                                    "value": "missing",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "505765-custom_field-187879",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Section",
+                        "title": "Verifica Documento di Identità",
+                        "styles": {},
+                        "columns": "3",
+                        "sequence": 16,
+                        "unique_id": "898818-section-343875",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 17,
+                        "unique_id": "205701-custom_field-760698",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "conformity_id_doc",
+                            "field_type": "Enum",
+                            "field_label": "Esito controllo Documento d'Identità",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "898818-section-343875",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "conformity_id_doc",
+                            "field_external_id": "conformity_id_doc",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "",
+                            "process_variable_options": "mainConformityOptions",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": true,
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 18,
+                        "unique_id": "466700-custom_field-244078",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "id_doc_nonconformity_reason",
+                            "field_type": "Enum",
+                            "field_label": "Motivazione",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "898818-section-343875",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "id_doc_nonconformity_reason",
+                            "field_external_id": "id_doc_nonconformity_reason",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "id_doc_nonconformity_reason",
+                            "process_variable_options": "nonConformityReasonsIdDoc",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "205701-custom_field-760698",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": true,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "Il documento di identità non è presente tra gli allegati inviati",
+                        "styles": {
+                            "font-size": "11px"
+                        },
+                        "sequence": 19,
+                        "unique_id": "444568-title-520970",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "466700-custom_field-244078",
+                                    "value": "missing",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "205701-custom_field-760698",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "Il documento di identità è illeggibile",
+                        "styles": {
+                            "font-size": "11px"
+                        },
+                        "sequence": 20,
+                        "unique_id": "193519-title-896619",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "466700-custom_field-244078",
+                                    "value": "unreadable",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "205701-custom_field-760698",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "Il documento di identità è scaduto",
+                        "styles": {
+                            "opacity": "",
+                            "font-size": "11px"
+                        },
+                        "sequence": 21,
+                        "unique_id": "217206-title-729543",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "466700-custom_field-244078",
+                                    "value": "expired",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "205701-custom_field-760698",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Section",
+                        "title": "Verifica Atto Notarile/Contratto di Locazione",
+                        "styles": {},
+                        "columns": "3",
+                        "sequence": 22,
+                        "unique_id": "191064-section-617563",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 23,
+                        "unique_id": "638188-custom_field-398892",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "conformity_loc_doc",
+                            "field_type": "Enum",
+                            "field_label": "Esito controllo Atto Notarile/Contratto di Locazione",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "191064-section-617563",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "conformity_loc_doc",
+                            "field_external_id": "conformity_loc_doc",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "",
+                            "process_variable_options": "mainConformityOptions",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": true,
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 24,
+                        "unique_id": "345634-custom_field-914256",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "loc_doc_nonconformity_reason",
+                            "field_type": "Enum",
+                            "field_label": "Motivazione",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "191064-section-617563",
+                            "entity_provider": "custom",
+                            "external_options": {},
+                            "field_value_path": "",
+                            "process_variable": "loc_doc_nonconformity_reason",
+                            "field_external_id": "loc_doc_nonconformity_reason",
+                            "field_value_lookup": {},
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-dropdown",
+                            "process_variable_value": "loc_doc_nonconformity_reason",
+                            "process_variable_options": "nonConformityReasonsLocDoc",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "638188-custom_field-398892",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "is_value_object": false,
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": true,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "L’atto notorio\\contratto di locazione non è presente tra gli allegati inviati",
+                        "styles": {
+                            "font-size": "11px"
+                        },
+                        "sequence": 25,
+                        "unique_id": "658152-title-410570",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "345634-custom_field-914256",
+                                    "value": "missing",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "638188-custom_field-398892",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Title",
+                        "title": "Il documento di atto notorio\\contratto di locazione non è firmato",
+                        "styles": {
+                            "font-size": "11px"
+                        },
+                        "sequence": 26,
+                        "unique_id": "298767-title-227149",
+                        "validation": {
+                            "regex": "",
+                            "action": "hide",
+                            "complex": [
+                                {
+                                    "type": "validation",
+                                    "field": "345634-custom_field-914256",
+                                    "value": "no_signature",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                },
+                                {
+                                    "type": "validation",
+                                    "field": "638188-custom_field-398892",
+                                    "value": "nonconforming",
+                                    "operation": "=",
+                                    "field_or_variable": "field"
+                                }
+                            ],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "field_or_variable": "",
+                                "isNewComplexValidation": false,
+                                "isPlusConditionVisible": true,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Button",
+                        "title": "",
+                        "styles": {},
+                        "sequence": 27,
+                        "unique_id": "777877-button-320913",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        },
+                        "button_info": {
+                            "nextLabel": "Avanti",
+                            "nextStyle": {},
+                            "prevLabel": "Indietro",
+                            "prevStyle": {},
+                            "saveLabel": "Save Label",
+                            "saveStyle": {},
+                            "cancelLabel": "Annulla",
+                            "cancelStyle": {},
+                            "isNextEnabled": true,
+                            "isPrevEnabled": true,
+                            "isSaveEnabled": false,
+                            "isCancelEnabled": true
+                        }
+                    }
+                ],
+                "profile_info": "",
+                "page_unique_id": "",
+                "mongo_collection": "",
+                "generic_information": ""
+            },
+            "process_guid": "f32659ef-72d8-42c2-b78a-fe277e94fdd3",
+            "owner_group": null
+        },
+        {
+            "guid": "594e21d1-f077-4dfa-9045-f6c23f83897d",
+            "created_date": "2025-03-31T13:07:46.845843",
+            "updated_date": "2026-05-19T15:44:48.655022",
+            "system_record": false,
+            "created_by": "aron.winkler@rapsodoo.com",
+            "modified_by": "aron.winkler@rapsodoo.com",
+            "sequence_data": "PBP-0000000165",
+            "name": "UserTask_10z41k0",
+            "page": {
+                "_id": {
+                    "stepkey": "UserTask_10z41k0",
+                    "processkey": "ml_voltura_preliminary_checks"
+                },
+                "columns": 3,
+                "entities": [],
+                "language": "",
+                "page_name": "",
+                "page_builder": [
+                    {
+                        "type": "Title",
+                        "title": "Fornitura non trovata",
+                        "styles": {},
+                        "sequence": 0,
+                        "unique_id": "621266-title-885033",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Button",
+                        "title": "",
+                        "styles": {},
+                        "sequence": 1,
+                        "unique_id": "596989-button-897002",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        },
+                        "button_info": {
+                            "nextLabel": "Next Label",
+                            "nextStyle": {},
+                            "prevLabel": "Indietro",
+                            "prevStyle": {},
+                            "saveLabel": "Chiudi",
+                            "saveStyle": {},
+                            "cancelLabel": "Annulla",
+                            "cancelStyle": {},
+                            "isNextEnabled": false,
+                            "isPrevEnabled": true,
+                            "isSaveEnabled": true,
+                            "isCancelEnabled": true
+                        }
+                    }
+                ],
+                "profile_info": "",
+                "page_unique_id": "",
+                "mongo_collection": "",
+                "generic_information": ""
+            },
+            "process_guid": "f32659ef-72d8-42c2-b78a-fe277e94fdd3",
+            "owner_group": null
+        },
+        {
+            "guid": "beda84fa-c94e-499e-8ec1-e864e00b16d2",
+            "created_date": "2025-03-31T09:39:54.111355",
+            "updated_date": "2026-05-19T15:44:48.584741",
+            "system_record": false,
+            "created_by": "aron.winkler@rapsodoo.com",
+            "modified_by": "aron.winkler@rapsodoo.com",
+            "sequence_data": "PBP-0000000164",
+            "name": "UserTask_1h01e7t",
+            "page": {
+                "_id": {
+                    "stepkey": "UserTask_1h01e7t",
+                    "processkey": "ml_voltura_preliminary_checks"
+                },
+                "columns": 3,
+                "entities": [
+                    {
+                        "id": null,
+                        "name": "helpdesk.ticket",
+                        "label": "Ticket",
+                        "datamap": "helpdesk.ticket",
+                        "provider": "ODOO",
+                        "collection": "helpdesk.ticket"
+                    }
+                ],
+                "language": "",
+                "page_name": "",
+                "page_builder": [
+                    {
+                        "type": "Title",
+                        "title": "L'elaborazione è andata a buon fine",
+                        "styles": {},
+                        "sequence": 0,
+                        "unique_id": "748329-title-409107",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Button",
+                        "title": "",
+                        "styles": {},
+                        "sequence": 1,
+                        "unique_id": "702316-button-867256",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        },
+                        "button_info": {
+                            "nextLabel": "Next Label",
+                            "nextStyle": {},
+                            "prevLabel": "INDIETRO",
+                            "prevStyle": {},
+                            "saveLabel": "CHIUDI",
+                            "saveStyle": {},
+                            "cancelLabel": "ANNULLA",
+                            "cancelStyle": {},
+                            "isNextEnabled": false,
+                            "isPrevEnabled": false,
+                            "isSaveEnabled": true,
+                            "isCancelEnabled": false
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {
+                            "display": "none"
+                        },
+                        "sequence": 2,
+                        "unique_id": "541206-custom_field-667578",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "helpdesk.ticket",
+                            "field_id": null,
+                            "field_name": "contract_end_reason",
+                            "field_type": "String",
+                            "field_label": "",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "",
+                            "entity_provider": "ODOO",
+                            "external_options": null,
+                            "process_variable": "contract_end_reason",
+                            "field_external_id": "contract_end_reason",
+                            "field_value_lookup": {
+                                "json_path": null,
+                                "value_key": null,
+                                "field_unique_id": null,
+                                "is_external_lookup": false
+                            },
+                            "is_entity_external": true,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-input-text",
+                            "process_variable_value": "contract_end_reason",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {}
+                        },
+                        "validation": {
+                            "regex": null,
+                            "action": "hide",
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": true
+                            },
+                            "required": false,
+                            "operation": "AND",
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    }
+                ],
+                "profile_info": "",
+                "page_unique_id": "",
+                "mongo_collection": "",
+                "generic_information": ""
+            },
+            "process_guid": "f32659ef-72d8-42c2-b78a-fe277e94fdd3",
+            "owner_group": null
+        },
+        {
+            "guid": "6b0f58b5-6702-4bc6-bfdd-c88bc61ea53e",
+            "created_date": "2025-03-30T14:30:57.576481",
+            "updated_date": "2026-05-19T15:44:48.439342",
+            "system_record": false,
+            "created_by": "aron.winkler@rapsodoo.com",
+            "modified_by": "aron.winkler@rapsodoo.com",
+            "sequence_data": "PBP-0000000162",
+            "name": "UserTask_176nfh6",
+            "page": {
+                "_id": {
+                    "stepkey": "UserTask_176nfh6",
+                    "processkey": "ml_voltura_preliminary_checks"
+                },
+                "columns": 3,
+                "entities": [],
+                "language": "",
+                "page_name": "",
+                "page_builder": [
+                    {
+                        "type": "Title",
+                        "title": "Controllo stato POD",
+                        "styles": {},
+                        "sequence": 0,
+                        "unique_id": "267010-title-173005",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        }
+                    },
+                    {
+                        "type": "Field",
+                        "styles": {},
+                        "sequence": 1,
+                        "unique_id": "282162-custom_field-173532",
+                        "field_info": {
+                            "group": "nogroup",
+                            "entity": "custom",
+                            "field_id": null,
+                            "field_name": "pod_pdr_code",
+                            "field_type": "String",
+                            "field_label": "Codice POD/PDR",
+                            "field_value": "",
+                            "field_options": null,
+                            "field_section": "",
+                            "entity_provider": "custom",
+                            "external_options": null,
+                            "process_variable": "pod_pdr_code",
+                            "field_external_id": "pod_pdr_code",
+                            "field_value_lookup": {
+                                "json_path": null,
+                                "value_key": null,
+                                "field_unique_id": null,
+                                "is_external_lookup": false
+                            },
+                            "is_entity_external": false,
+                            "is_option_external": false,
+                            "field_visualization": "b2w-input-text",
+                            "process_variable_value": "",
+                            "field_visualization_allowed": [
+                                "b2w-date-picker",
+                                "b2w-dropdown",
+                                "b2w-textarea",
+                                "b2w-check-box",
+                                "b2w-input-text",
+                                "b2w-input-number"
+                            ],
+                            "field_visualization_properties": {
+                                "maxLength": "14",
+                                "minLength": "14"
+                            }
+                        },
+                        "validation": {
+                            "regex": null,
+                            "complex": [],
+                            "options": {
+                                "is_custom": true,
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": false,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": true,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": true,
+                            "read_only": false,
+                            "validation_message": null
+                        }
+                    },
+                    {
+                        "type": "Button",
+                        "title": "",
+                        "styles": {},
+                        "sequence": 2,
+                        "unique_id": "469101-button-360238",
+                        "validation": {
+                            "regex": "",
+                            "complex": [],
+                            "options": {
+                                "isExpansed": true,
+                                "isLookupOpen": false,
+                                "isNewComplexValidation": true,
+                                "isPlusConditionVisible": false,
+                                "showAddProcessVariables": true,
+                                "showModalExternalLookup": false,
+                                "showProcessVariablesPanel": false,
+                                "showComplexValidationPanel": false
+                            },
+                            "required": false,
+                            "read_only": false,
+                            "validation_message": ""
+                        },
+                        "button_info": {
+                            "nextLabel": "Avanti",
+                            "nextStyle": {},
+                            "prevLabel": "Prev Label",
+                            "prevStyle": {},
+                            "saveLabel": "Save Label",
+                            "saveStyle": {},
+                            "cancelLabel": "Annulla",
+                            "cancelStyle": {},
+                            "isNextEnabled": true,
+                            "isPrevEnabled": false,
+                            "isSaveEnabled": false,
+                            "isCancelEnabled": true
+                        }
+                    }
+                ],
+                "profile_info": "",
+                "page_unique_id": "",
+                "mongo_collection": "",
+                "generic_information": ""
+            },
+            "process_guid": "f32659ef-72d8-42c2-b78a-fe277e94fdd3",
+            "owner_group": null
+        }
+    ]
+}

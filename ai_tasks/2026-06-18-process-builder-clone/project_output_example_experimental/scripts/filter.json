@@ -1,0 +1,28 @@
+{
+    "filters": [
+        {
+            "product_id": "734489-custom_field-490493"
+        },
+        {
+            "pricelist_qualification": "Voltura"
+        },
+        {
+            "status": "PUBLISHED"
+        },
+        {
+            "start_validity_pricelist": {
+                "_$lte": "{{catalogDateFilter}}"
+            }
+        },
+        {
+            "end_validity_pricelist": {
+                "_$gte": "{{catalogDateFilter}}"
+            }
+        }
+    ],
+    "size": 1000000,
+    "page": 1,
+    "group_to_show": "all",
+    "catalog_guid": "{{catalog_guid}}",
+    "pricelist_guid": "{{pricelist_guid}}"
+}

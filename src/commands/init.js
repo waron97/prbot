@@ -123,6 +123,14 @@ async function init() {
                 existing.IMPORTEXPORT_URL ??
                 'https://sorgenia-test-02.symple.cloud/api/importexport/v1/',
         },
+        {
+            type: 'input',
+            name: 'PB_URL',
+            message: 'Process Builder URL:',
+            default:
+                existing.PB_URL ??
+                'https://sorgenia-test-02.symple.cloud/api/processbuilder/v1',
+        },
     ]);
 
     if (!answers.KC_PASSWORD && existing.KC_PASSWORD) {

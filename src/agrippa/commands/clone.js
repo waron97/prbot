@@ -7,8 +7,13 @@ import { getToken } from '../../lib/auth.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { toSlug, defaultMfaPath, writeCodeFile } from '../lib/workspace.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
+import { clonePb } from './clonePb.js';
 
 async function clone(opts) {
+    if (opts.pb) {
+        return clonePb(opts);
+    }
+
     const config = readConfig();
     loadEffectiveEnv(config);
 

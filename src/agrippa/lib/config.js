@@ -24,7 +24,7 @@ function loadEffectiveEnv(localConfig) {
 
     // Overlay workspace-level overrides from agrippa.yaml's agrippa: section
     const overrides = localConfig?.agrippa ?? {};
-    const keys = ['KC_URL', 'KC_USER', 'KC_PASSWORD', 'KC_ID', 'KC_SECRET', 'RIP_URL'];
+    const keys = ['KC_URL', 'KC_USER', 'KC_PASSWORD', 'KC_ID', 'KC_SECRET', 'RIP_URL', 'PB_URL'];
     for (const key of keys) {
         if (overrides[key]) {
             process.env[key] = overrides[key];

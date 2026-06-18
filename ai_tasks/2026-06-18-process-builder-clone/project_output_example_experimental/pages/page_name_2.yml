@@ -1,0 +1,90 @@
+{
+  "guid": "594e21d1-f077-4dfa-9045-f6c23f83897d",
+  "created_date": "2025-03-31T13:07:46.845843",
+  "updated_date": "2026-05-19T15:44:48.655022",
+  "system_record": false,
+  "created_by": "aron.winkler@rapsodoo.com",
+  "modified_by": "aron.winkler@rapsodoo.com",
+  "sequence_data": "PBP-0000000165",
+  "name": "UserTask_10z41k0",
+  "page": {
+    "_id": {
+      "stepkey": "UserTask_10z41k0",
+      "processkey": "ml_voltura_preliminary_checks"
+    },
+    "columns": 3,
+    "entities": [],
+    "language": "",
+    "page_name": "",
+    "page_builder": [
+      {
+        "type": "Title",
+        "title": "Fornitura non trovata",
+        "styles": {},
+        "sequence": 0,
+        "unique_id": "621266-title-885033",
+        "validation": {
+          "regex": "",
+          "complex": [],
+          "options": {
+            "isExpansed": true,
+            "isLookupOpen": false,
+            "isNewComplexValidation": true,
+            "isPlusConditionVisible": false,
+            "showAddProcessVariables": true,
+            "showModalExternalLookup": false,
+            "showProcessVariablesPanel": false,
+            "showComplexValidationPanel": false
+          },
+          "required": false,
+          "read_only": false,
+          "validation_message": ""
+        }
+      },
+      {
+        "type": "Button",
+        "title": "",
+        "styles": {},
+        "sequence": 1,
+        "unique_id": "596989-button-897002",
+        "validation": {
+          "regex": "",
+          "complex": [],
+          "options": {
+            "isExpansed": true,
+            "isLookupOpen": false,
+            "isNewComplexValidation": true,
+            "isPlusConditionVisible": false,
+            "showAddProcessVariables": true,
+            "showModalExternalLookup": false,
+            "showProcessVariablesPanel": false,
+            "showComplexValidationPanel": false
+          },
+          "required": false,
+          "read_only": false,
+          "validation_message": ""
+        },
+        "button_info": {
+          "nextLabel": "Next Label",
+          "nextStyle": {},
+          "prevLabel": "Indietro",
+          "prevStyle": {},
+          "saveLabel": "Chiudi",
+          "saveStyle": {},
+          "cancelLabel": "Annulla",
+          "cancelStyle": {},
+          "isNextEnabled": false,
+          "isPrevEnabled": true,
+          "isSaveEnabled": true,
+          "isCancelEnabled": true
+        }
+      }
+    ],
+    "profile_info": "",
+    "page_unique_id": "",
+    "mongo_collection": "",
+    "generic_information": ""
+  },
+  "process_guid": "f32659ef-72d8-42c2-b78a-fe277e94fdd3",
+  "owner_group": null
+}
