@@ -8,6 +8,7 @@ import { push } from './commands/push.js';
 import { diff } from './commands/diff.js';
 import { initPhase } from './commands/initPhase.js';
 import { repair } from './commands/repair.js';
+import { pbFormat, pbAdd, pbRemove, pbConnect, pbDisconnect, pbList, pbPreview } from './commands/pb.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../../package.json');
@@ -61,5 +62,65 @@ program
     .command('repair')
     .description('Remove stale workspace entries where local file no longer exists')
     .action(() => repair().catch((err) => { console.error(`Error: ${err.message}`); process.exit(1); }));
+
+// ---- pb: local editing helpers for a cloned process-builder wizard ----
+const die = (err) => { console.error(`Error: ${err.message}`); process.exit(1); };
+const pb = program.command('pb').description('Edit a cloned process-builder wizard (local; run `pb format` after edits)');
+
+pb
+    .command('format')
+    .description('Auto-lay-out the diagram (left→right) and rewrite geometry')
+    .option('--pb <document_id>', 'Target wizard (else single-entry / fuzzy prompt)')
+    .action((opts) => pbFormat(opts).catch(die));
+
+pb
+    .command('add')
+    .description('Add a node (scaffolds script/page); stub geometry, run format after')
+    .requiredOption('--type <type>', 'Node type: scriptTask|serviceTask|userTask|exclusiveGateway|subProcess|transaction|startEvent|endEvent|boundaryEvent')
+    .option('--name <name>', 'Node name')
+    .option('--parent <id>', 'Place inside this subProcess/transaction')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbAdd(opts).catch(die));
+
+pb
+    .command('rm')
+    .description('Remove a node, its edges, and its script/page files')
+    .requiredOption('--id <id>', 'Node id to remove')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbRemove(opts).catch(die));
+
+pb
+    .command('connect')
+    .description('Add a sequenceFlow between two nodes')
+    .requiredOption('--from <id>', 'Source node id')
+    .requiredOption('--to <id>', 'Target node id')
+    .option('--name <name>', 'Flow name (label)')
+    .option('--condition <expr>', 'Condition expression, e.g. ${isAlive}')
+    .option('--condition-type <type>', 'xsi:type for the condition (default tFormalExpression)')
+    .option('--default', 'Mark this as the source gateway default flow')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbConnect(opts).catch(die));
+
+pb
+    .command('disconnect')
+    .description('Remove a sequenceFlow by id, or by --from/--to')
+    .option('--id <id>', 'Edge id to remove')
+    .option('--from <id>', 'Source node id')
+    .option('--to <id>', 'Target node id')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbDisconnect(opts).catch(die));
+
+pb
+    .command('ls')
+    .description('List nodes and edges (discover ids without reading the YAML)')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbList(opts).catch(die));
+
+pb
+    .command('preview')
+    .description('Render the diagram to an SVG (dev check of format output)')
+    .option('--out <file>', 'Output path (default <project>/preview.svg)')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbPreview(opts).catch(die));
 
 program.parse();

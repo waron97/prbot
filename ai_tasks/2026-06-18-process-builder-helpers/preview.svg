@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1922" height="599" viewBox="0 0 1922 599" font-family="sans-serif" font-size="11">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 z" fill="#444"/></marker></defs>
+<rect width="100%" height="100%" fill="#fff"/>
+<polyline points="76,318 136,318" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="220,318 280,318" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="364,318 447,318" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1738,514 1748,514 1748,462 1798,462" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1594,82 1654,82" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1450,506 1521,506" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1450,489 1470,489 1470,288 1516,288" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1470" y="284" text-anchor="middle" fill="#666" font-size="9">err</text>
+<polyline points="1798,434 384,434 384,133 364,133" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="364,113 424,113" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="364,123 394,123 394,272 1516,272" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="394" y="268" text-anchor="middle" fill="#666" font-size="9">err</text>
+<polyline points="364,143 374,143 374,559 1460,559 1460,522 1521,522" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1460" y="555" text-anchor="middle" fill="#666" font-size="9">Invalid selection</text>
+<polyline points="1450,82 1510,82" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1450,99 1470,99 1470,255 1516,255" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1470" y="251" text-anchor="middle" fill="#666" font-size="9">err</text>
+<polyline points="1566,272 1654,272" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1571,514 1654,514" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="508,99 761,99" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1052,90 1112,90" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1196,90 1256,90" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1340,90 1400,90" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="811,90 968,90" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="811,107 918,107 918,152 1460,152 1460,263 1516,263" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1460" y="148" text-anchor="middle" fill="#666" font-size="9">error</text>
+<polyline points="497,326 518,326 518,372 696,372" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="497,309 1123,309" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1123" y="305" text-anchor="middle" fill="#666" font-size="9">err</text>
+<polyline points="780,372 991,372" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1041,381 1062,381 1062,497 1112,497" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1041,364 1062,364 1062,326 1123,326" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="1062" y="322" text-anchor="middle" fill="#666" font-size="9">err</text>
+<polyline points="1196,497 1256,497" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1340,497 1400,497" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="1173,318 1460,318 1460,280 1516,280" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>
+<polyline points="508,127 518,127 518,208 568,208" fill="none" stroke="#888" stroke-width="1" stroke-dasharray="3,3"/>
+<rect x="568" y="164" width="340" height="88" fill="#fffbe6" stroke="#d4b106"/>
+<text x="572" y="178" font-size="9">Saving through "Save" button failes due </text>
+<circle cx="58" cy="318" r="18" fill="#fff" stroke="#333" stroke-width="1.5"/>
+<text x="58" y="346" text-anchor="middle" dominant-baseline="middle">Start</text>
+<circle cx="1672" cy="82" r="18" fill="#fff" stroke="#333" stroke-width="3"/>
+<text x="1672" y="110" text-anchor="middle" dominant-baseline="middle">End</text>
+<rect x="136" y="276" width="84" height="84" rx="8" fill="#f0ffe6" stroke="#333"/>
+<text x="178" y="318" text-anchor="middle" dominant-baseline="middle">Template</text>
+<rect x="280" y="276" width="84" height="84" rx="8" fill="#fff" stroke="#333"/>
+<text x="322" y="318" text-anchor="middle" dominant-baseline="middle">Init</text>
+<rect x="1654" y="472" width="84" height="84" rx="8" fill="#e6f4ff" stroke="#333"/>
+<text x="1696" y="514" text-anchor="middle" dominant-baseline="middle">Selections</text>
+<rect x="1510" y="40" width="84" height="84" rx="8" fill="#e6f4ff" stroke="#333"/>
+<text x="1552" y="82" text-anchor="middle" dominant-baseline="middle">Save</text>
+<polygon points="1425,472 1450,497 1425,522 1400,497" fill="#fff" stroke="#333"/>
+<text x="1425" y="497" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+<text x="1425" y="532" text-anchor="middle" dominant-baseline="middle">eg err</text>
+<rect x="1798" y="406" width="84" height="84" rx="8" fill="#fff" stroke="#333"/>
+<text x="1840" y="448" text-anchor="middle" dominant-baseline="middle">Check Selections</text>
+<polygon points="339,103 364,128 339,153 314,128" fill="#fff" stroke="#333"/>
+<text x="339" y="128" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+<text x="339" y="163" text-anchor="middle" dominant-baseline="middle">eg err</text>
+<polygon points="1425,65 1450,90 1425,115 1400,90" fill="#fff" stroke="#333"/>
+<text x="1425" y="90" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+<text x="1425" y="125" text-anchor="middle" dominant-baseline="middle">eg err</text>
+<circle cx="1672" cy="272" r="18" fill="#fff" stroke="#333" stroke-width="3"/>
+<text x="1672" y="300" text-anchor="middle" dominant-baseline="middle">ERR end</text>
+<polygon points="1541,247 1566,272 1541,297 1516,272" fill="#fff" stroke="#333"/>
+<text x="1541" y="272" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+
+<polygon points="1546,489 1571,514 1546,539 1521,514" fill="#fff" stroke="#333"/>
+<text x="1546" y="514" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+
+<rect x="424" y="71" width="84" height="84" rx="8" fill="#fff" stroke="#333"/>
+<text x="466" y="113" text-anchor="middle" dominant-baseline="middle">Prep save</text>
+<rect x="968" y="48" width="84" height="84" rx="8" fill="#f0ffe6" stroke="#333"/>
+<text x="1010" y="90" text-anchor="middle" dominant-baseline="middle">Update Case</text>
+<rect x="1112" y="48" width="84" height="84" rx="8" fill="#f0ffe6" stroke="#333"/>
+<text x="1154" y="90" text-anchor="middle" dominant-baseline="middle">Set status</text>
+<rect x="1256" y="48" width="84" height="84" rx="8" fill="#fff" stroke="#333"/>
+<text x="1298" y="90" text-anchor="middle" dominant-baseline="middle">Check save</text>
+<polygon points="786,74 811,99 786,124 761,99" fill="#fff" stroke="#333"/>
+<text x="786" y="99" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+<text x="786" y="134" text-anchor="middle" dominant-baseline="middle">EG error</text>
+<polygon points="472,293 497,318 472,343 447,318" fill="#fff" stroke="#333"/>
+<text x="472" y="318" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+<text x="472" y="353" text-anchor="middle" dominant-baseline="middle">eg err</text>
+<rect x="696" y="330" width="84" height="84" rx="8" fill="#fff" stroke="#333"/>
+<text x="738" y="372" text-anchor="middle" dominant-baseline="middle">prep get points</text>
+<polygon points="1016,347 1041,372 1016,397 991,372" fill="#fff" stroke="#333"/>
+<text x="1016" y="372" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+<text x="1016" y="407" text-anchor="middle" dominant-baseline="middle">eg err</text>
+<rect x="1112" y="455" width="84" height="84" rx="8" fill="#f0ffe6" stroke="#333"/>
+<text x="1154" y="497" text-anchor="middle" dominant-baseline="middle">get points</text>
+<rect x="1256" y="455" width="84" height="84" rx="8" fill="#fff" stroke="#333"/>
+<text x="1298" y="497" text-anchor="middle" dominant-baseline="middle">check points</text>
+<polygon points="1148,293 1173,318 1148,343 1123,318" fill="#fff" stroke="#333"/>
+<text x="1148" y="318" text-anchor="middle" dominant-baseline="middle" font-size="13">&#215;</text>
+
+</svg>

@@ -376,6 +376,8 @@ export {
     stableStringify,
     localChecksum,
     enumeratePages,
+    stringifyStructure,
+    pad,
     MANIFEST_FILE,
     STRUCTURE_FILE,
     PROCESS_FILE,
