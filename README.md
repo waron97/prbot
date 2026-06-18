@@ -283,13 +283,15 @@ agrippa repair
 
 ### `agrippa pb`
 
-Local editing helpers for a **cloned process-builder wizard** (no network — they edit the decomposed files in place). Each operates on **one** wizard, resolved by `--pb <document_id>`, single-entry auto-select, or a fuzzy prompt. After structural edits, run `pb format` to assign geometry, then `agrippa push`.
+Local editing helpers for a **cloned process-builder wizard** (no network — they edit the decomposed files in place). Each operates on **one** wizard, resolved by `--pb <document_id>`, single-entry auto-select, or a fuzzy prompt.
 
-These commands exist mainly so an **AI agent** can add/remove/connect blocks without hand-editing the multi-thousand-line `structure.yaml`. Human users typically edit blocks in the UI instead. Full agent-facing guide: [`agrippa-pb.md`](agrippa-pb.md).
+These commands exist mainly so an **AI agent** can add/remove/connect blocks without hand-editing the multi-thousand-line `structure.yaml`. Human users typically edit blocks in the UI instead. Full agent-facing guide (also usable as a workspace `CLAUDE.md`): [`agrippa-pb.md`](agrippa-pb.md).
+
+Newly added blocks get placeholder geometry. `pb format` re-lays-out the **whole** diagram (discarding any hand-tuned layout), so running it is a deliberate **human decision** — the alternative is positioning the new blocks by hand in the UI. Agents are expected to make structural edits but **not** to run `format` or to `pull`/`push`; a human reviews and syncs.
 
 | Command         | Purpose                                                                              |
 | --------------- | ------------------------------------------------------------------------------------ |
-| `pb format`     | Auto-lay-out the diagram (elkjs, left→right) and rewrite node/edge geometry          |
+| `pb format`     | Re-lay-out the **entire** diagram (elkjs, left→right); overwrites existing layout    |
 | `pb add`        | Add a node (`--type`, `--name`, `--parent`); scaffolds script/page files             |
 | `pb rm`         | Remove a node (`--id`), its edges, and its script/page files                         |
 | `pb connect`    | Add a flow (`--from`, `--to`, `--condition`, `--default`); enforces the gateway rule |

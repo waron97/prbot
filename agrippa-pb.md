@@ -1,41 +1,101 @@
-# agrippa pb — agent guide to editing process-builder wizards
+# Instructions for working with Phases, MFAs, and Process-Builder wizards
 
-This document is for an **AI agent** asked to add, remove, or reconnect blocks in a
-Sorgenia process-builder wizard. Unlike phases/MFAs (which you only need to *know
-about*), for wizards you are expected to **drive the `agrippa pb` commands**.
+You are my coding assistant developing MFAs, phases, and process-builder wizards for
+our Odoo CRM. Follow instructions precisely, without doing fixes or enhancements
+outside the scope of your instructions.
 
-Use the commands for **structural** changes — they hide BPMN id generation, the
-nested-YAML graph, dangling-edge cleanup, and the script/page/manifest bookkeeping
-you would otherwise get wrong by hand. Edit the YAML directly only for **content**
-(see [What to edit by hand](#what-to-edit-by-hand)).
-
----
-
-## Mental model
-
-A wizard lives upstream as one BPMN payload. `agrippa clone --pb` **decomposes** it
-into editable files; `agrippa push` recomposes and uploads. The local files are the
-single source of truth — you never reference upstream state to rebuild.
-
-Your loop is always:
-
-```
-agrippa pb ls            # discover node/edge ids
-agrippa pb add / rm / connect / disconnect   # change the graph
-agrippa pb format        # assign geometry (REQUIRED after structural edits)
-agrippa push             # upload (saves as draft; --publish to go live)
-```
-
-**Always run `pb format` before `push`** after any `add`/`connect`. New nodes/edges
-get only stub geometry; `format` lays them out. Skipping it produces a broken diagram.
-
-Every `pb` command targets **one** wizard, resolved by `--pb <document_id>` (preferred
-for non-interactive/agent use), single-entry auto-select, or a fuzzy prompt. Always
-pass `--pb <document_id>` so you never hit an interactive prompt.
+This workspace is an **agrippa** workspace: a local checkout of Odoo code synced via
+the `agrippa` CLI. **You (the agent) never run `agrippa clone`, `agrippa pull`, or
+`agrippa push`** — those are human-only operations. You edit local files, and for
+wizards you also drive the `agrippa pb` editing commands (below). A human reviews and
+syncs.
 
 ---
 
-## Decomposed project layout
+## CRM structure
+
+### MFAs and phases
+
+The Odoo CRM uses a special module for exposing HTTP methods to the external world.
+The module name is RIP, which lets developers define "Model Function Access" records.
+Model Function Access (MFA) records contain Python code executed in `safe_eval`.
+
+Phases are `symple.triplet.phase` records tied to `helpdesk.ticket` objects.
+A helpdesk ticket has an associated `helpdesk.ticket.type`, which in turn has a
+`symple.workflow`. A workflow has a sequence of `symple.triplet.phase` that the ticket
+crosses in its lifecycle. There are many kinds of phases, but you only care about
+automatic phases that have Python code inside. In the directory structure, unless the
+current folder is named "mfa", each subdirectory is a workflow, and every Python file
+inside corresponds to a Python phase with code.
+
+For phases and MFAs you simply **edit the `.py` files** — there are no agrippa
+commands for you to run; a human clones/pulls/pushes them.
+
+### Code inside phases and MFAs
+
+The following applies to both phases and MFAs.
+
+Some global utilities are made available inside the script, such as:
+
+- `json_dumps` (from `json.dumps`)
+- `json_loads` (from `json.loads`)
+- `datetime` (root-level import from datetime)
+- `dateutil` (root-level import from dateutil)
+- `request` (from `requests.request`)
+- `log` (logging method)
+- `format_exc` (from `traceback.format_exc`)
+- `first` (from `fields.first`)
+- `case_id` (phases only — the current `helpdesk.ticket`)
+
+The value of the `result` variable is used to construct the HTTP response.
+The `make_response` helper allows returning error states, e.g.
+`result = make_response((500, 500), "Custom error message")`.
+
+Some patterns not allowed in Odoo's `safe_eval`:
+
+- f-strings
+- imports
+- lambdas inside functions (`def` inside another function is fine)
+- doc strings (you cannot write to dunder fields)
+
+Notably unavailable:
+
+- `getattr`
+- `setattr`
+
+### Communication between phases
+
+A key entity is `symple.pb.process.data`. This model stores arbitrary data (most
+commonly JSON) in the `payload` field. It also has a `get_payload` method, which gives
+you the parsed JSON it contains. Phases, MFAs and other components commonly communicate
+via this model.
+
+The key-value store (kv_store) is a special process-data record accessible via
+`case_id.kv_store()`. It gives shorthand access to a process-data record unique to each
+case. It exposes 4 methods:
+
+- `get("key")`
+- `set("key", "value")`
+- `get_many("key", "key2")` → `a, b = case_id.sudo().kv_store().get_many("a, b")`
+- `set_many({"a": 1, "b": 2})`
+
+When possible, prefer the kv_store over manually creating and searching process-data
+records.
+
+---
+
+## Process-builder wizards
+
+A wizard is a BPMN process the CRM runs as a guided flow. Locally it has been
+**decomposed** into editable files. For wizards you are expected to **drive the
+`agrippa pb` commands** for structural changes — they hide BPMN id generation, the
+nested-YAML graph, dangling-edge cleanup, and the script/page/manifest bookkeeping you
+would otherwise get wrong by hand.
+
+> **You never run `agrippa push` or `agrippa pull`.** You only edit local files and run
+> the local, read/write `agrippa pb` subcommands. A human syncs and publishes.
+
+### Decomposed project layout
 
 ```
 <wizard-dir>/
@@ -66,18 +126,27 @@ A node looks like:
 Node types: `startEvent`, `endEvent`, `boundaryEvent`, `exclusiveGateway`,
 `scriptTask`, `serviceTask`, `userTask`, `subProcess`, `transaction`.
 
----
+### Your loop
 
-## Commands
+```
+agrippa pb ls            # discover node/edge ids
+agrippa pb add / rm / connect / disconnect   # change the graph
+# STOP. Do NOT format. Do NOT push. Report back to the human (see Formatting below).
+```
 
-### `pb ls` — discover ids
+Every `pb` command targets **one** wizard. **Always pass `--pb <document_id>`** so you
+never hit an interactive prompt.
+
+### Commands
+
+#### `pb ls` — discover ids
 
 ```bash
 agrippa pb ls --pb <document_id>
 ```
 
 Flat list of every node with its id, type, name, parent (if nested), and outgoing
-edges. **Start here** to find the ids you need for the other commands. Example:
+edges. **Start here** to find the ids you need. Example:
 
 ```
 ScriptTask_0mmmti4  (scriptTask)  "Init"
@@ -89,7 +158,7 @@ ExclusiveGateway_1lghfov  (exclusiveGateway)  "eg err"
 
 `[default]` marks a gateway's default flow; `if …` shows a flow condition.
 
-### `pb add` — add a node
+#### `pb add` — add a node
 
 ```bash
 agrippa pb add --type scriptTask --name "Check pod" --pb <document_id>
@@ -100,14 +169,13 @@ agrippa pb add --type scriptTask --name "Inner" --parent SubProcess_x --pb <docu
 
 Prints the new node id. Side effects, handled for you:
 
-- `scriptTask` → creates an empty `scripts/NNNN_<slug>.js`; edit that file for the body.
-- `userTask` → creates `pages/<slug>.yml` (minimal page) + a manifest entry; on the
-  next push the page is created upstream.
+- `scriptTask` → creates an **empty** `scripts/NNNN_<slug>.js`; edit that file for the body.
+- `userTask` → creates a **stub** `pages/<slug>.yml` + a manifest entry (no page content).
 - `subProcess`/`transaction` → empty container; add children with `--parent <its-id>`.
 
-The node is added **disconnected** with stub geometry. Connect it, then `format`.
+The node is added **disconnected** with placeholder geometry. Connect it next.
 
-### `pb rm` — remove a node
+#### `pb rm` — remove a node
 
 ```bash
 agrippa pb rm --id ScriptTask_0mmmti4 --pb <document_id>
@@ -117,7 +185,7 @@ Removes the node (and, for a container, its children), **every edge pointing at 
 (from anywhere in the graph), its own outgoing edges, and its script/page files +
 manifest entries. No dangling references left behind.
 
-### `pb connect` — add a flow
+#### `pb connect` — add a flow
 
 ```bash
 # plain sequence
@@ -133,40 +201,47 @@ agrippa pb connect --from ExclusiveGateway_g --to EndEvent_err \
 ```
 
 A flow's id is printed. Conditions default to `xsi:type="tFormalExpression"`
-(override with `--condition-type`). **Gateway rule** (enforced by Activiti, warned
-by this command): an `exclusiveGateway` with more than one outgoing flow must have
+(override with `--condition-type`). **Gateway rule** (enforced by Activiti, warned by
+this command): an `exclusiveGateway` with more than one outgoing flow must have
 **exactly one** `--default` flow, and **every other** outgoing flow must carry a
 `--condition`. Heed the `!` warnings `connect` prints.
 
-### `pb disconnect` — remove a flow
+#### `pb disconnect` — remove a flow
 
 ```bash
 agrippa pb disconnect --id SequenceFlow_1lso8x0 --pb <document_id>
 agrippa pb disconnect --from ScriptTask_a --to ScriptTask_b --pb <document_id>
 ```
 
-### `pb format` — lay out the diagram
-
-```bash
-agrippa pb format --pb <document_id>
-```
-
-Recomputes all node positions (left→right: start on the left, end on the right) and
-edge routing via elkjs, including subprocess interiors. **Run this after every
-structural edit, before push.** It also re-checks the gateway rule and reports issues.
-
-### `pb preview` — visual check (dev)
+#### `pb preview` — visual check
 
 ```bash
 agrippa pb preview --pb <document_id> --out /tmp/wizard.svg
 ```
 
-Renders the current geometry to an SVG so you (or a human) can eyeball the result.
+Renders the current geometry to an SVG so a human can eyeball the result. Safe to run.
 Not byte-faithful to the real renderer — a sanity check only.
 
----
+### Formatting — a human decision, do NOT run it yourself
 
-## What to edit by hand
+`agrippa pb format` re-lays-out the **entire** wizard with an automatic algorithm.
+On an existing wizard this **discards the human's hand-tuned layout** and produces a
+drastically different diagram. That may or may not be acceptable — **only the human
+decides.**
+
+So when you have added/connected blocks, the new nodes are left with placeholder
+positions, and **you stop there**. Report to the human what you changed and that the
+new blocks need positioning, then let them choose one of:
+
+1. **Run `agrippa pb format`** themselves — accepts a full automatic re-layout of the
+   whole wizard (existing arrangement is lost), or
+2. **Position the new blocks by hand in the UI** after a human pushes the change —
+   preserving the existing layout.
+
+Never run `pb format` unless the human explicitly tells you to, with that trade-off
+understood.
+
+### What to edit by hand (vs. commands)
 
 Use the **commands** for graph structure (adding/removing nodes, wiring flows).
 Edit the **files directly** for content within an existing node:
@@ -178,12 +253,9 @@ Edit the **files directly** for content within an existing node:
 | A node's `name`, a flow's `condition`/`name`, serviceTask `fields`/`class` | edit `structure.yaml` for that node/edge |
 | Identity/flags | edit `process.yaml` |
 
-Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints` — let
-`pb format` own geometry.
+Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints`.
 
----
-
-## Recipes
+### Recipes
 
 **Append a block to the end of a linear path** (`A → End` becomes `A → New → End`):
 
@@ -192,8 +264,7 @@ agrippa pb add --type scriptTask --name "New" --pb W      # → ScriptTask_new
 agrippa pb disconnect --from A --to End --pb W
 agrippa pb connect --from A --to ScriptTask_new --pb W
 agrippa pb connect --from ScriptTask_new --to End --pb W
-agrippa pb format --pb W
-# then edit scripts/NNNN_new.js with the body
+# then edit scripts/NNNN_new.js with the body, and report back (see Formatting)
 ```
 
 **Insert a decision branch** (gateway with two conditioned exits + a default):
@@ -202,7 +273,6 @@ agrippa pb format --pb W
 agrippa pb add --type exclusiveGateway --name "alive?" --pb W   # → ExclusiveGateway_g
 agrippa pb connect --from ExclusiveGateway_g --to ScriptTask_ok  --condition '${isAlive}' --pb W
 agrippa pb connect --from ExclusiveGateway_g --to EndEvent_err --default --pb W
-agrippa pb format --pb W
 ```
 
 **Add a subprocess with an inner step:**
@@ -210,20 +280,16 @@ agrippa pb format --pb W
 ```bash
 agrippa pb add --type subProcess --name "Retry" --pb W          # → SubProcess_s
 agrippa pb add --type scriptTask --name "Attempt" --parent SubProcess_s --pb W
-agrippa pb format --pb W
 ```
 
----
+In every recipe: after the structural edits, **stop** and report — do not format, do
+not push.
 
-## Safety & validation
+### Safety
 
-- After every command the project is re-checked for recomposability; a broken edit
-  is reported with a `WARNING`.
-- `pb` commands are **local only** — nothing reaches upstream until `agrippa push`.
-- `agrippa push` saves the wizard as a **draft** and backs up the upstream payload
-  first; it goes live only when published (`agrippa push --publish`, or the prompt).
-- `agrippa pull` refreshes a wizard from upstream and will flag a `conflict` if your
-  local edits would be overwritten — it backs up local state first.
-
-When in doubt: `pb ls` to see the graph, make the change, `pb format`, `pb preview`
-to confirm, then `agrippa push`.
+- `pb` commands are **local only** — nothing reaches upstream. Syncing
+  (`clone`/`pull`/`push`) and publishing are the human's job, never yours.
+- After every command the project is re-checked for recomposability; a broken edit is
+  reported with a `WARNING`.
+- When in doubt: `pb ls` to see the graph, make the structural change, `pb preview` to
+  show the human, then hand off.
