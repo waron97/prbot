@@ -175,6 +175,75 @@ function addNode(structure, manifest, opts, ctx = {}) {
     return { writes, deletes: [], result: { id, type, file: writes && Object.keys(writes)[0] } };
 }
 
+// Add a node spliced between two already-connected nodes: there must be exactly
+// one sequenceFlow `from` → `to` already (none, or more than one, is an error —
+// ambiguous or nothing to splice). That edge (id, name, condition, default-flag
+// reference — all keyed by edge id) is kept and retargeted onto the new node; a
+// second plain edge runs new-node → `to`. `from`/`to` must share the same
+// container — boundary-crossing flows aren't auto-spliced.
+function addNodeBetween(structure, manifest, opts, ctx = {}) {
+    const { from, to, type, name } = opts;
+    if (!PREFIX[type]) throw new Error(`Unknown node type: ${type}`);
+
+    const sf = findNode(structure, from);
+    if (!sf) throw new Error(`source node not found: ${from}`);
+    const st = findNode(structure, to);
+    if (!st) throw new Error(`target node not found: ${to}`);
+
+    const sfParentId = sf.parent ? sf.parent.id : null;
+    const stParentId = st.parent ? st.parent.id : null;
+    if (sfParentId !== stParentId) {
+        throw new Error(
+            `${from} and ${to} are in different containers (boundary-crossing flow) — ` +
+                'insert not supported automatically; use `pb add` + `pb connect`/`pb disconnect` manually.'
+        );
+    }
+
+    const candidates = (sf.node.edges || []).filter((e) => e.target === to);
+    if (candidates.length !== 1) {
+        throw new Error(
+            candidates.length === 0
+                ? `no edge ${from} → ${to}; nothing to insert between.`
+                : `${candidates.length} edges ${from} → ${to} (${candidates.map((e) => e.id).join(', ')}); ` +
+                  'must be exactly one to insert between.'
+        );
+    }
+    const edge = candidates[0];
+
+    const { writes, result } = addNode(
+        structure,
+        manifest,
+        { type, name, parentId: sfParentId || undefined },
+        ctx
+    );
+    const newNode = findNode(structure, result.id).node;
+
+    edge.target = result.id;
+    edge.waypoints = [centerOf(sf.node), centerOf(newNode)];
+
+    const id2 = genId(structure, 'SequenceFlow');
+    newNode.edges = newNode.edges || [];
+    newNode.edges.push({ id: id2, target: to, waypoints: [centerOf(newNode), centerOf(st.node)] });
+
+    const warnings =
+        sf.node.type === 'exclusiveGateway'
+            ? lintGateways(structure).filter((w) => w.startsWith(from))
+            : [];
+
+    return {
+        writes,
+        deletes: [],
+        result: {
+            id: result.id,
+            type,
+            file: result.file,
+            edgeId: edge.id,
+            newEdgeId: id2,
+            warnings,
+        },
+    };
+}
+
 // ---------- remove ----------
 
 // Remove a node (and, recursively, its container children). Drops the node's own
@@ -351,6 +420,7 @@ export {
     findNode,
     genId,
     addNode,
+    addNodeBetween,
     removeNode,
     connect,
     disconnect,

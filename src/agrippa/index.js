@@ -128,6 +128,12 @@ pb.command('add')
     )
     .option('--name <name>', 'Node name')
     .option('--parent <id>', 'Place inside this subProcess/transaction')
+    .option(
+        '--from <id>',
+        'Insert between two already-connected nodes: source id (requires --to; ' +
+            'exactly one edge must already run --from → --to)'
+    )
+    .option('--to <id>', 'Insert between two already-connected nodes: target id (requires --from)')
     .option('--pb <document_id>', 'Target wizard')
     .action((opts) => pbAdd(opts).catch(die));
 

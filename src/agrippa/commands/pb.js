@@ -20,6 +20,7 @@ import { fuzzyMatch } from '../../lib/fuzzy.js';
 import { readConfig } from '../lib/config.js';
 import {
     addNode,
+    addNodeBetween,
     connect,
     disconnect,
     eachNode,
@@ -134,13 +135,41 @@ async function pbAdd(opts) {
         throw new Error(
             '--type is required (e.g. scriptTask, serviceTask, userTask, exclusiveGateway, subProcess, endEvent...)'
         );
+    if ((opts.from || opts.to) && !(opts.from && opts.to))
+        throw new Error('--from and --to must be used together');
+    if (opts.from && opts.parent)
+        throw new Error('--parent is implied by --from/--to; pass only one');
+
     const dir = await resolveProjectPath(opts);
     const { structure, manifest } = loadProject(dir);
+    const ctx = { existingScripts: listScriptFiles(dir), documentId: manifest.document_id };
+
+    if (opts.from) {
+        const { writes, result } = addNodeBetween(
+            structure,
+            manifest,
+            { from: opts.from, to: opts.to, type: opts.type, name: opts.name },
+            ctx
+        );
+        applyEffects(dir, { writes, deletes: [] });
+        saveStructure(dir, structure);
+        saveManifest(dir, manifest);
+        validate(dir);
+        console.log(
+            `Added ${result.type} ${result.id}${result.file ? ` (${result.file})` : ''} between ${opts.from} → ${opts.to}.`
+        );
+        console.log(`  ${opts.from} → ${result.id}  (${result.edgeId}, retargeted)`);
+        console.log(`  ${result.id} → ${opts.to}  (${result.newEdgeId})`);
+        for (const w of result.warnings || []) console.warn(`  ! ${w}`);
+        console.log('Run `agrippa pb format` to lay it out.');
+        return;
+    }
+
     const { writes, result } = addNode(
         structure,
         manifest,
         { type: opts.type, name: opts.name, parentId: opts.parent },
-        { existingScripts: listScriptFiles(dir), documentId: manifest.document_id }
+        ctx
     );
     applyEffects(dir, { writes, deletes: [] });
     saveStructure(dir, structure);

@@ -260,9 +260,12 @@ agrippa push --skip-publish  # never publish (no prompt)
 
 Shows a diff between local files and remote code. Optionally filter to a specific file path.
 
+For process-builder wizards, diffs the whole project tree against what the workspace would look like if the wizard were decomposed fresh from upstream right now (`.backup/` and `preview.svg` are excluded as local-only artifacts).
+
 ```bash
 agrippa diff
 agrippa diff my-workflow/some-phase.py
+agrippa diff ml_review_billing      # a cloned wizard's directory
 ```
 
 ### `agrippa init-phase`

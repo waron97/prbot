@@ -1,20 +1,28 @@
 import { spawnSync } from 'child_process';
-import { existsSync, statSync, unlinkSync, writeFileSync } from 'fs';
+import {
+    cpSync,
+    existsSync,
+    mkdirSync,
+    mkdtempSync,
+    rmSync,
+    statSync,
+    unlinkSync,
+    writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { getToken } from '../../lib/auth.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig } from '../lib/config.js';
+import { getProcess } from '../lib/pbApi.js';
+import { decompose, localChecksum } from '../lib/pbProject.js';
+import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 import { fileExists, readCodeFile } from '../lib/workspace.js';
 import { fetchRemoteCode } from './pull.js';
 
 async function diff(targetArg) {
     const config = readConfig();
     loadEffectiveEnv(config);
-
-    const ripUrl = process.env.RIP_URL;
-    if (!ripUrl)
-        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
     if (!config.workspace.length) {
         console.log('No tracked resources. Run `agrippa clone` first.');
@@ -27,13 +35,40 @@ async function diff(targetArg) {
         return;
     }
 
+    const pbEntries = entries.filter((e) => e.object_type === 'process_builder');
+    const codeEntries = entries.filter((e) => e.object_type !== 'process_builder');
+
+    if (codeEntries.length && !process.env.RIP_URL)
+        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (pbEntries.length && !process.env.PB_URL)
+        throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+
     console.log('Fetching remote code...');
     const token = await getToken();
-    const remoteCodeMap = await fetchRemoteCode(token, ripUrl, entries);
 
     let diffCount = 0;
-    const tmpFiles = [];
 
+    if (codeEntries.length) {
+        const remoteCodeMap = await fetchRemoteCode(token, process.env.RIP_URL, codeEntries);
+        diffCount += diffCodeEntries(codeEntries, remoteCodeMap);
+    }
+
+    for (const entry of pbEntries) {
+        if (await diffPbEntry(token, entry)) diffCount++;
+    }
+
+    if (diffCount === 0) {
+        console.log('No differences found — all tracked files match the remote.');
+    } else {
+        console.log(`\n${diffCount} file(s) differ from remote.`);
+    }
+}
+
+// Single-file phase/mfa code entries: write the remote body to a tmp file and
+// hand both sides to `git diff --no-index`.
+function diffCodeEntries(entries, remoteCodeMap) {
+    let diffCount = 0;
+    const tmpFiles = [];
     try {
         for (const entry of entries) {
             const key = `${entry.object_type}:${entry.id}`;
@@ -47,7 +82,6 @@ async function diff(targetArg) {
                 continue;
             }
 
-            // Write remote content to a temp file so git diff --no-index can compare
             const tmpPath = join(tmpdir(), `agrippa-remote-${entry.object_type}-${entry.id}.py`);
             writeFileSync(tmpPath, (remoteCode ?? '').trim() + '\n', 'utf-8');
             tmpFiles.push(tmpPath);
@@ -74,11 +108,48 @@ async function diff(targetArg) {
             }
         }
     }
+    return diffCount;
+}
 
-    if (diffCount === 0) {
-        console.log('No differences found — all tracked files match the remote.');
-    } else {
-        console.log(`\n${diffCount} file(s) differ from remote.`);
+// Process-builder wizard: decompose the upstream payload into a throwaway
+// project tree (exactly what re-cloning now would produce) and diff it against
+// a copy of the local project, recursively. `.backup/` and `preview.svg` are
+// local-only artifacts (push backups, dev preview render) with no upstream
+// counterpart, so they're stripped from the local copy before diffing.
+async function diffPbEntry(token, entry) {
+    const upstream = await getProcess(token, entry.guid);
+    if (!upstream) throw new Error(`could not fetch upstream wizard ${entry.guid}`);
+
+    const tmpRoot = mkdtempSync(join(tmpdir(), 'agrippa-pb-diff-'));
+    try {
+        const upstreamDir = join(tmpRoot, 'upstream');
+        const localDir = join(tmpRoot, 'local');
+        mkdirSync(upstreamDir, { recursive: true });
+        writeProject(upstreamDir, decompose(upstream).files);
+
+        cpSync(entry.path, localDir, { recursive: true });
+        rmSync(join(localDir, '.backup'), { recursive: true, force: true });
+        rmSync(join(localDir, 'preview.svg'), { force: true });
+
+        // Compare via the recompose pipeline on both sides (not raw upstream JSON
+        // vs. local): the BPMN xml is regenerated from structure.yaml on rebuild
+        // and never matches the raw upstream xml byte-for-byte even when nothing
+        // structural changed, so it'd otherwise look like a permanent false diff.
+        if (localChecksum(projectReader(upstreamDir)) === localChecksum(projectReader(localDir)))
+            return false;
+
+        console.log(`\n=== ${entry.path}  [${entry.name}] (process-builder) ===`);
+        const result = spawnSync(
+            'git',
+            ['diff', '--no-index', '--color=always', 'upstream', 'local'],
+            { cwd: tmpRoot, stdio: ['ignore', 'inherit', 'inherit'] }
+        );
+        if (result.status !== null && result.status > 1) {
+            console.error(`git diff failed for ${entry.path}`);
+        }
+        return true;
+    } finally {
+        rmSync(tmpRoot, { recursive: true, force: true });
     }
 }
 

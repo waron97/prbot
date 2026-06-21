@@ -132,6 +132,7 @@ would otherwise get wrong by hand.
 ```
 
 `structure.yaml` is large and nested. **Do not read it to find ids** — use `pb ls`.
+`agrippa-pb.json` is a massive json file. **Do not read it unless strictly required** — use `pb ls` and explore deconstructed files.
 
 A node looks like:
 
@@ -139,12 +140,12 @@ A node looks like:
 - id: ScriptTask_0mmmti4
   type: scriptTask
   name: Init
-  script: scripts/0010_init.js # ref to the body file
+  script: scripts/0010_init.js      # ref to the body file
   layout: { x: -462, y: 78, width: 84, height: 84 }
-  edges: # OUTGOING flows belong to the source node
-      - id: SequenceFlow_1lso8x0
-        target: ExclusiveGateway_1lghfov
-        waypoints: [[-378, 120], [-345, 120]]
+  edges:                            # OUTGOING flows belong to the source node
+    - id: SequenceFlow_1lso8x0
+      target: ExclusiveGateway_1lghfov
+      waypoints: [[-378, 120], [-345, 120]]
 ```
 
 Node types: `startEvent`, `endEvent`, `boundaryEvent`, `exclusiveGateway`,
@@ -198,6 +199,19 @@ Prints the new node id. Side effects, handled for you:
 - `subProcess`/`transaction` → empty container; add children with `--parent <its-id>`.
 
 The node is added **disconnected** with placeholder geometry. Connect it next.
+
+**Insert mode** — `--from <id> --to <id>` splices the new node into an existing flow
+instead of adding it disconnected:
+
+```bash
+agrippa pb add --type scriptTask --name "New" --from A --to End --pb <document_id>
+```
+
+Requires **exactly one** existing edge `A → End` already (errors if there's none, or
+more than one — ambiguous). That edge is kept (same id, name, condition, gateway
+`default` reference) and retargeted onto the new node; a second plain edge runs
+new-node → `End`. `--parent` is implied by `A`/`End`'s container, so don't pass both.
+`A`/`End` must be in the same container — it errors on boundary-crossing flows.
 
 #### `pb rm` — remove a node
 
@@ -270,26 +284,27 @@ understood.
 Use the **commands** for graph structure (adding/removing nodes, wiring flows).
 Edit the **files directly** for content within an existing node:
 
-| Change                                                                     | How                                      |
-| -------------------------------------------------------------------------- | ---------------------------------------- |
-| A scriptTask body                                                          | edit its `scripts/NNNN_*.js` file        |
-| A userTask page                                                            | edit its `pages/<formKey>.yml` file      |
+| Change | How |
+| --- | --- |
+| A scriptTask body | edit its `scripts/NNNN_*.js` file |
+| A userTask page | edit its `pages/<formKey>.yml` file |
 | A node's `name`, a flow's `condition`/`name`, serviceTask `fields`/`class` | edit `structure.yaml` for that node/edge |
-| Identity/flags                                                             | edit `process.yaml`                      |
+| Identity/flags | edit `process.yaml` |
 
 Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints`.
 
 ### Recipes
 
-**Append a block to the end of a linear path** (`A → End` becomes `A → New → End`):
+**Insert a block into an existing path** (`A → B` becomes `A → New → B`, anywhere in
+the graph, not just the end):
 
 ```bash
-agrippa pb add --type scriptTask --name "New" --pb W      # → ScriptTask_new
-agrippa pb disconnect --from A --to End --pb W
-agrippa pb connect --from A --to ScriptTask_new --pb W
-agrippa pb connect --from ScriptTask_new --to End --pb W
+agrippa pb add --type scriptTask --name "New" --from A --to B --pb W   # → ScriptTask_new
 # then edit scripts/NNNN_new.js with the body, and report back (see Formatting)
 ```
+
+Errors out instead of guessing if `A → B` doesn't have exactly one edge — fix the
+graph (`pb ls`) first if so.
 
 **Insert a decision branch** (gateway with two conditioned exits + a default):
 
@@ -317,3 +332,5 @@ not push.
   reported with a `WARNING`.
 - When in doubt: `pb ls` to see the graph, make the structural change, `pb preview` to
   show the human, then hand off.
+
+
