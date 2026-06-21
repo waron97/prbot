@@ -12,8 +12,13 @@
 //   2. Edge section coords are relative to the lowest common ancestor (LCA)
 //      container of the edge's endpoints → offset by that container's absolute
 //      origin (root → 0,0). See the LCA computation below.
-// boundaryEvents have no ELK port concept here, so they are snapped onto their
-// attached task's bottom border in a post-pass.
+// boundaryEvents are excluded from the ELK node graph and modelled as ports
+// on their attachedToRef node, which makes ELK route their outgoing edge as a
+// real hierarchy-crossing flow. ELK does NOT honour any port side/position for
+// such edges (it exits the border facing the target) and the port rectangle it
+// reports often disagrees with where the edge is actually drawn — so the
+// boundary glyph is snapped onto the edge's start point afterwards, not the
+// reported port.
 
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { CONTAINER, eachNode, SIZE } from './pbEdit.js';
@@ -38,16 +43,27 @@ function sizeOf(n) {
 }
 
 // structure node -> elk node (recursive for containers; container size omitted so
-// ELK computes it from its children).
-function toElk(n) {
+// ELK computes it from its children). boundaryEvents are skipped — they appear as
+// ports on their attachedToRef node instead (beByRef collected by the caller).
+function toElk(n, beByRef) {
+    if (n.type === 'boundaryEvent') return null;
     const en = { id: n.id };
     if (CONTAINER.has(n.type)) {
         en.layoutOptions = CONTAINER_OPTS;
-        en.children = (n.nodes || []).map(toElk);
+        en.children = (n.nodes || []).map((c) => toElk(c, beByRef)).filter(Boolean);
     } else {
         const [w, h] = sizeOf(n);
         en.width = w;
         en.height = h;
+    }
+    const bes = beByRef?.[n.id];
+    if (bes?.length) {
+        // The port exists only so ELK reserves the edge and routes it as a real
+        // hierarchy-crossing flow. ELK ignores any port side/position constraint
+        // for these edges — it always exits the border facing the target — so we
+        // don't bother setting one; the boundary glyph is later snapped onto the
+        // edge's actual start point instead (see below).
+        en.ports = bes.map((be) => ({ id: `__port_${be.id}` }));
     }
     return en;
 }
@@ -98,7 +114,16 @@ function computeHappyEdges(structure) {
 
 async function autoLayout(structure) {
     // ----- build the elk graph (all edges declared at root) -----
-    const children = (structure.nodes || []).map(toElk);
+    // boundaryEvents are removed from the node set and surfaced as ports on
+    // their attachedToRef node, so ELK routes their outgoing edges from the
+    // correct border position natively.
+    const beByRef = {};
+    eachNode(structure.nodes, null, (n) => {
+        if (n.type === 'boundaryEvent' && n.attachedToRef)
+            (beByRef[n.attachedToRef] ||= []).push(n);
+    });
+
+    const children = (structure.nodes || []).map((n) => toElk(n, beByRef)).filter(Boolean);
     for (const a of structure.annotations || []) {
         children.push({ id: a.id, width: a.layout?.width || 100, height: a.layout?.height || 30 });
     }
@@ -108,10 +133,17 @@ async function autoLayout(structure) {
     eachNode(structure.nodes, null, (n) => {
         for (const e of n.edges || []) {
             const isHappy = happyEdges.has(e.id);
+            let source = n.id;
+            let sourcePort;
+            if (n.type === 'boundaryEvent' && n.attachedToRef) {
+                source = n.attachedToRef;
+                sourcePort = `__port_${n.id}`;
+            }
             edges.push({
                 id: e.id,
-                sources: [n.id],
+                sources: [source],
                 targets: [e.target],
+                sourcePort,
                 layoutOptions: {
                     'elk.layered.priority.straightness': isHappy ? '10' : 1,
                     'elk.layered.priority.shortness': isHappy ? '10' : 1,
@@ -138,6 +170,23 @@ async function autoLayout(structure) {
         }
     };
     accumulate(res, 0, 0);
+
+    // ----- port positions (boundaryEvent ports on their attachedToRef node) -----
+    const portPos = {};
+    const accumulatePorts = (node, ox, oy) => {
+        for (const p of node.ports || []) {
+            portPos[p.id] = {
+                x: ox + (p.x || 0),
+                y: oy + (p.y || 0),
+                width: p.width || 0,
+                height: p.height || 0,
+            };
+        }
+        for (const c of node.children || []) {
+            accumulatePorts(c, ox + (c.x || 0), oy + (c.y || 0));
+        }
+    };
+    accumulatePorts(res, 0, 0);
 
     // ----- container path per node (for edge LCA offset) -----
     const pathOf = {};
@@ -190,14 +239,21 @@ async function autoLayout(structure) {
         }
     });
 
-    // boundaryEvents: snap to the attached task's bottom border (no ELK port concept)
+    // boundaryEvents: positioned from the first waypoint of their outgoing edge.
+    // With free port constraints, elkjs reports the port rect on one border but
+    // routes the edge from another, so the reported port position and the actual
+    // edge origin disagree (the glyph would detach from its own arrow). The edge
+    // section is the source of truth — its startPoint sits exactly on the
+    // attachedToRef border where the flow leaves — so we center the 36×36 glyph
+    // there. Fall back to the port rect only for a boundary event with no edge.
     eachNode(structure.nodes, null, (n) => {
         if (n.type !== 'boundaryEvent' || !n.attachedToRef) return;
-        const t = pos[n.attachedToRef];
-        if (t)
+        const wp0 = n.edges?.find((e) => e.waypoints?.length)?.waypoints[0];
+        const center = wp0 ? { x: wp0[0], y: wp0[1] } : portPos[`__port_${n.id}`];
+        if (center)
             n.layout = {
-                x: round(t.x + t.width / 2 - 18),
-                y: round(t.y + t.height - 18),
+                x: round(center.x - 18),
+                y: round(center.y - 18),
                 width: 36,
                 height: 36,
             };
