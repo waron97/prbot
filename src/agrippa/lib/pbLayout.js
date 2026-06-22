@@ -31,8 +31,11 @@ const ROOT_OPTS = {
     'elk.edgeRouting': 'ORTHOGONAL',
     'elk.hierarchyHandling': 'INCLUDE_CHILDREN',
     'elk.layered.spacing.nodeNodeBetweenLayers': '60',
-    'elk.spacing.nodeNode': '40',
+    'elk.spacing.nodeNode': '80',
     'elk.spacing.edgeNode': '20',
+    'elk.spacing.edgeEdge': '20',
+    'elk.layered.spacing.edgeEdgeBetweenLayers': '20',
+    'elk.layered.spacing.edgeNodeBetweenLayers': '20',
 };
 const CONTAINER_OPTS = { 'elk.padding': '[top=40.0,left=20.0,bottom=20.0,right=20.0]' };
 
