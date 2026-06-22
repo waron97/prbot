@@ -10,6 +10,7 @@ import {
     pbConnect,
     pbDisconnect,
     pbFormat,
+    pbLint,
     pbList,
     pbPreview,
     pbRemove,
@@ -170,6 +171,11 @@ pb.command('set-default')
     .option('--to <id>', 'Target node id')
     .option('--pb <document_id>', 'Target wizard')
     .action((opts) => pbSetDefault(opts).catch(die));
+
+pb.command('lint')
+    .description('Check diagram for structural issues (edge names, incoming-edge rules, gateway rules)')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbLint(opts).catch(die));
 
 pb.command('ls')
     .description('List nodes and edges (discover ids without reading the YAML)')

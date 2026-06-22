@@ -25,7 +25,7 @@ import {
     connect,
     disconnect,
     eachNode,
-    lintGateways,
+    lintAll,
     listGraph,
     removeNode,
     setDefault,
@@ -125,9 +125,9 @@ async function pbFormat(opts) {
     console.log(
         `Formatted ${dir} (${nodes} node(s) laid out${missing ? `, ${missing} without layout` : ''}).`
     );
-    const issues = lintGateways(structure);
+    const issues = lintAll(structure);
     if (issues.length) {
-        console.warn('Gateway issues (exclusiveGateway default/condition rule):');
+        console.warn('Diagram issues:');
         for (const w of issues) console.warn(`  ! ${w}`);
     }
 }
@@ -276,4 +276,16 @@ async function pbPreview(opts) {
     console.log(`Wrote ${out} (${svg.length} bytes).`);
 }
 
-export { pbFormat, pbAdd, pbRemove, pbConnect, pbDisconnect, pbSetDefault, pbList, pbPreview };
+async function pbLint(opts) {
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const issues = lintAll(structure);
+    if (!issues.length) {
+        console.log('No issues.');
+    } else {
+        for (const w of issues) console.warn(`  ! ${w}`);
+        process.exitCode = 1;
+    }
+}
+
+export { pbFormat, pbAdd, pbRemove, pbConnect, pbDisconnect, pbSetDefault, pbList, pbPreview, pbLint };

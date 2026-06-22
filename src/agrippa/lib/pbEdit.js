@@ -350,10 +350,9 @@ function connect(structure, { from, to, name, condition, conditionType, makeDefa
                 warnings.push(`replaced previous default flow ${prev} on ${from}.`);
         }
     }
-    // Re-check the gateway's invariant after the edit.
-    if (sf.node.type === 'exclusiveGateway') {
-        warnings.push(...lintGateways(structure).filter((w) => w.startsWith(from)));
-    }
+    // Re-check all structural invariants after the edit, scoped to affected nodes.
+    const allIssues = lintAll(structure);
+    warnings.push(...allIssues.filter((w) => w.startsWith(from) || w.startsWith(to)));
 
     return { writes: {}, deletes: [], result: { id, from, to, warnings } };
 }
@@ -423,6 +422,64 @@ function lintGateways(structure) {
     return issues;
 }
 
+// Flag non-default outgoing edges that are missing a name when a node has 2+
+// outgoing flows. In Activiti diagrams these labels are mandatory so operators
+// can distinguish branches at runtime.
+function lintEdgeNames(structure) {
+    const issues = [];
+    eachNode(structure.nodes, null, (n) => {
+        const outs = n.edges || [];
+        if (outs.length < 2) return;
+        const def = n.attrs?.default;
+        for (const e of outs) {
+            if (e.id === def) continue;
+            if (!e.name) {
+                issues.push(
+                    `${n.id} → ${e.target} (${e.id}): non-default flow has no name.`
+                );
+            }
+        }
+    });
+    return issues;
+}
+
+// Flag incoming-edge violations:
+// - Only exclusiveGateway may have >1 incoming flows.
+// - An exclusiveGateway may not have both >1 incoming AND >1 outgoing (pick one
+//   direction for merging or splitting, not both at once).
+function lintIncomingEdges(structure) {
+    const inCount = {};
+    const outCount = {};
+    eachNode(structure.nodes, null, (n) => {
+        for (const e of n.edges || []) {
+            inCount[e.target] = (inCount[e.target] || 0) + 1;
+            outCount[n.id] = (outCount[n.id] || 0) + 1;
+        }
+    });
+
+    const issues = [];
+    eachNode(structure.nodes, null, (n) => {
+        const inc = inCount[n.id] || 0;
+        const out = outCount[n.id] || 0;
+        if (inc > 1 && n.type !== 'exclusiveGateway') {
+            issues.push(
+                `${n.id} (${n.name || n.type}): only exclusiveGateway may have multiple incoming flows (has ${inc}).`
+            );
+        }
+        if (n.type === 'exclusiveGateway' && inc > 1 && out > 1) {
+            issues.push(
+                `${n.id} (${n.name || 'gateway'}): exclusiveGateway may not have both multiple incoming (${inc}) and multiple outgoing (${out}) flows.`
+            );
+        }
+    });
+    return issues;
+}
+
+// Run all lint rules and return combined issues.
+function lintAll(structure) {
+    return [...lintGateways(structure), ...lintEdgeNames(structure), ...lintIncomingEdges(structure)];
+}
+
 // Remove an edge by id, or by --from/--to pair.
 function disconnect(structure, { id, from, to }) {
     let removed = 0;
@@ -480,4 +537,7 @@ export {
     setDefault,
     listGraph,
     lintGateways,
+    lintEdgeNames,
+    lintIncomingEdges,
+    lintAll,
 };

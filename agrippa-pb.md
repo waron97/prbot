@@ -156,6 +156,7 @@ Node types: `startEvent`, `endEvent`, `boundaryEvent`, `exclusiveGateway`,
 ```
 agrippa pb ls            # discover node/edge ids
 agrippa pb add / rm / connect / disconnect / set-default   # change the graph
+agrippa pb lint          # check for structural issues before handing off
 # STOP. Do NOT format. Do NOT push. Report back to the human (see Formatting below).
 ```
 
@@ -229,20 +230,27 @@ manifest entries. No dangling references left behind.
 # plain sequence
 agrippa pb connect --from ScriptTask_a --to ScriptTask_b --pb <document_id>
 
-# gateway branch with a condition
+# named branch (required when the source has 2+ outgoing flows and this is non-default)
 agrippa pb connect --from ExclusiveGateway_g --to ScriptTask_b \
-  --condition '${isAlive}' --pb <document_id>
+  --name "alive" --condition '${isAlive}' --pb <document_id>
 
-# the gateway's fallback branch
+# the gateway's fallback branch (default needs no name)
 agrippa pb connect --from ExclusiveGateway_g --to EndEvent_err \
   --default --pb <document_id>
 ```
 
 A flow's id is printed. Conditions default to `xsi:type="tFormalExpression"`
-(override with `--condition-type`). **Gateway rule** (enforced by Activiti, warned by
-this command): an `exclusiveGateway` with more than one outgoing flow must have
-**exactly one** `--default` flow, and **every other** outgoing flow must carry a
-`--condition`. Heed the `!` warnings `connect` prints.
+(override with `--condition-type`). **Rules** (warned by this command and by `pb lint`):
+
+- An `exclusiveGateway` with more than one outgoing flow must have **exactly one**
+  `--default` flow, and **every other** outgoing flow must carry a `--condition`.
+- Any node with more than one outgoing flow: every **non-default** flow must have a
+  `--name` (operators need labels to distinguish branches at runtime).
+- Only `exclusiveGateway` may have more than one **incoming** flow.
+- An `exclusiveGateway` may not have both multiple incoming **and** multiple outgoing
+  flows — pick one direction (merging or splitting), not both.
+
+Heed the `!` warnings `connect` prints.
 
 #### `pb disconnect` — remove a flow
 
@@ -250,6 +258,22 @@ this command): an `exclusiveGateway` with more than one outgoing flow must have
 agrippa pb disconnect --id SequenceFlow_1lso8x0 --pb <document_id>
 agrippa pb disconnect --from ScriptTask_a --to ScriptTask_b --pb <document_id>
 ```
+
+#### `pb lint` — check for structural issues
+
+```bash
+agrippa pb lint --pb <document_id>
+```
+
+Runs all diagram rules and prints any violations. Exits 1 if issues found. Run after
+every batch of structural edits before handing off to a human. Rules checked:
+
+- `exclusiveGateway` default/condition rule (2+ outgoing → one default, rest conditioned)
+- Non-default outgoing flows must have a name when the source has 2+ outgoing flows
+- Only `exclusiveGateway` may have multiple incoming flows
+- `exclusiveGateway` may not have both multiple incoming and multiple outgoing flows
+
+`pb format` and `pb connect` also surface the same warnings inline.
 
 #### `pb set-default` — change a gateway's default flow
 
@@ -324,7 +348,8 @@ graph (`pb ls`) first if so.
 
 ```bash
 agrippa pb add --type exclusiveGateway --name "alive?" --pb W   # → ExclusiveGateway_g
-agrippa pb connect --from ExclusiveGateway_g --to ScriptTask_ok  --condition '${isAlive}' --pb W
+agrippa pb connect --from ExclusiveGateway_g --to ScriptTask_ok \
+  --name "alive" --condition '${isAlive}' --pb W
 agrippa pb connect --from ExclusiveGateway_g --to EndEvent_err --default --pb W
 ```
 
