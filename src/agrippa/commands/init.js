@@ -1,4 +1,11 @@
-import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'fs';
+import {
+    appendFileSync,
+    copyFileSync,
+    existsSync,
+    mkdirSync,
+    readFileSync,
+    writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import inquirer from 'inquirer';
@@ -64,6 +71,17 @@ const TYPING_FILES = [
     'b2w_entities.pyi',
 ];
 
+// The copied guidance is wrapped in these sentinels so a re-run can find the
+// managed block and refresh it in place (when agrippa-pb.md changes) without
+// touching the human's own CLAUDE.md content outside the markers.
+const PB_BEGIN = '<!-- BEGIN agrippa-pb guidance (managed by `agrippa init`) -->';
+const PB_END = '<!-- END agrippa-pb guidance -->';
+
+// Wrap the guide in the managed block.
+function pbBlock(guide) {
+    return `${PB_BEGIN}\n\n${guide.trimEnd()}\n\n${PB_END}\n`;
+}
+
 async function init() {
     if (existsSync(WORKSPACE_FILE)) {
         const { overwrite } = await inquirer.prompt([
@@ -115,6 +133,41 @@ async function init() {
             copyFileSync(join(typingsDir, file), join('typings', file));
         }
         console.log(`Copied ${TYPING_FILES.length} type stubs to typings/`);
+    }
+
+    const { importInstructions } = await inquirer.prompt([
+        {
+            type: 'confirm',
+            name: 'importInstructions',
+            message: 'Copy agrippa-pb.md guidance into local CLAUDE.md?',
+            default: true,
+        },
+    ]);
+
+    if (importInstructions) {
+        const guidePath = fileURLToPath(new URL('../../../agrippa-pb.md', import.meta.url));
+        const block = pbBlock(readFileSync(guidePath, 'utf-8'));
+        if (!existsSync('CLAUDE.md')) {
+            writeFileSync('CLAUDE.md', block, 'utf-8');
+            console.log('Created CLAUDE.md with agrippa-pb guidance');
+        } else {
+            const current = readFileSync('CLAUDE.md', 'utf-8');
+            const begin = current.indexOf(PB_BEGIN);
+            if (begin === -1) {
+                appendFileSync('CLAUDE.md', `\n${block}`, 'utf-8');
+                console.log('Appended agrippa-pb guidance to CLAUDE.md');
+            } else {
+                // Replace the existing managed block in place; leave the rest as-is.
+                const endIdx = current.indexOf(PB_END, begin);
+                if (endIdx === -1)
+                    throw new Error(
+                        'CLAUDE.md has a malformed agrippa-pb block (BEGIN without END) — fix it by hand.'
+                    );
+                const after = current.slice(endIdx + PB_END.length).replace(/^\n/, '');
+                writeFileSync('CLAUDE.md', current.slice(0, begin) + block + after, 'utf-8');
+                console.log('Refreshed agrippa-pb guidance in CLAUDE.md');
+            }
+        }
     }
 }
 

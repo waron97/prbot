@@ -36,7 +36,8 @@
     },
     "files": [
         "src/",
-        "agrippa_typings/"
+        "agrippa_typings/",
+        "agrippa-pb.md"
     ],
     "keywords": [],
     "author": "",
