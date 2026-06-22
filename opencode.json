@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+    "agent": {
+        "plan": {
+            "model": "deepseek-v4-pro",
+            "variant": "max"
+        },
+        "build": {
+            "model": "deepseek-v4-flash",
+            "variant": "high"
+        },
+        "explore": {
+            "model": "deepseek-v4-flash",
+            "variant": "low"
+        }
+    }
+}
