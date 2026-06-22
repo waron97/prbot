@@ -47,19 +47,30 @@ async function diff(targetArg) {
     const token = await getToken();
 
     let diffCount = 0;
+    const chunks = [];
 
     if (codeEntries.length) {
         const remoteCodeMap = await fetchRemoteCode(token, process.env.RIP_URL, codeEntries);
-        diffCount += diffCodeEntries(codeEntries, remoteCodeMap);
+        const { diffCount: c, chunks: cs } = diffCodeEntries(codeEntries, remoteCodeMap);
+        diffCount += c;
+        chunks.push(...cs);
     }
 
     for (const entry of pbEntries) {
-        if (await diffPbEntry(token, entry)) diffCount++;
+        const { hasDiff, chunk } = await diffPbEntry(token, entry);
+        if (hasDiff) {
+            diffCount++;
+            chunks.push(chunk);
+        }
     }
 
     if (diffCount === 0) {
         console.log('No differences found — all tracked files match the remote.');
     } else {
+        const combined = Buffer.concat(chunks);
+        const pager = process.env.PAGER || 'less';
+        const pagerArgs = pager === 'less' ? ['-R', '-F'] : [];
+        spawnSync(pager, pagerArgs, { input: combined, stdio: ['pipe', 'inherit', 'inherit'] });
         console.log(`\n${diffCount} file(s) differ from remote.`);
     }
 }
@@ -68,6 +79,7 @@ async function diff(targetArg) {
 // hand both sides to `git diff --no-index`.
 function diffCodeEntries(entries, remoteCodeMap) {
     let diffCount = 0;
+    const chunks = [];
     const tmpFiles = [];
     try {
         for (const entry of entries) {
@@ -86,17 +98,17 @@ function diffCodeEntries(entries, remoteCodeMap) {
             writeFileSync(tmpPath, (remoteCode ?? '').trim() + '\n', 'utf-8');
             tmpFiles.push(tmpPath);
 
-            console.log(`\n=== ${entry.path}  [${entry.name}] ===`);
-
             const result = spawnSync(
                 'git',
                 ['diff', '--no-index', '--color=always', tmpPath, entry.path],
-                { stdio: ['ignore', 'inherit', 'inherit'] }
+                { stdio: ['ignore', 'pipe', 'pipe'] }
             );
             // exit code 1 means differences found (normal), 0 means identical, >1 means error
             if (result.status !== null && result.status > 1) {
                 console.error(`git diff failed for ${entry.path}`);
             }
+            const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] ===\n`);
+            chunks.push(Buffer.concat([header, result.stdout ?? Buffer.alloc(0)]));
             diffCount++;
         }
     } finally {
@@ -108,7 +120,7 @@ function diffCodeEntries(entries, remoteCodeMap) {
             }
         }
     }
-    return diffCount;
+    return { diffCount, chunks };
 }
 
 // Process-builder wizard: decompose the upstream payload into a throwaway
@@ -136,18 +148,19 @@ async function diffPbEntry(token, entry) {
         // and never matches the raw upstream xml byte-for-byte even when nothing
         // structural changed, so it'd otherwise look like a permanent false diff.
         if (localChecksum(projectReader(upstreamDir)) === localChecksum(projectReader(localDir)))
-            return false;
+            return { hasDiff: false };
 
-        console.log(`\n=== ${entry.path}  [${entry.name}] (process-builder) ===`);
         const result = spawnSync(
             'git',
             ['diff', '--no-index', '--color=always', 'upstream', 'local'],
-            { cwd: tmpRoot, stdio: ['ignore', 'inherit', 'inherit'] }
+            { cwd: tmpRoot, stdio: ['ignore', 'pipe', 'pipe'] }
         );
         if (result.status !== null && result.status > 1) {
             console.error(`git diff failed for ${entry.path}`);
         }
-        return true;
+        const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] (process-builder) ===\n`);
+        const chunk = Buffer.concat([header, result.stdout ?? Buffer.alloc(0)]);
+        return { hasDiff: true, chunk };
     } finally {
         rmSync(tmpRoot, { recursive: true, force: true });
     }
