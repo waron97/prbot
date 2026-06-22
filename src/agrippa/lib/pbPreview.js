@@ -91,9 +91,11 @@ function toSvg(structure) {
             `<polyline points="${pts}" fill="none" stroke="#444" stroke-width="1.5" marker-end="url(#arrow)"/>`
         );
         if (e.name) {
-            const m = e.waypoints[Math.floor(e.waypoints.length / 2)];
+            const lp = e.labelPos;
+            const lx = lp ? lp.x + lp.width / 2 : e.waypoints[Math.floor(e.waypoints.length / 2)][0];
+            const ly = lp ? lp.y + lp.height / 2 : e.waypoints[Math.floor(e.waypoints.length / 2)][1] - 4;
             out.push(
-                `<text x="${m[0] + ox}" y="${m[1] + oy - 4}" text-anchor="middle" fill="#666" font-size="9">${esc(e.name)}</text>`
+                `<text x="${lx + ox}" y="${ly + oy}" text-anchor="middle" fill="#666" font-size="9">${esc(e.name)}</text>`
             );
         }
     }

@@ -169,6 +169,7 @@ function flattenNodes(structNodes, parentId, model, read, geo) {
             if (se.documentation !== undefined) e.documentation = se.documentation;
             if (parentId) e.parent = parentId;
             if (se.waypoints) geo.waypoints[se.id] = se.waypoints;
+            if (se.labelPos) geo.labelPos[se.id] = se.labelPos;
             model.edges.push(e);
         }
         if (sn.nodes) flattenNodes(sn.nodes, sn.id, model, read, geo);
@@ -264,7 +265,7 @@ function recompose(read) {
         annotations: structure.annotations || [],
         associations: structure.associations || [],
     };
-    const geo = { bounds: {}, waypoints: {}, expanded: {} };
+    const geo = { bounds: {}, waypoints: {}, expanded: {}, labelPos: {} };
     flattenNodes(structure.nodes, null, model, read, geo);
     // annotation/association geometry (top-level lists carry it inline)
     for (const a of model.annotations) if (a.layout) geo.bounds[a.id] = a.layout;

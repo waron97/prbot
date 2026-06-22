@@ -37,7 +37,13 @@ const ROOT_OPTS = {
     'elk.layered.spacing.edgeEdgeBetweenLayers': '20',
     'elk.layered.spacing.edgeNodeBetweenLayers': '20',
 };
-const CONTAINER_OPTS = { 'elk.padding': '[top=40.0,left=20.0,bottom=20.0,right=20.0]' };
+const CONTAINER_OPTS = {
+    'elk.padding': '[top=50.0,left=30.0,bottom=50.0,right=30.0]',
+    'elk.layered.spacing.nodeNodeBetweenLayers': '60',
+    'elk.spacing.nodeNode': '80',
+    'elk.spacing.edgeNode': '20',
+    'elk.layered.spacing.edgeNodeBetweenLayers': '20',
+};
 
 function sizeOf(n) {
     if (SIZE[n.type]) return SIZE[n.type];
@@ -147,6 +153,9 @@ async function autoLayout(structure) {
                 sources: [source],
                 targets: [e.target],
                 sourcePort,
+                labels: e.name
+                    ? [{ id: `${e.id}__lbl`, text: e.name, width: Math.min(e.name.length * 6, 140), height: 14 }]
+                    : [],
                 layoutOptions: {
                     'elk.layered.priority.straightness': isHappy ? '10' : 1,
                     'elk.layered.priority.shortness': isHappy ? '10' : 1,
@@ -237,8 +246,20 @@ async function autoLayout(structure) {
                 height: round(p.height),
             };
         for (const e of n.edges || []) {
-            const wp = waypointsFor(e.id, lcaOffset(n.id, e.target));
+            const off = lcaOffset(n.id, e.target);
+            const wp = waypointsFor(e.id, off);
             if (wp) e.waypoints = wp;
+            if (e.name) {
+                const lbl = elkEdges[e.id]?.labels?.[0];
+                if (lbl) {
+                    e.labelPos = {
+                        x: round(lbl.x + off.x),
+                        y: round(lbl.y + off.y),
+                        width: round(lbl.width),
+                        height: round(lbl.height),
+                    };
+                }
+            }
         }
     });
 

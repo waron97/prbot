@@ -353,8 +353,9 @@ function boundsAttrs(b) {
 }
 
 // Rebuild <bpmndi> purely from structure.yaml geometry (model graph + geo maps).
-// DI element ids are derived (`<id>_di`); the manifest is never consulted. Labels
-// are omitted (renderers auto-place them); only positions, sizes, waypoints and
+// DI element ids are derived (`<id>_di`); the manifest is never consulted. Node
+// labels are omitted (renderers auto-place them); edge labels use ELK-computed
+// bounds from geo.labelPos when present — only positions, sizes, waypoints and
 // subprocess expand-state are authoritative — see compareDiagram.
 function buildDiagram(model, geo) {
     if (!geo) return null;
@@ -373,10 +374,12 @@ function buildDiagram(model, geo) {
     const pushEdge = (id) => {
         const wps = geo.waypoints[id];
         if (!wps) return;
-        const pts = wps.map(([x, y]) =>
-            el('omgdi:waypoint', { '@_x': String(x), '@_y': String(y) }, [])
-        );
-        edgeEls.push(el('bpmndi:BPMNEdge', { '@_id': `${id}_di`, '@_bpmnElement': id }, pts));
+        const children = [];
+        const lp = geo.labelPos?.[id];
+        for (const [x, y] of wps)
+            children.push(el('omgdi:waypoint', { '@_x': String(x), '@_y': String(y) }, []));
+        if (lp) children.push(el('bpmndi:BPMNLabel', {}, [el('omgdc:Bounds', boundsAttrs(lp), [])]));
+        edgeEls.push(el('bpmndi:BPMNEdge', { '@_id': `${id}_di`, '@_bpmnElement': id }, children));
     };
     for (const e of model.edges) pushEdge(e.id);
     for (const a of model.associations || []) pushEdge(a.id);
