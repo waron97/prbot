@@ -155,7 +155,7 @@ Node types: `startEvent`, `endEvent`, `boundaryEvent`, `exclusiveGateway`,
 
 ```
 agrippa pb ls            # discover node/edge ids
-agrippa pb add / rm / connect / disconnect   # change the graph
+agrippa pb add / rm / connect / disconnect / set-default   # change the graph
 # STOP. Do NOT format. Do NOT push. Report back to the human (see Formatting below).
 ```
 
@@ -250,6 +250,20 @@ this command): an `exclusiveGateway` with more than one outgoing flow must have
 agrippa pb disconnect --id SequenceFlow_1lso8x0 --pb <document_id>
 agrippa pb disconnect --from ScriptTask_a --to ScriptTask_b --pb <document_id>
 ```
+
+#### `pb set-default` — change a gateway's default flow
+
+```bash
+agrippa pb set-default --id SequenceFlow_b --pb <document_id>
+agrippa pb set-default --from ExclusiveGateway_g --to EndEvent_err --pb <document_id>
+```
+
+Flips an **already-existing** flow to be its source gateway's `default`, by edge id or
+by `--from`/`--to` pair. Use this when a gateway already has a default and you want a
+different outgoing flow to become it — no need to `disconnect` and re-`connect` just to
+move the flag. The source must be an `exclusiveGateway`. Re-runs the gateway lint and
+prints any `!` warnings (e.g. a now-default flow that still carries a condition, or a
+non-default flow left without one).
 
 #### `pb preview` — visual check
 

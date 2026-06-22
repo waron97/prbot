@@ -205,7 +205,7 @@ function addNodeBetween(structure, manifest, opts, ctx = {}) {
             candidates.length === 0
                 ? `no edge ${from} → ${to}; nothing to insert between.`
                 : `${candidates.length} edges ${from} → ${to} (${candidates.map((e) => e.id).join(', ')}); ` +
-                  'must be exactly one to insert between.'
+                      'must be exactly one to insert between.'
         );
     }
     const edge = candidates[0];
@@ -342,6 +342,43 @@ function connect(structure, { from, to, name, condition, conditionType, makeDefa
     return { writes: {}, deletes: [], result: { id, from, to, warnings } };
 }
 
+// Mark an existing outgoing flow as the source gateway's default — by edge id,
+// or by --from/--to pair. The flow must already exist (use `pb connect` to add a
+// new one); this only flips the default flag, so the agent no longer has to
+// delete and re-add a connection just to change which one is default. The owner
+// must be an exclusiveGateway. Returns the previous default (if any) and a fresh
+// gateway lint as non-blocking warnings.
+function setDefault(structure, { id, from, to }) {
+    let owner = null;
+    let edge = null;
+    eachNode(structure.nodes, null, (n) => {
+        if (owner || !n.edges) return;
+        const e = id
+            ? n.edges.find((x) => x.id === id)
+            : n.id === from && n.edges.find((x) => x.target === to);
+        if (e) {
+            owner = n;
+            edge = e;
+        }
+    });
+    if (!edge) throw new Error(id ? `edge not found: ${id}` : `no edge from ${from} to ${to}`);
+    if (owner.type !== 'exclusiveGateway')
+        throw new Error(
+            `--default only applies to exclusiveGateway; ${owner.id} is ${owner.type}.`
+        );
+
+    const prev = owner.attrs?.default;
+    owner.attrs = owner.attrs || {};
+    owner.attrs.default = edge.id;
+
+    const warnings = lintGateways(structure).filter((w) => w.startsWith(owner.id));
+    return {
+        writes: {},
+        deletes: [],
+        result: { id: edge.id, from: owner.id, to: edge.target, prev, warnings },
+    };
+}
+
 // Flag exclusiveGateways that violate the default/condition rule: a gateway with
 // >1 outgoing flow needs exactly one default, and every non-default flow needs a
 // condition. Returns human-readable issue strings (empty = all good).
@@ -424,6 +461,7 @@ export {
     removeNode,
     connect,
     disconnect,
+    setDefault,
     listGraph,
     lintGateways,
 };

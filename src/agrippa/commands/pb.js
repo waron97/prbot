@@ -6,6 +6,7 @@
 //   rm          remove a node, its edges, and its script/page files
 //   connect     add a sequenceFlow between two nodes
 //   disconnect  remove a sequenceFlow
+//   set-default mark an existing flow as the source gateway's default
 //   ls          list nodes/edges (so an agent can discover ids without the YAML)
 //
 // Mutations stub geometry; run `pb format` afterwards to finalize layout. The
@@ -27,6 +28,7 @@ import {
     lintGateways,
     listGraph,
     removeNode,
+    setDefault,
 } from '../lib/pbEdit.js';
 import { autoLayout } from '../lib/pbLayout.js';
 import { toSvg } from '../lib/pbPreview.js';
@@ -228,6 +230,21 @@ async function pbDisconnect(opts) {
     console.log(`Removed ${result.removed} edge(s)${result.id ? ` (${result.id})` : ''}.`);
 }
 
+async function pbSetDefault(opts) {
+    if (!opts.id && !(opts.from && opts.to))
+        throw new Error('provide --id, or both --from and --to');
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const { result } = setDefault(structure, { id: opts.id, from: opts.from, to: opts.to });
+    saveStructure(dir, structure);
+    validate(dir);
+    console.log(
+        `Default flow on ${result.from} is now ${result.id} (→ ${result.to})` +
+            `${result.prev && result.prev !== result.id ? `, was ${result.prev}` : ''}.`
+    );
+    for (const w of result.warnings || []) console.warn(`  ! ${w}`);
+}
+
 async function pbList(opts) {
     const dir = await resolveProjectPath(opts);
     const { structure } = loadProject(dir);
@@ -259,4 +276,4 @@ async function pbPreview(opts) {
     console.log(`Wrote ${out} (${svg.length} bytes).`);
 }
 
-export { pbFormat, pbAdd, pbRemove, pbConnect, pbDisconnect, pbList, pbPreview };
+export { pbFormat, pbAdd, pbRemove, pbConnect, pbDisconnect, pbSetDefault, pbList, pbPreview };

@@ -13,6 +13,7 @@ import {
     pbList,
     pbPreview,
     pbRemove,
+    pbSetDefault,
 } from './commands/pb.js';
 import { pull } from './commands/pull.js';
 import { push } from './commands/push.js';
@@ -161,6 +162,14 @@ pb.command('disconnect')
     .option('--to <id>', 'Target node id')
     .option('--pb <document_id>', 'Target wizard')
     .action((opts) => pbDisconnect(opts).catch(die));
+
+pb.command('set-default')
+    .description("Mark an existing flow as the source gateway's default (by --id or --from/--to)")
+    .option('--id <id>', 'Edge id to mark default')
+    .option('--from <id>', 'Source gateway id')
+    .option('--to <id>', 'Target node id')
+    .option('--pb <document_id>', 'Target wizard')
+    .action((opts) => pbSetDefault(opts).catch(die));
 
 pb.command('ls')
     .description('List nodes and edges (discover ids without reading the YAML)')
