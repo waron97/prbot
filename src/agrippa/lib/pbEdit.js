@@ -44,6 +44,20 @@ const PREFIX = {
 
 const CONTAINER = new Set(['subProcess', 'transaction']);
 
+// Default attrs injected at node creation so the editor accepts them without manual edits.
+const DEFAULT_ATTRS = {
+    scriptTask: {
+        scriptFormat: 'javascript',
+        'activiti:async': 'false',
+        'activiti:exclusive': 'false',
+        'activiti:autoStoreVariables': 'false',
+    },
+    serviceTask: {
+        'activiti:async': 'false',
+        'activiti:exclusive': 'false',
+    },
+};
+
 // Depth-first visit of every node in the nested graph, with its parent node.
 function eachNode(nodes, parent, fn) {
     for (const n of nodes || []) {
@@ -160,6 +174,8 @@ function addNode(structure, manifest, opts, ctx = {}) {
         node.expanded = 'true';
         node.nodes = [];
     }
+
+    if (DEFAULT_ATTRS[type]) node.attrs = { ...DEFAULT_ATTRS[type] };
 
     if (parentId) {
         const f = findNode(structure, parentId);
