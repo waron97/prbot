@@ -5,7 +5,7 @@ import { describeWorkflow, getPhasesByIds, getPhasesByWorkflow, listMfas } from 
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
 import { getProcess } from '../lib/pbApi.js';
-import { localChecksum } from '../lib/pbProject.js';
+import { localChecksum, remoteChecksumPb } from '../lib/pbProject.js';
 import { projectReader } from '../lib/pbWorkspace.js';
 import {
     fileExists,
@@ -63,13 +63,13 @@ async function pull() {
             const localCode = readCodeFile(entry.path);
 
             const remoteChecksum = computeChecksum(remoteCode ?? '');
-            const localChecksum = computeChecksum(localCode ?? '');
+            const localChecksumVal = computeChecksum(localCode ?? '');
             const pullChecksum = entry.checksum_at_pull;
 
             let status;
-            if (pullChecksum === localChecksum && pullChecksum === remoteChecksum) {
+            if (localChecksumVal === remoteChecksum) {
                 status = 'unchanged';
-            } else if (pullChecksum === localChecksum) {
+            } else if (pullChecksum === localChecksumVal) {
                 status = 'fast-forward';
             } else {
                 status = 'conflict';
@@ -116,11 +116,10 @@ async function pull() {
 }
 
 // Refresh tracked wizards from upstream. Pull concern (inverted from push):
-// overwriting *local* edits. Status per entry from three states —
-// checksum_at_pull, current local (recomposed), upstream updated_date:
-//   unchanged    remote not advanced → nothing to bring down
-//   fast-forward remote advanced, local untouched since pull → safe overwrite
-//   conflict     remote advanced AND local diverged → overwrite loses local work
+// overwriting *local* edits. Status per entry:
+//   unchanged    local === remote semantically → nothing to do
+//   fast-forward remote changed, local untouched since pull → safe overwrite
+//   conflict     local diverged from checksum_at_pull → overwrite loses local work
 async function pullPbEntries(token, config) {
     const entries = config.workspace.filter((e) => e.object_type === 'process_builder');
     if (!entries.length) return;
@@ -140,12 +139,13 @@ async function pullPbEntries(token, config) {
             console.warn(`  ${entry.name}: could not fetch upstream, skipping`);
             continue;
         }
-        const local = localChecksum(projectReader(entry.path));
-        const localChanged = entry.checksum_at_pull !== local;
-        const remoteChanged = upstream.updated_date !== entry.updated_date;
+        const localSemantic = localChecksum(projectReader(entry.path));
+        const remoteSemantic = remoteChecksumPb(upstream);
+        const pullChecksum = entry.checksum_at_pull;
         let status;
-        if (!remoteChanged) status = 'unchanged';
-        else status = localChanged ? 'conflict' : 'fast-forward';
+        if (localSemantic === remoteSemantic) status = 'unchanged';
+        else if (pullChecksum === localSemantic) status = 'fast-forward';
+        else status = 'conflict';
         classified.push({ ...entry, upstream, status });
     }
 

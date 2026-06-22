@@ -342,6 +342,15 @@ function localChecksum(read) {
     return computeChecksum(stableStringify(recompose(read)));
 }
 
+// Semantic checksum of a remote payload. Decompose → recompose normalises field
+// order and non-semantic server-side differences, same pipeline as localChecksum
+// so the two are directly comparable.
+function remoteChecksumPb(payload) {
+    const { files } = decompose(payload);
+    const read = (p) => files[p] ?? '';
+    return computeChecksum(stableStringify(recompose(read)));
+}
+
 // Enumerate the wizard's pages from the pages/*.yml files (the authoritative
 // local set). Each page links to its userTask via `page._id.stepkey`; the
 // manifest supplies the upstream page guid (absent => a locally-added page that
@@ -379,6 +388,7 @@ export {
     verifyRoundTrip,
     stableStringify,
     localChecksum,
+    remoteChecksumPb,
     enumeratePages,
     stringifyStructure,
     pad,

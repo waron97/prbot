@@ -6,7 +6,7 @@ import { updateMfa, updatePhase } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
 import { getProcess } from '../lib/pbApi.js';
-import { localChecksum } from '../lib/pbProject.js';
+import { localChecksum, remoteChecksumPb } from '../lib/pbProject.js';
 import { projectReader } from '../lib/pbWorkspace.js';
 import { fileExists, readCodeFile } from '../lib/workspace.js';
 import { fetchRemoteCode, selectEntries } from './pull.js';
@@ -71,12 +71,12 @@ async function push(opts = {}) {
     const classified = config.workspace.map((entry) => {
         if (entry.object_type === 'process_builder') {
             const upstream = upstreamMap.get(entry.guid) ?? null;
-            const local = localChecksum(projectReader(entry.path));
-            const localChanged = entry.checksum_at_pull !== local;
-            const remoteChanged = !upstream || upstream.updated_date !== entry.updated_date;
+            const localSemantic = localChecksum(projectReader(entry.path));
+            const remoteSemantic = upstream ? remoteChecksumPb(upstream) : null;
+            const pullChecksum = entry.checksum_at_pull;
             let status;
-            if (!localChanged && !remoteChanged) status = 'unchanged';
-            else if (!remoteChanged) status = 'fast-forward';
+            if (localSemantic === remoteSemantic) status = 'unchanged';
+            else if (pullChecksum === remoteSemantic) status = 'fast-forward';
             else status = 'conflict';
             return { ...entry, upstream, status };
         }
@@ -88,8 +88,7 @@ async function push(opts = {}) {
         const localChecksumVal = computeChecksum(localCode ?? '');
         const pullChecksum = entry.checksum_at_pull;
         let status;
-        if (pullChecksum === localChecksumVal && pullChecksum === remoteChecksum)
-            status = 'unchanged';
+        if (localChecksumVal === remoteChecksum) status = 'unchanged';
         else if (pullChecksum === remoteChecksum) status = 'fast-forward';
         else status = 'conflict';
         return { ...entry, remoteCode, localCode, status };
