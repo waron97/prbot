@@ -57,35 +57,85 @@ match the result whose `next_phase` is X and use its `code_values`.
 
 ### Code inside phases and MFAs
 
-The following applies to both phases and MFAs.
+Phases and MFAs both run stored Python through Odoo 15 `safe_eval` (mode `exec`), but
+they run in **different environments with different globals**. The shared sandbox rules
+come first; the per-environment globals follow.
 
-Some global utilities are made available inside the script, such as:
+#### Shared sandbox rules (apply to both)
 
-- `json_dumps` (from `json.dumps`)
-- `json_loads` (from `json.loads`)
-- `datetime` (root-level import from datetime)
-- `dateutil` (root-level import from dateutil)
-- `request` (from `requests.request`)
-- `log` (logging method)
-- `format_exc` (from `traceback.format_exc`)
-- `first` (from `fields.first`)
-- `case_id` (phases only — the current `helpdesk.ticket`)
+Patterns **not allowed** by `safe_eval`:
 
-The value of the `result` variable is used to construct the HTTP response.
-The `make_response` helper allows returning error states, e.g.
-`result = make_response((500, 500), "Custom error message")`.
+- **`import`** — forbidden outright.
+- **f-strings** — do not use them; use `"...{}".format(...)` instead. (The current
+  runtime's opcode whitelist technically permits them, but team convention and observed
+  failures mean you must avoid them.)
+- **attribute assignment** (`obj.attr = x`) — forbidden (`STORE_ATTR` is blocked). You
+  cannot set attributes; write through the ORM (`record.write({...})`) instead.
+- **dunder names** — any name containing `__` (e.g. `__class__`) is rejected. This is why
+  you cannot write doc strings.
+- **`getattr` / `setattr` / `eval`** — not in the builtins, so unavailable.
 
-Some patterns not allowed in Odoo's `safe_eval`:
+Patterns that **are** allowed (but with a sharp limit):
 
-- f-strings
-- imports
-- lambdas inside functions (`def` inside another function is fine)
-- doc strings (you cannot write to dunder fields)
+- **lambdas and nested `def` are creatable, but cannot form closures.** A lambda/nested
+  function may reference only its **own parameters, module globals** (`env` etc.) **and
+  constants**. It must **not** capture a variable from the enclosing function — the
+  closure-cell opcodes (`LOAD_DEREF`/`STORE_DEREF`/`LOAD_CLOSURE`/`MAKE_CELL`) are not
+  whitelisted, so a closure fails validation.
+    - ✅ works: `recs.filtered(lambda r: r.wizard_result == "CANCEL")` — no captured locals
+    - ❌ fails: `recs.filtered(lambda r: r.x == target)` — `target` is an enclosing local
+    - In practice nested functions are rarely usable, since they almost always close over
+      local state. Self-contained `.filtered(lambda r: ...)` predicates are the common
+      legitimate use and appear throughout real phase code.
 
-Notably unavailable:
+#### Phase environment (`symple.triplet.phase`)
 
-- `getattr`
-- `setattr`
+Phase code runs against a full Odoo "server action" context. Globals available:
+
+- `env` — the **full Odoo ORM** (`env["model"].sudo().search/create/write/browse`)
+- `case_id` — the current `helpdesk.ticket`
+- `Command` — x2many command namespace
+- `ValidationError` — raise to abort with a warning
+- `request` (= `requests.request`), for outbound HTTP
+- `json_dumps` (= `json.dumps`), `json_load` (= `json.load` — note: **not** `json_loads`)
+- `time`, `datetime`, `dateutil`, `timezone`, `float_compare`, `OrderedDict`
+- `b64encode`, `b64decode`
+- `log(message, level='info')`, `format_exc` (= `traceback.format_exc`), `first`
+  (= `fields.first`), `uid`, `user`
+
+There is **no** `make_response` in phases.
+
+**Returning a result:** assign `result` as a **string** — it must match one of the phase's
+`code_values` in `workflow.yml` (e.g. `result = "RES1"`). It is **not** a dict. The string
+is matched against `result.code.configurator` to pick the outgoing edge.
+
+**Reporting errors:** write the message onto the case, conventionally
+`case_id.write({"info_message": "..."})` (`error_message` also exists but `info_message`
+is the prevailing choice).
+
+**Case helpers** (defined on `helpdesk.ticket` in `sorgenia_tools`):
+
+- `case_id.kv_store()` — the per-case key/value store (see below).
+- `case_id.last_staging("<process_name>")` — returns the latest
+  `symple.pb.process.data` for that process on the case, raising `ValidationError` if
+  none exists. Prefer this over searching `symple.pb.process.data` by hand.
+
+#### MFA environment (RIP)
+
+MFA code runs to build an HTTP response, with a much smaller context. Globals available:
+
+- `env` — the Odoo ORM
+- `make_response` — build a response, e.g.
+  `result = make_response((500, 500), "Custom error message")`
+- `logger` — a standard Python logger
+- `result` — assign the response payload (a recordset or JSON-serialisable content); it
+  is consumed to construct the HTTP response
+- the incoming request data: `method`, `model`, `records`, `user`, `args`, `headers`,
+  `body`, `httprequest`
+- `datetime`, `dateutil`
+
+MFAs have **no** `case_id`, `Command`, `ValidationError`, `json_dumps`, `first`, `log`,
+or `format_exc` by default.
 
 ### Communication between phases
 
