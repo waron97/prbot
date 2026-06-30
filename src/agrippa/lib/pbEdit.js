@@ -14,6 +14,7 @@
 
 import { stringify as yamlStringify } from 'yaml';
 import { pad, toSlug } from './pbProject.js';
+import { SCRIPT_TEMPLATE } from './pbScriptTemplate.js';
 
 // Fixed element sizes (measured across all fixtures). Containers are sized by
 // the layout engine; we seed a small default so a stubbed clone stays valid.
@@ -126,7 +127,7 @@ function nextScriptSeq(existingScriptFiles) {
 
 // ---------- add ----------
 
-// Add a node. For scriptTask, scaffolds an empty script file and refs it. For
+// Add a node. For scriptTask, scaffolds a templated script file and refs it. For
 // userTask, scaffolds a minimal page file + a manifest page entry (guid=null →
 // push will create it upstream). Container nodes start empty + expanded.
 function addNode(structure, manifest, opts, ctx = {}) {
@@ -144,7 +145,7 @@ function addNode(structure, manifest, opts, ctx = {}) {
     if (type === 'scriptTask') {
         const seq = nextScriptSeq(ctx.existingScripts);
         const file = `scripts/${pad(seq)}_${toSlug(name || id)}.js`;
-        writes[file] = '';
+        writes[file] = SCRIPT_TEMPLATE;
         node.script = file;
     } else if (type === 'userTask') {
         const formKey = toSlug(name || id);
