@@ -100,27 +100,26 @@ async function initPhase() {
         return;
     }
 
-    const phase = await search({
-        message: 'Select a phase:',
-        source: (input) => {
-            const filtered = input ? phases.filter((p) => fuzzyMatch(p.name, input)) : phases;
-            return filtered.map((p) => ({ name: p.name, value: p }));
+    const { selectedPhases } = await inquirer.prompt([
+        {
+            type: 'checkbox',
+            name: 'selectedPhases',
+            message: 'Select phases to initialize:',
+            choices: phases.map((p) => ({ name: p.name, value: p })),
+            loop: false,
         },
-    });
+    ]);
 
-    // Resolve result objects — API may return IDs or full objects
-    let results = phase.allowed_phase_result_ids || [];
-    if (results.length > 0 && typeof results[0] === 'number') {
-        results = await getPhaseResults(token, ripUrl, results);
+    if (!selectedPhases.length) {
+        console.log('No phases selected. Aborted.');
+        return;
     }
-
-    const code = generateCode(results);
 
     const { confirm } = await inquirer.prompt([
         {
             type: 'confirm',
             name: 'confirm',
-            message: `Initialize phase "${phase.name}"? This will overwrite existing code.`,
+            message: `Initialize ${selectedPhases.length} phase(s)? This will overwrite existing code.`,
             default: true,
         },
     ]);
@@ -130,29 +129,40 @@ async function initPhase() {
         return;
     }
 
-    // Delete existing configurator records for this phase
-    const existing = await getPhaseConfigurators(token, ripUrl, phase.id);
-    for (const cfg of existing) {
-        await deleteConfigurator(token, ripUrl, cfg.id);
+    for (const phase of selectedPhases) {
+        // Resolve result objects — API may return IDs or full objects
+        let results = phase.allowed_phase_result_ids || [];
+        if (results.length > 0 && typeof results[0] === 'number') {
+            results = await getPhaseResults(token, ripUrl, results);
+        }
+
+        const code = generateCode(results);
+
+        // Delete existing configurator records for this phase
+        const existing = await getPhaseConfigurators(token, ripUrl, phase.id);
+        for (const cfg of existing) {
+            await deleteConfigurator(token, ripUrl, cfg.id);
+        }
+
+        // Update phase code + set_result_automatically
+        await initPhaseRemote(token, ripUrl, phase.id, code);
+
+        // Create new configurator records for each result
+        const vars = results.map((_, i) => `RES${i + 1}`);
+        for (let i = 0; i < results.length; i++) {
+            await createConfigurator(token, ripUrl, {
+                result_value: vars[i],
+                code_phase_id: phase.id,
+                triplet_phase_result_id: results[i].id,
+            });
+        }
+
+        console.log(`Initialized phase "${phase.name}".`);
+        if (results.length > 0) {
+            console.log(`  ${results.length} configurator(s) created: ${vars.join(', ')}`);
+        }
     }
 
-    // Update phase code + set_result_automatically
-    await initPhaseRemote(token, ripUrl, phase.id, code);
-
-    // Create new configurator records for each result
-    const vars = results.map((_, i) => `RES${i + 1}`);
-    for (let i = 0; i < results.length; i++) {
-        await createConfigurator(token, ripUrl, {
-            result_value: vars[i],
-            code_phase_id: phase.id,
-            triplet_phase_result_id: results[i].id,
-        });
-    }
-
-    console.log(`Initialized phase "${phase.name}".`);
-    if (results.length > 0) {
-        console.log(`  ${results.length} configurator(s) created: ${vars.join(', ')}`);
-    }
     console.log(
         `Run 'agrippa pull' in workspaces that track this workflow to fetch the updated code.`
     );
