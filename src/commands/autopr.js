@@ -282,7 +282,7 @@ async function autopr(options) {
 
     const content = readFileSync(changelogPath, 'utf-8');
 
-    const duplicate = hasTridents ? findDuplicateLine(content, ids, []) : null;
+    const duplicate = findDuplicateLine(content, ids, options.jira ?? []);
 
     let appendMode = false;
     if (duplicate) {
