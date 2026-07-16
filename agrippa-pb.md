@@ -1,14 +1,14 @@
-# Instructions for working with Phases, MFAs, and Process-Builder wizards
+# Instructions for working with Phases, MFAs, Process-Builder wizards, and LRPs
 
-You are my coding assistant developing MFAs, phases, and process-builder wizards for
-our Odoo CRM. Follow instructions precisely, without doing fixes or enhancements
-outside the scope of your instructions.
+You are my coding assistant developing MFAs, phases, process-builder wizards, and
+long-running processes (LRPs) for our Odoo CRM. Follow instructions precisely, without
+doing fixes or enhancements outside the scope of your instructions.
 
 This workspace is an **agrippa** workspace: a local checkout of Odoo code synced via
 the `agrippa` CLI. **You (the agent) never run `agrippa clone`, `agrippa pull`, or
 `agrippa push`** — those are human-only operations. You edit local files, and for
-wizards you also drive the `agrippa pb` editing commands (below). A human reviews and
-syncs.
+wizards and LRPs you also drive the `agrippa pb` editing commands (below). A human
+reviews and syncs.
 
 ---
 
@@ -158,26 +158,42 @@ records.
 
 ---
 
-## Process-builder wizards
+## Process-builder wizards and long-running processes (LRPs)
 
-A wizard is a BPMN process the CRM runs as a guided flow. Locally it has been
-**decomposed** into editable files. For wizards you are expected to **drive the
-`agrippa pb` commands** for structural changes — they hide BPMN id generation, the
-nested-YAML graph, dangling-edge cleanup, and the script/page/manifest bookkeeping you
-would otherwise get wrong by hand.
+A wizard or LRP is a BPMN process the CRM runs as a guided flow (wizards) or a
+long-running background process (LRPs). Both are the **same underlying Activiti/
+Symphony BPMN XML**, so locally they share **one** decomposed layout and one `pb`
+editing suite — everything below applies to both unless a difference is called out.
+For wizards/LRPs you are expected to **drive the `agrippa pb` commands** for
+structural changes — they hide BPMN id generation, the nested-YAML graph,
+dangling-edge cleanup, and the script/page/manifest bookkeeping you would otherwise
+get wrong by hand.
+
+**LRP-specific differences:**
+
+- **No pages.** LRPs never contain `userTask`. `pb add --type userTask` errors out on
+  an LRP project.
+- **Selector is `name`, not `document_id`.** LRPs have no stable id — the Symphony id
+  changes on every save — so `--pb <name>` (not a `document_id`) is how you target an
+  LRP project. `pb ls`/error messages show `name` when `document_id` is absent.
+- **A few extra node types show up more often**: `intermediateCatchEvent`,
+  `intermediateThrowEvent`, `callActivity`, `parallelGateway`, `eventBasedGateway` (see
+  Node types below) — these exist for PBs too but are common in LRPs.
+- Publishing is called **deploy** for LRPs (same human-only `agrippa push
+  --publish`/`--skip-publish` flow as wizard publish — not a `pb` command).
 
 > **You never run `agrippa push` or `agrippa pull`.** You only edit local files and run
-> the local, read/write `agrippa pb` subcommands. A human syncs and publishes.
+> the local, read/write `agrippa pb` subcommands. A human syncs and publishes/deploys.
 
 ### Decomposed project layout
 
 ```
-<wizard-dir>/
+<wizard-or-lrp-dir>/
   process.yaml      identity + top-level flags (envelope)
   structure.yaml    THE graph: nodes hold their outgoing `edges` and nested
                     `nodes` (for subProcess/transaction); inline geometry
   scripts/NNNN_*.js one scriptTask body each (byte-exact)
-  pages/<formKey>.yml one userTask page object each
+  pages/<formKey>.yml one userTask page object each (PB only — LRPs have no pages/)
   .agrippa-pb.json  manifest: scalars, namespaces, id↔file maps (do not hand-edit)
 ```
 
@@ -199,7 +215,9 @@ A node looks like:
 ```
 
 Node types: `startEvent`, `endEvent`, `boundaryEvent`, `exclusiveGateway`,
-`scriptTask`, `serviceTask`, `userTask`, `subProcess`, `transaction`.
+`scriptTask`, `serviceTask`, `userTask` (PB only), `subProcess`, `transaction`,
+`intermediateCatchEvent`, `intermediateThrowEvent`, `callActivity`,
+`parallelGateway`, `eventBasedGateway`.
 
 ### Your loop
 
@@ -210,7 +228,8 @@ agrippa pb lint          # check for structural issues before handing off
 # STOP. Do NOT format. Do NOT push. Report back to the human (see Formatting below).
 ```
 
-Every `pb` command targets **one** wizard. **Always pass `--pb <document_id>`** so you
+Every `pb` command targets **one** wizard or LRP. **Always pass
+`--pb <document_id_or_name>`** (a wizard's `document_id`, or an LRP's `name`) so you
 never hit an interactive prompt.
 
 ### Commands
@@ -218,7 +237,7 @@ never hit an interactive prompt.
 #### `pb ls` — discover ids
 
 ```bash
-agrippa pb ls --pb <document_id>
+agrippa pb ls --pb <document_id_or_name>
 ```
 
 Flat list of every node with its id, type, name, parent (if nested), and outgoing
@@ -237,17 +256,21 @@ ExclusiveGateway_1lghfov  (exclusiveGateway)  "eg err"
 #### `pb add` — add a node
 
 ```bash
-agrippa pb add --type scriptTask --name "Check pod" --pb <document_id>
-agrippa pb add --type userTask   --name "Review"    --pb <document_id>
-agrippa pb add --type subProcess --name "Retry loop" --pb <document_id>
-agrippa pb add --type scriptTask --name "Inner" --parent SubProcess_x --pb <document_id>
+agrippa pb add --type scriptTask --name "Check pod" --pb <document_id_or_name>
+agrippa pb add --type userTask   --name "Review"    --pb <document_id_or_name>
+agrippa pb add --type subProcess --name "Retry loop" --pb <document_id_or_name>
+agrippa pb add --type scriptTask --name "Inner" --parent SubProcess_x --pb <document_id_or_name>
 ```
 
 Prints the new node id. Side effects, handled for you:
 
 - `scriptTask` → creates an **empty** `scripts/NNNN_<slug>.js`; edit that file for the body.
 - `userTask` → creates a **stub** `pages/<slug>.yml` + a manifest entry (no page content).
+  **PB only** — rejected with an error on an LRP project (LRPs have no user tasks).
 - `subProcess`/`transaction` → empty container; add children with `--parent <its-id>`.
+- new event/gateway types (`intermediateCatchEvent`, `intermediateThrowEvent`,
+  `callActivity`, `parallelGateway`, `eventBasedGateway`) → sized/laid out like their
+  closest existing counterpart, no extra scaffold files.
 
 The node is added **disconnected** with placeholder geometry. Connect it next.
 
@@ -255,7 +278,7 @@ The node is added **disconnected** with placeholder geometry. Connect it next.
 instead of adding it disconnected:
 
 ```bash
-agrippa pb add --type scriptTask --name "New" --from A --to End --pb <document_id>
+agrippa pb add --type scriptTask --name "New" --from A --to End --pb <document_id_or_name>
 ```
 
 Requires **exactly one** existing edge `A → End` already (errors if there's none, or
@@ -267,7 +290,7 @@ new-node → `End`. `--parent` is implied by `A`/`End`'s container, so don't pas
 #### `pb rm` — remove a node
 
 ```bash
-agrippa pb rm --id ScriptTask_0mmmti4 --pb <document_id>
+agrippa pb rm --id ScriptTask_0mmmti4 --pb <document_id_or_name>
 ```
 
 Removes the node (and, for a container, its children), **every edge pointing at it**
@@ -278,15 +301,15 @@ manifest entries. No dangling references left behind.
 
 ```bash
 # plain sequence
-agrippa pb connect --from ScriptTask_a --to ScriptTask_b --pb <document_id>
+agrippa pb connect --from ScriptTask_a --to ScriptTask_b --pb <document_id_or_name>
 
 # named branch (required when the source has 2+ outgoing flows and this is non-default)
 agrippa pb connect --from ExclusiveGateway_g --to ScriptTask_b \
-  --name "alive" --condition '${isAlive}' --pb <document_id>
+  --name "alive" --condition '${isAlive}' --pb <document_id_or_name>
 
 # the gateway's fallback branch (default needs no name)
 agrippa pb connect --from ExclusiveGateway_g --to EndEvent_err \
-  --default --pb <document_id>
+  --default --pb <document_id_or_name>
 ```
 
 A flow's id is printed. Conditions default to `xsi:type="tFormalExpression"`
@@ -305,14 +328,14 @@ Heed the `!` warnings `connect` prints.
 #### `pb disconnect` — remove a flow
 
 ```bash
-agrippa pb disconnect --id SequenceFlow_1lso8x0 --pb <document_id>
-agrippa pb disconnect --from ScriptTask_a --to ScriptTask_b --pb <document_id>
+agrippa pb disconnect --id SequenceFlow_1lso8x0 --pb <document_id_or_name>
+agrippa pb disconnect --from ScriptTask_a --to ScriptTask_b --pb <document_id_or_name>
 ```
 
 #### `pb lint` — check for structural issues
 
 ```bash
-agrippa pb lint --pb <document_id>
+agrippa pb lint --pb <document_id_or_name>
 ```
 
 Runs all diagram rules and prints any violations. Exits 1 if issues found. Run after
@@ -328,8 +351,8 @@ every batch of structural edits before handing off to a human. Rules checked:
 #### `pb set-default` — change a gateway's default flow
 
 ```bash
-agrippa pb set-default --id SequenceFlow_b --pb <document_id>
-agrippa pb set-default --from ExclusiveGateway_g --to EndEvent_err --pb <document_id>
+agrippa pb set-default --id SequenceFlow_b --pb <document_id_or_name>
+agrippa pb set-default --from ExclusiveGateway_g --to EndEvent_err --pb <document_id_or_name>
 ```
 
 Flips an **already-existing** flow to be its source gateway's `default`, by edge id or
@@ -342,7 +365,7 @@ non-default flow left without one).
 #### `pb preview` — visual check
 
 ```bash
-agrippa pb preview --pb <document_id> --out /tmp/wizard.svg
+agrippa pb preview --pb <document_id_or_name> --out /tmp/wizard.svg
 ```
 
 Renders the current geometry to an SVG so a human can eyeball the result. Safe to run.
@@ -350,8 +373,8 @@ Not byte-faithful to the real renderer — a sanity check only.
 
 ### Formatting — a human decision, do NOT run it yourself
 
-`agrippa pb format` re-lays-out the **entire** wizard with an automatic algorithm.
-On an existing wizard this **discards the human's hand-tuned layout** and produces a
+`agrippa pb format` re-lays-out the **entire** wizard/LRP with an automatic algorithm.
+On an existing project this **discards the human's hand-tuned layout** and produces a
 drastically different diagram. That may or may not be acceptable — **only the human
 decides.**
 
@@ -360,9 +383,9 @@ positions, and **you stop there**. Report to the human what you changed and that
 new blocks need positioning, then let them choose one of:
 
 1. **Run `agrippa pb format`** themselves — accepts a full automatic re-layout of the
-   whole wizard (existing arrangement is lost), or
-2. **Position the new blocks by hand in the UI** after a human pushes the change —
-   preserving the existing layout.
+   whole project (existing arrangement is lost), or
+2. **Position the new blocks by hand in the UI** after a human pushes/deploys the
+   change — preserving the existing layout.
 
 Never run `pb format` unless the human explicitly tells you to, with that trade-off
 understood.

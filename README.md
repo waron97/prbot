@@ -194,7 +194,7 @@ prbot update
 
 ## agrippa
 
-Syncs Odoo workflow phase Python code and MFA records between the local filesystem and the RIP API. Tracks changes via checksums and detects conflicts before overwriting.
+Syncs Odoo workflow phase Python code, MFA records, process-builder wizards, and long-running processes (LRPs) between the local filesystem and the RIP / Process Builder / Symphony APIs. Tracks changes via checksums and detects conflicts before overwriting.
 
 Credentials are inherited from the global prbot config (`~/.config/prbot/config`). Override per-workspace in `agrippa.yaml`.
 
@@ -208,9 +208,9 @@ agrippa init
 
 ### `agrippa clone`
 
-Clones all `from_code` phases for a selected workflow, a single MFA, or a **process-builder wizard**, into the workspace. Writes files to disk and registers them in `agrippa.yaml`. With no flag, prompts for the object type (MFA / Phase / Process Builder).
+Clones all `from_code` phases for a selected workflow, a single MFA, a **process-builder wizard**, or a **long-running process (LRP)**, into the workspace. Writes files to disk and registers them in `agrippa.yaml`. With no flag, prompts for the object type (MFA / Phase / Process Builder / Long Running Process).
 
-A wizard is downloaded and **decomposed** into editable files (`structure.yaml`, `process.yaml`, `scripts/`, `pages/`, manifest); see [`agrippa pb`](#agrippa-pb) and [`agrippa-pb.md`](agrippa-pb.md).
+A wizard or LRP is downloaded and **decomposed** into editable files (`structure.yaml`, `process.yaml`, `scripts/`, `pages/`, manifest) — LRPs share the same layout minus `pages/` (LRPs have no user tasks); see [`agrippa pb`](#agrippa-pb) and [`agrippa-pb.md`](agrippa-pb.md).
 
 ```bash
 agrippa clone
@@ -219,18 +219,21 @@ agrippa clone --mfa
 agrippa clone --phase --id 123 --path my-workflow/
 agrippa clone --pb                          # select a wizard
 agrippa clone --pb --name ml_review_billing --path my-wizard/
+agrippa clone --lrp                         # live search LRPs by name
+agrippa clone --lrp --name B2WA_ml_IFS_passive_trigger --path my-lrp/
 ```
 
 Options:
 
-| Flag                   | Description                                                   |
-| ---------------------- | ------------------------------------------------------------- |
-| `--phase`              | Clone a phase (select a workflow)                             |
-| `--mfa`                | Clone an MFA record                                           |
-| `--pb`                 | Clone a process-builder wizard                                |
-| `--id <id>`            | Skip selection, clone by ID (phase/mfa)                       |
-| `--name <document_id>` | Skip selection, clone a wizard by `document_id` (with `--pb`) |
-| `--path <path>`        | Destination path (base dir for phases/wizard, file for MFA)   |
+| Flag              | Description                                                                |
+| ----------------- | --------------------------------------------------------------------------- |
+| `--phase`         | Clone a phase (select a workflow)                                          |
+| `--mfa`           | Clone an MFA record                                                        |
+| `--pb`            | Clone a process-builder wizard                                             |
+| `--lrp`           | Clone a long-running process                                               |
+| `--id <id>`       | Skip selection, clone by ID (phase/mfa)                                    |
+| `--name <name>`   | Skip selection: `document_id` (with `--pb`) or process name (with `--lrp`) |
+| `--path <path>`   | Destination path (base dir for phases/wizard/lrp, file for MFA)            |
 
 ### `agrippa pull`
 
@@ -238,7 +241,7 @@ Fetches remote code for all tracked entries and shows what changed. Classifies e
 
 After pulling, also checks tracked workflows for newly added `from_code` phases and auto-clones any not yet present locally.
 
-Tracked **process-builder wizards** are also refreshed from upstream: the local project is re-decomposed from the latest payload (orphan script/page files pruned), with the same `fast-forward`/`conflict` classification (based on the wizard's upstream `updated_date` vs. the last pulled state). The current local state is backed up to `.backup/<timestamp>/<path>/local.json` first.
+Tracked **process-builder wizards** and **long-running processes** are also refreshed from upstream: the local project is re-decomposed from the latest payload (orphan script files pruned; PB wizards also prune orphan pages), with the same `fast-forward`/`conflict` classification (PB: upstream `updated_date`; LRP: re-resolved-by-name payload checksum vs. the last pulled state — LRPs have no stable id, so every pull re-resolves the current id/tenantId by name first). The current local state is backed up to `.backup/<timestamp>/<path>/local.json` first.
 
 ```bash
 agrippa pull
@@ -246,14 +249,14 @@ agrippa pull
 
 ### `agrippa push`
 
-Pushes local file changes back to RIP (phases/MFAs) and to the Process Builder API (wizards). Backs up current remote state to `.backup/<timestamp>/` before overwriting. Same conflict detection as pull, with the concern inverted.
+Pushes local file changes back to RIP (phases/MFAs), the Process Builder API (wizards), and Symphony (long-running processes). Backs up current remote state to `.backup/<timestamp>/` before overwriting. Same conflict detection as pull, with the concern inverted. LRP entries are located by **name**, not id (the Symphony id changes on every save), re-resolving the current id/tenantId immediately before saving.
 
-Pushing a wizard saves it as a **draft**; publish it so live consumers see the change with `--publish` (auto) or answer the prompt. Page edits (`pages/`) are saved independently of the whole-wizard save, mirroring the UI.
+Pushing a wizard saves it as a **draft**; publish it so live consumers see the change with `--publish` (auto) or answer the prompt. Page edits (`pages/`) are saved independently of the whole-wizard save, mirroring the UI. Pushing an LRP saves the BPMN via Symphony's `tabulator` PATCH; **deploy** it (the LRP analog of publish) the same way — `--publish`/`--skip-publish` double as auto-deploy/never-deploy for LRPs too.
 
 ```bash
-agrippa push                 # prompts whether to publish each pushed wizard
-agrippa push --publish       # auto-publish pushed wizards
-agrippa push --skip-publish  # never publish (no prompt)
+agrippa push                 # prompts whether to publish/deploy each pushed wizard/LRP
+agrippa push --publish       # auto-publish wizards, auto-deploy LRPs
+agrippa push --skip-publish  # never publish/deploy (no prompt)
 ```
 
 ### `agrippa diff [path]`
@@ -286,7 +289,7 @@ agrippa repair
 
 ### `agrippa pb`
 
-Local editing helpers for a **cloned process-builder wizard** (no network — they edit the decomposed files in place). Each operates on **one** wizard, resolved by `--pb <document_id>`, single-entry auto-select, or a fuzzy prompt.
+Local editing helpers for a **cloned process-builder wizard or long-running process** (no network — they edit the decomposed files in place; both share the same decomposed layout and BPMN engine). Each operates on **one** wizard/LRP, resolved by `--pb <document_id_or_name>` (name for LRPs, since they have no `document_id`), single-entry auto-select, or a fuzzy prompt.
 
 These commands exist mainly so an **AI agent** can add/remove/connect blocks without hand-editing the multi-thousand-line `structure.yaml`. Human users typically edit blocks in the UI instead. Full agent-facing guide (also usable as a workspace `CLAUDE.md`): [`agrippa-pb.md`](agrippa-pb.md).
 
@@ -307,4 +310,9 @@ agrippa pb ls --pb ml_review_billing
 agrippa pb add --type scriptTask --name "Check pod" --pb ml_review_billing
 agrippa pb connect --from ScriptTask_x --to ExclusiveGateway_y --pb ml_review_billing
 agrippa pb format --pb ml_review_billing
+
+agrippa pb ls --pb B2WA_ml_IFS_passive_trigger        # LRP, resolved by name
+agrippa pb add --type serviceTask --name "Call SAP" --pb B2WA_ml_IFS_passive_trigger
 ```
+
+`userTask` (pages) can't be added to an LRP project — LRPs never have user tasks.
