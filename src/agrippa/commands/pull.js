@@ -4,6 +4,7 @@ import { getToken } from '../../lib/auth.js';
 import { describeWorkflow, getPhasesByIds, getPhasesByWorkflow, listMfas } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
+import { fetchUpstream } from '../lib/lrpApi.js';
 import { getProcess } from '../lib/pbApi.js';
 import { localChecksum, remoteChecksumPb } from '../lib/pbProject.js';
 import { projectReader } from '../lib/pbWorkspace.js';
@@ -14,6 +15,7 @@ import {
     writeCodeFile,
     writeWorkflowDoc,
 } from '../lib/workspace.js';
+import { pullLrpEntry } from './pullLrp.js';
 import { pullPbEntry } from './pullPb.js';
 
 async function pull() {
@@ -50,9 +52,11 @@ async function pull() {
     const changedWorkflowIds = new Set();
 
     // ── pull existing tracked entries ─────────────────────────────────────────
-    // process_builder wizards are refreshed separately (different checksum model);
-    // see pullPbEntries below.
-    const pullable = config.workspace.filter((e) => e.object_type !== 'process_builder');
+    // process_builder wizards and LRPs are refreshed separately (different
+    // checksum/identity model); see pullPbEntries/pullLrpEntries below.
+    const pullable = config.workspace.filter(
+        (e) => e.object_type !== 'process_builder' && e.object_type !== 'long_running_process'
+    );
     if (pullable.length) {
         console.log('Fetching remote code...');
         const remoteCodeMap = await fetchRemoteCode(token, ripUrl, pullable);
@@ -110,6 +114,9 @@ async function pull() {
 
     // ── refresh tracked process-builder wizards ───────────────────────────────
     await pullPbEntries(token, config);
+
+    // ── refresh tracked long-running processes ────────────────────────────────
+    await pullLrpEntries(token, config);
 
     // ── discover new phases on tracked workflows ──────────────────────────────
     await discoverNewPhases(token, ripUrl, config, changedWorkflowIds);
@@ -177,6 +184,75 @@ async function pullPbEntries(token, config) {
     }
     writeConfig(config);
     console.log(`\nPulled ${selected.length} wizard(s). Local backups in .backup/${backupTs}/`);
+}
+
+// Refresh tracked long-running processes from upstream. Same classification
+// concern as pullPbEntries, but entries are located by NAME (the tabulator id
+// changes on every save/version — never a stable key).
+async function pullLrpEntries(token, config) {
+    const entries = config.workspace.filter((e) => e.object_type === 'long_running_process');
+    if (!entries.length) return;
+    if (!process.env.IMPORTEXPORT_URL)
+        throw new Error(
+            'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
+        );
+
+    console.log('Checking long-running processes...');
+    const classified = [];
+    for (const entry of entries) {
+        let upstream = null;
+        try {
+            upstream = await fetchUpstream(token, entry.name);
+        } catch {
+            upstream = null;
+        }
+        if (!upstream) {
+            console.warn(`  ${entry.name}: could not fetch upstream, skipping`);
+            continue;
+        }
+        const localSemantic = localChecksum(projectReader(entry.path));
+        const remoteSemantic = remoteChecksumPb(upstream.payload);
+        const pullChecksum = entry.checksum_at_pull;
+        let status;
+        if (localSemantic === remoteSemantic) status = 'unchanged';
+        else if (pullChecksum === localSemantic) status = 'fast-forward';
+        else status = 'conflict';
+        classified.push({ ...entry, upstream, status });
+    }
+
+    const changed = classified.filter((e) => e.status !== 'unchanged');
+    if (!changed.length) {
+        console.log('Long-running processes are up to date.');
+        return;
+    }
+
+    const selected = await selectEntries(changed, 'pull (overwrites local LRP files)');
+    if (!selected.length) {
+        console.log('No long-running processes selected.');
+        return;
+    }
+
+    const backupTs = new Date().toISOString().replace(/:/g, '-').replace('T', '_').slice(0, 19);
+    for (const entry of selected) {
+        const res = await pullLrpEntry(token, entry, '.backup', backupTs);
+        const idx = config.workspace.findIndex(
+            (e) => e.object_type === 'long_running_process' && e.name === entry.name
+        );
+        if (idx !== -1) {
+            config.workspace[idx].checksum_at_pull = res.newChecksum;
+            config.workspace[idx].tenant_id = res.newRow.tenantId;
+            config.workspace[idx].svg = res.newRow.bpmnFileSvg;
+            config.workspace[idx].description = res.newRow.description;
+            config.workspace[idx].version = res.newRow.version;
+            config.workspace[idx].status = res.newRow.status;
+        }
+        const note = res.diffs.length ? ` (WARNING: ${res.diffs.length} round-trip diff(s))` : '';
+        console.log(`  ${entry.name} → refreshed${note}`);
+    }
+    writeConfig(config);
+    console.log(
+        `\nPulled ${selected.length} long-running process(es). Local backups in .backup/${backupTs}/`
+    );
 }
 
 async function discoverNewPhases(token, ripUrl, config, changedWorkflowIds = new Set()) {

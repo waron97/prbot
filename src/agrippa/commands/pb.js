@@ -37,32 +37,49 @@ import { projectReader } from '../lib/pbWorkspace.js';
 
 // ---------- project resolution ----------
 
-async function resolveProjectPath(opts) {
+// Resolves against both process-builder wizards and long-running processes —
+// `structure.yaml`-level editing is identical for both (see pbEdit.js). PBs
+// select by --pb/--name matched against document_id; LRPs have no document_id
+// so the same flag matches against name instead.
+async function resolveProjectEntry(opts) {
     const config = readConfig();
-    const entries = (config.workspace || []).filter((e) => e.object_type === 'process_builder');
+    const entries = (config.workspace || []).filter(
+        (e) => e.object_type === 'process_builder' || e.object_type === 'long_running_process'
+    );
     if (!entries.length) {
         throw new Error(
-            'No process-builder wizards in this workspace. Clone one with `agrippa clone --pb`.'
+            'No process-builder wizards or long-running processes in this workspace. ' +
+                'Clone one with `agrippa clone --pb` or `agrippa clone --lrp`.'
         );
     }
     const sel = opts.pb || opts.name;
     if (sel) {
-        const entry = entries.find((e) => e.document_id === sel);
-        if (!entry) throw new Error(`No cloned wizard with document_id "${sel}"`);
-        return entry.path;
+        const entry = entries.find((e) => e.document_id === sel || e.name === sel);
+        if (!entry) throw new Error(`No cloned project with document_id/name "${sel}"`);
+        return entry;
     }
-    if (entries.length === 1) return entries[0].path;
+    if (entries.length === 1) return entries[0];
     const entry = await search({
-        message: 'Select a cloned wizard:',
+        message: 'Select a cloned project:',
         source: (input) => {
             const list = input
                 ? entries.filter(
-                      (e) => fuzzyMatch(e.name, input) || fuzzyMatch(e.document_id, input)
+                      (e) =>
+                          fuzzyMatch(e.name, input) ||
+                          (e.document_id && fuzzyMatch(e.document_id, input))
                   )
                 : entries;
-            return list.map((e) => ({ name: `${e.name}  (${e.document_id})`, value: e }));
+            return list.map((e) => ({
+                name: e.document_id ? `${e.name}  (${e.document_id})` : e.name,
+                value: e,
+            }));
         },
     });
+    return entry;
+}
+
+async function resolveProjectPath(opts) {
+    const entry = await resolveProjectEntry(opts);
     return entry.path;
 }
 
@@ -135,14 +152,20 @@ async function pbFormat(opts) {
 async function pbAdd(opts) {
     if (!opts.type)
         throw new Error(
-            '--type is required (e.g. scriptTask, serviceTask, userTask, exclusiveGateway, subProcess, endEvent...)'
+            '--type is required (e.g. scriptTask, serviceTask, userTask, exclusiveGateway, subProcess, endEvent, callActivity...)'
         );
     if ((opts.from || opts.to) && !(opts.from && opts.to))
         throw new Error('--from and --to must be used together');
     if (opts.from && opts.parent)
         throw new Error('--parent is implied by --from/--to; pass only one');
 
-    const dir = await resolveProjectPath(opts);
+    const projectEntry = await resolveProjectEntry(opts);
+    if (opts.type === 'userTask' && projectEntry.object_type === 'long_running_process') {
+        throw new Error(
+            'userTask is not valid on a long-running process — LRPs have no pages (user tasks are a process-builder-only concept).'
+        );
+    }
+    const dir = projectEntry.path;
     const { structure, manifest } = loadProject(dir);
     const ctx = { existingScripts: listScriptFiles(dir), documentId: manifest.document_id };
 
@@ -288,4 +311,14 @@ async function pbLint(opts) {
     }
 }
 
-export { pbFormat, pbAdd, pbRemove, pbConnect, pbDisconnect, pbSetDefault, pbList, pbPreview, pbLint };
+export {
+    pbFormat,
+    pbAdd,
+    pbRemove,
+    pbConnect,
+    pbDisconnect,
+    pbSetDefault,
+    pbList,
+    pbPreview,
+    pbLint,
+};

@@ -5,11 +5,13 @@ import { getToken } from '../../lib/auth.js';
 import { updateMfa, updatePhase } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
+import { fetchUpstream } from '../lib/lrpApi.js';
 import { getProcess } from '../lib/pbApi.js';
 import { localChecksum, remoteChecksumPb } from '../lib/pbProject.js';
 import { projectReader } from '../lib/pbWorkspace.js';
 import { fileExists, readCodeFile } from '../lib/workspace.js';
 import { fetchRemoteCode, selectEntries } from './pull.js';
+import { deploy, pushLrpEntry } from './pushLrp.js';
 import { publish, pushPbEntry } from './pushPb.js';
 
 const BACKUP_DIR = '.backup';
@@ -46,11 +48,16 @@ async function push(opts = {}) {
         (e) => e.object_type === 'phase' || e.object_type === 'mfa'
     );
     const hasPb = config.workspace.some((e) => e.object_type === 'process_builder');
+    const hasLrp = config.workspace.some((e) => e.object_type === 'long_running_process');
     const ripUrl = process.env.RIP_URL;
     if (hasCode && !ripUrl)
         throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
     if (hasPb && !process.env.PB_URL)
         throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (hasLrp && !process.env.IMPORTEXPORT_URL)
+        throw new Error(
+            'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
+        );
 
     console.log('Fetching remote state...');
     const token = await getToken();
@@ -66,6 +73,14 @@ async function push(opts = {}) {
             upstreamMap.set(e.guid, null);
         }
     }
+    const lrpUpstreamMap = new Map();
+    for (const e of config.workspace.filter((x) => x.object_type === 'long_running_process')) {
+        try {
+            lrpUpstreamMap.set(e.name, await fetchUpstream(token, e.name));
+        } catch {
+            lrpUpstreamMap.set(e.name, null);
+        }
+    }
 
     // Classify every entry to a status badge — concern: overwriting remote work.
     const classified = config.workspace.map((entry) => {
@@ -73,6 +88,18 @@ async function push(opts = {}) {
             const upstream = upstreamMap.get(entry.guid) ?? null;
             const localSemantic = localChecksum(projectReader(entry.path));
             const remoteSemantic = upstream ? remoteChecksumPb(upstream) : null;
+            const pullChecksum = entry.checksum_at_pull;
+            let status;
+            if (localSemantic === remoteSemantic) status = 'unchanged';
+            else if (pullChecksum === remoteSemantic) status = 'fast-forward';
+            else status = 'conflict';
+            return { ...entry, upstream, status };
+        }
+
+        if (entry.object_type === 'long_running_process') {
+            const upstream = lrpUpstreamMap.get(entry.name) ?? null;
+            const localSemantic = localChecksum(projectReader(entry.path));
+            const remoteSemantic = upstream ? remoteChecksumPb(upstream.payload) : null;
             const pullChecksum = entry.checksum_at_pull;
             let status;
             if (localSemantic === remoteSemantic) status = 'unchanged';
@@ -108,10 +135,14 @@ async function push(opts = {}) {
 
     const backupTs = new Date().toISOString().replace(/:/g, '-').replace('T', '_').slice(0, 19);
 
-    // Back up remote code for phase/mfa before overwriting (pb backs up its own
-    // full upstream payload inside pushPbEntry).
+    // Back up remote code for phase/mfa before overwriting (pb/lrp back up
+    // their own full upstream payload inside pushPbEntry/pushLrpEntry).
     for (const entry of selected) {
-        if (entry.object_type !== 'process_builder' && entry.remoteCode != null) {
+        if (
+            entry.object_type !== 'process_builder' &&
+            entry.object_type !== 'long_running_process' &&
+            entry.remoteCode != null
+        ) {
             const backupPath = join(BACKUP_DIR, backupTs, entry.path);
             mkdirSync(dirname(backupPath), { recursive: true });
             writeFileSync(backupPath, (entry.remoteCode ?? '').trim() + '\n', 'utf-8');
@@ -119,15 +150,15 @@ async function push(opts = {}) {
     }
 
     const pushedPb = [];
+    const pushedLrp = [];
     let pushed = 0;
     for (const entry of selected) {
-        const idx = config.workspace.findIndex(
-            (e) =>
-                e.object_type === entry.object_type &&
-                (entry.object_type === 'process_builder'
-                    ? e.guid === entry.guid
-                    : e.id === entry.id)
-        );
+        const idx = config.workspace.findIndex((e) => {
+            if (e.object_type !== entry.object_type) return false;
+            if (entry.object_type === 'process_builder') return e.guid === entry.guid;
+            if (entry.object_type === 'long_running_process') return e.name === entry.name;
+            return e.id === entry.id;
+        });
 
         if (entry.object_type === 'process_builder') {
             const res = await pushPbEntry(token, entry, BACKUP_DIR, backupTs);
@@ -144,6 +175,19 @@ async function push(opts = {}) {
                 config.workspace[idx].status = res.newStatus || 'draft';
             }
             pushedPb.push({ entry, idx });
+        } else if (entry.object_type === 'long_running_process') {
+            const res = await pushLrpEntry(token, entry, BACKUP_DIR, backupTs);
+            console.log(`  ${entry.name} → saved`);
+            if (idx !== -1) {
+                config.workspace[idx].checksum_at_pull = res.newChecksum;
+                config.workspace[idx].tenant_id = res.newRow.tenantId;
+                config.workspace[idx].description = res.newRow.description;
+                config.workspace[idx].version = res.newRow.version;
+                config.workspace[idx].status = res.newRow.status;
+            }
+            // deployBpmn's expected id (fresh save response vs the pre-save row)
+            // isn't verified live yet — see pushLrp.js.
+            pushedLrp.push({ entry, idx, deployId: res.saved?.id ?? res.newRow.id });
         } else {
             const code = entry.localCode ?? '';
             if (entry.object_type === 'phase') await updatePhase(token, ripUrl, entry.id, code);
@@ -155,9 +199,12 @@ async function push(opts = {}) {
 
     console.log(`\nRemote backups written to ${BACKUP_DIR}/${backupTs}/`);
 
-    // Publish step for pushed wizards (now in "draft").
+    // Publish/deploy step for pushed wizards and LRPs.
     if (pushedPb.length) {
         await handlePublish(token, pushedPb, config, opts);
+    }
+    if (pushedLrp.length) {
+        await handleDeploy(token, pushedLrp, config, opts);
     }
 
     writeConfig(config);
@@ -183,6 +230,29 @@ async function handlePublish(token, pushedPb, config, opts) {
             await publish(token, entry.guid);
             if (idx !== -1) config.workspace[idx].status = 'published';
             console.log(`  published ${entry.name}`);
+        }
+    }
+}
+
+async function handleDeploy(token, pushedLrp, config, opts) {
+    for (const { entry, idx, deployId } of pushedLrp) {
+        let doDeploy;
+        if (opts.skipPublish) doDeploy = false;
+        else if (opts.publish) doDeploy = true;
+        else {
+            ({ doDeploy } = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'doDeploy',
+                    message: `Deploy "${entry.name}" now?`,
+                    default: false,
+                },
+            ]));
+        }
+        if (doDeploy) {
+            await deploy(token, deployId);
+            if (idx !== -1) config.workspace[idx].status = 'deployed';
+            console.log(`  deployed ${entry.name}`);
         }
     }
 }

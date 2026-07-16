@@ -7,11 +7,15 @@ import { describeWorkflow, getPhasesByWorkflow, listMfas, listWorkflows } from '
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
 import { defaultMfaPath, toSlug, writeCodeFile, writeWorkflowDoc } from '../lib/workspace.js';
+import { cloneLrp } from './cloneLrp.js';
 import { clonePb } from './clonePb.js';
 
 async function clone(opts) {
     if (opts.pb) {
         return clonePb(opts);
+    }
+    if (opts.lrp) {
+        return cloneLrp(opts);
     }
 
     const config = readConfig();
@@ -26,11 +30,13 @@ async function clone(opts) {
                 { name: 'MFA', value: 'mfa' },
                 { name: 'Phase', value: 'phase' },
                 { name: 'Process Builder', value: 'pb' },
+                { name: 'Long Running Process', value: 'lrp' },
             ],
         });
     }
-    // Process-builder wizards have their own clone flow (PB_URL, recompose verify).
+    // Process-builder wizards and LRPs have their own clone flow (recompose verify).
     if (objectType === 'pb') return clonePb(opts);
+    if (objectType === 'lrp') return cloneLrp(opts);
 
     const ripUrl = process.env.RIP_URL;
     if (!ripUrl)

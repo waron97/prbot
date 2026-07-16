@@ -52,7 +52,9 @@ const NODE_FIELDS = [
     'fields',
     'formKey',
     'attachedToRef',
-    'errorEventDefinition',
+    'eventDefinitions',
+    'calledElement',
+    'dataIO',
     'multiInstance',
     'documentation',
 ];
@@ -107,9 +109,12 @@ function geometryMaps(diagram) {
             if (s.attrs.isExpanded !== undefined)
                 expanded[s.attrs.bpmnElement] = s.attrs.isExpanded;
         }
+        // Always record the edge, even with zero waypoints (rare, but real —
+        // some exporters emit an empty <...:BPMNEdge>). Skipping on `.length`
+        // would drop the entry, so buildDiagram doesn't recreate the edge shape
+        // at all, losing a real (if degenerate) diagram element.
         for (const e of diagram.edges)
-            if (e.waypoints?.length)
-                waypoints[e.attrs.bpmnElement] = e.waypoints.map((w) => [w.x, w.y]);
+            waypoints[e.attrs.bpmnElement] = (e.waypoints || []).map((w) => [w.x, w.y]);
     }
     return { bounds, waypoints, expanded };
 }
@@ -121,6 +126,7 @@ function structEdge(e, geo) {
     if (e.name !== undefined) o.name = e.name;
     if (e.condition !== undefined) o.condition = e.condition;
     if (e.conditionType !== undefined) o.conditionType = e.conditionType;
+    if (e.conditionAttrs !== undefined) o.conditionAttrs = e.conditionAttrs;
     if (e.documentation !== undefined) o.documentation = e.documentation;
     if (geo.waypoints[e.id]) o.waypoints = geo.waypoints[e.id];
     return o;
@@ -166,6 +172,7 @@ function flattenNodes(structNodes, parentId, model, read, geo) {
             if (se.name !== undefined) e.name = se.name;
             if (se.condition !== undefined) e.condition = se.condition;
             if (se.conditionType !== undefined) e.conditionType = se.conditionType;
+            if (se.conditionAttrs !== undefined) e.conditionAttrs = se.conditionAttrs;
             if (se.documentation !== undefined) e.documentation = se.documentation;
             if (parentId) e.parent = parentId;
             if (se.waypoints) geo.waypoints[se.id] = se.waypoints;
@@ -219,13 +226,19 @@ function decompose(payload) {
     // back for the diagram).
     const structure = {
         process: model.process,
+        messages: model.messages,
         errors: model.errors,
+        signals: model.signals,
+        extraDefs: model.extraDefs,
         nodes: nestNodes(model, null, scriptsMap, geo),
         annotations: model.annotations.map((a) =>
             geo.bounds[a.id] ? { ...a, layout: geo.bounds[a.id] } : a
         ),
         associations: model.associations.map((a) =>
             geo.waypoints[a.id] ? { ...a, waypoints: geo.waypoints[a.id] } : a
+        ),
+        groups: (model.groups || []).map((g) =>
+            geo.bounds[g.id] ? { ...g, layout: geo.bounds[g.id] } : g
         ),
     };
     files[STRUCTURE_FILE] = stringifyStructure(structure);
@@ -259,17 +272,22 @@ function recompose(read) {
 
     const model = {
         process: structure.process,
+        messages: structure.messages || [],
         errors: structure.errors || [],
+        signals: structure.signals || [],
+        extraDefs: structure.extraDefs || [],
         nodes: [],
         edges: [],
         annotations: structure.annotations || [],
         associations: structure.associations || [],
+        groups: structure.groups || [],
     };
     const geo = { bounds: {}, waypoints: {}, expanded: {}, labelPos: {} };
     flattenNodes(structure.nodes, null, model, read, geo);
-    // annotation/association geometry (top-level lists carry it inline)
+    // annotation/association/group geometry (top-level lists carry it inline)
     for (const a of model.annotations) if (a.layout) geo.bounds[a.id] = a.layout;
     for (const a of model.associations) if (a.waypoints) geo.waypoints[a.id] = a.waypoints;
+    for (const g of model.groups) if (g.layout) geo.bounds[g.id] = g.layout;
 
     const built_page = buildProcess({ ns: manifest.ns, model, geo });
 

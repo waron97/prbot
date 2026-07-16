@@ -42,13 +42,16 @@ program
 
 program
     .command('clone')
-    .description('Clone a phase, MFA, or process-builder wizard into this workspace')
+    .description(
+        'Clone a phase, MFA, process-builder wizard, or long-running process into this workspace'
+    )
     .option('--phase', 'Clone a phase (select a workflow)')
     .option('--mfa', 'Clone a Model Function Access record')
     .option('--pb', 'Clone a process-builder wizard')
+    .option('--lrp', 'Clone a long-running process')
     .option('--id <id>', 'Record ID to clone (phase/mfa)')
-    .option('--name <document_id>', 'Process-builder document_id to clone (with --pb)')
-    .option('--path <path>', 'Destination path (file for MFA, base dir for workflow/pb)')
+    .option('--name <name>', 'document_id (--pb) or process name (--lrp) to clone')
+    .option('--path <path>', 'Destination path (file for MFA, base dir for workflow/pb/lrp)')
     .action((opts) =>
         clone(opts).catch((err) => {
             console.error(`Error: ${err.message}`);
@@ -68,9 +71,9 @@ program
 
 program
     .command('push')
-    .description('Push local changes to RIP / Process Builder (backs up remote first)')
-    .option('--publish', 'Auto-publish pushed process-builder wizards')
-    .option('--skip-publish', 'Skip publishing pushed wizards (no prompt)')
+    .description('Push local changes to RIP / Process Builder / LRP (backs up remote first)')
+    .option('--publish', 'Auto-publish pushed wizards and auto-deploy pushed LRPs')
+    .option('--skip-publish', 'Skip publishing/deploying pushed wizards and LRPs (no prompt)')
     .action((opts) =>
         push(opts).catch((err) => {
             console.error(`Error: ${err.message}`);
@@ -108,25 +111,29 @@ program
         })
     );
 
-// ---- pb: local editing helpers for a cloned process-builder wizard ----
+// ---- pb: local editing helpers for a cloned process-builder wizard or LRP ----
 const die = (err) => {
     console.error(`Error: ${err.message}`);
     process.exit(1);
 };
 const pb = program
     .command('pb')
-    .description('Edit a cloned process-builder wizard (local; run `pb format` after edits)');
+    .description(
+        'Edit a cloned process-builder wizard or long-running process (local; run `pb format` after edits)'
+    );
 
 pb.command('format')
     .description('Auto-lay-out the diagram (left→right) and rewrite geometry')
-    .option('--pb <document_id>', 'Target wizard (else single-entry / fuzzy prompt)')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP (else single-entry / fuzzy prompt)')
     .action((opts) => pbFormat(opts).catch(die));
 
 pb.command('add')
     .description('Add a node (scaffolds script/page); stub geometry, run format after')
     .requiredOption(
         '--type <type>',
-        'Node type: scriptTask|serviceTask|userTask|exclusiveGateway|subProcess|transaction|startEvent|endEvent|boundaryEvent'
+        'Node type: scriptTask|serviceTask|userTask|exclusiveGateway|subProcess|transaction|' +
+            'startEvent|endEvent|boundaryEvent|intermediateCatchEvent|intermediateThrowEvent|' +
+            'callActivity|parallelGateway|eventBasedGateway (userTask is process-builder only)'
     )
     .option('--name <name>', 'Node name')
     .option('--parent <id>', 'Place inside this subProcess/transaction')
@@ -136,13 +143,13 @@ pb.command('add')
             'exactly one edge must already run --from → --to)'
     )
     .option('--to <id>', 'Insert between two already-connected nodes: target id (requires --from)')
-    .option('--pb <document_id>', 'Target wizard')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbAdd(opts).catch(die));
 
 pb.command('rm')
     .description('Remove a node, its edges, and its script/page files')
     .requiredOption('--id <id>', 'Node id to remove')
-    .option('--pb <document_id>', 'Target wizard')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbRemove(opts).catch(die));
 
 pb.command('connect')
@@ -153,7 +160,7 @@ pb.command('connect')
     .option('--condition <expr>', 'Condition expression, e.g. ${isAlive}')
     .option('--condition-type <type>', 'xsi:type for the condition (default tFormalExpression)')
     .option('--default', 'Mark this as the source gateway default flow')
-    .option('--pb <document_id>', 'Target wizard')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbConnect(opts).catch(die));
 
 pb.command('disconnect')
@@ -161,7 +168,7 @@ pb.command('disconnect')
     .option('--id <id>', 'Edge id to remove')
     .option('--from <id>', 'Source node id')
     .option('--to <id>', 'Target node id')
-    .option('--pb <document_id>', 'Target wizard')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbDisconnect(opts).catch(die));
 
 pb.command('set-default')
@@ -169,23 +176,25 @@ pb.command('set-default')
     .option('--id <id>', 'Edge id to mark default')
     .option('--from <id>', 'Source gateway id')
     .option('--to <id>', 'Target node id')
-    .option('--pb <document_id>', 'Target wizard')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbSetDefault(opts).catch(die));
 
 pb.command('lint')
-    .description('Check diagram for structural issues (edge names, incoming-edge rules, gateway rules)')
-    .option('--pb <document_id>', 'Target wizard')
+    .description(
+        'Check diagram for structural issues (edge names, incoming-edge rules, gateway rules)'
+    )
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbLint(opts).catch(die));
 
 pb.command('ls')
     .description('List nodes and edges (discover ids without reading the YAML)')
-    .option('--pb <document_id>', 'Target wizard')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbList(opts).catch(die));
 
 pb.command('preview')
     .description('Render the diagram to an SVG (dev check of format output)')
     .option('--out <file>', 'Output path (default <project>/preview.svg)')
-    .option('--pb <document_id>', 'Target wizard')
+    .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbPreview(opts).catch(die));
 
 program.parse();

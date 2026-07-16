@@ -28,6 +28,12 @@ const SIZE = {
     userTask: [84, 84],
     subProcess: [350, 200],
     transaction: [350, 200],
+    // LRP-only (measured across the real LRP corpus):
+    intermediateCatchEvent: [36, 36],
+    intermediateThrowEvent: [36, 36],
+    callActivity: [84, 84],
+    parallelGateway: [50, 50],
+    eventBasedGateway: [50, 50],
 };
 
 // BPMN id prefixes by node type (mirrors the upstream naming convention).
@@ -41,6 +47,11 @@ const PREFIX = {
     userTask: 'UserTask',
     subProcess: 'SubProcess',
     transaction: 'Transaction',
+    intermediateCatchEvent: 'IntermediateCatchEvent',
+    intermediateThrowEvent: 'IntermediateThrowEvent',
+    callActivity: 'CallActivity',
+    parallelGateway: 'ParallelGateway',
+    eventBasedGateway: 'EventBasedGateway',
 };
 
 const CONTAINER = new Set(['subProcess', 'transaction']);
@@ -435,19 +446,24 @@ function lintEdgeNames(structure) {
         for (const e of outs) {
             if (e.id === def) continue;
             if (!e.name) {
-                issues.push(
-                    `${n.id} → ${e.target} (${e.id}): non-default flow has no name.`
-                );
+                issues.push(`${n.id} → ${e.target} (${e.id}): non-default flow has no name.`);
             }
         }
     });
     return issues;
 }
 
+// Gateway types that legitimately fan multiple flows into one node (a "join").
+// parallelGateway/eventBasedGateway joins are common in the real LRP corpus
+// (61 occurrences) — only exclusiveGateway's merge semantics need a lint rule.
+const JOIN_CAPABLE_GATEWAYS = new Set(['exclusiveGateway', 'parallelGateway', 'eventBasedGateway']);
+
 // Flag incoming-edge violations:
-// - Only exclusiveGateway may have >1 incoming flows.
+// - Only a gateway may have >1 incoming flows (plain tasks/events are 1-in).
 // - An exclusiveGateway may not have both >1 incoming AND >1 outgoing (pick one
-//   direction for merging or splitting, not both at once).
+//   direction for merging or splitting, not both at once) — parallel/event-based
+//   gateways may legitimately fork-then-join across the diagram, so this
+//   specific rule stays scoped to exclusiveGateway.
 function lintIncomingEdges(structure) {
     const inCount = {};
     const outCount = {};
@@ -462,9 +478,9 @@ function lintIncomingEdges(structure) {
     eachNode(structure.nodes, null, (n) => {
         const inc = inCount[n.id] || 0;
         const out = outCount[n.id] || 0;
-        if (inc > 1 && n.type !== 'exclusiveGateway') {
+        if (inc > 1 && !JOIN_CAPABLE_GATEWAYS.has(n.type)) {
             issues.push(
-                `${n.id} (${n.name || n.type}): only exclusiveGateway may have multiple incoming flows (has ${inc}).`
+                `${n.id} (${n.name || n.type}): only a gateway may have multiple incoming flows (has ${inc}).`
             );
         }
         if (n.type === 'exclusiveGateway' && inc > 1 && out > 1) {
@@ -478,7 +494,11 @@ function lintIncomingEdges(structure) {
 
 // Run all lint rules and return combined issues.
 function lintAll(structure) {
-    return [...lintGateways(structure), ...lintEdgeNames(structure), ...lintIncomingEdges(structure)];
+    return [
+        ...lintGateways(structure),
+        ...lintEdgeNames(structure),
+        ...lintIncomingEdges(structure),
+    ];
 }
 
 // Remove an edge by id, or by --from/--to pair.

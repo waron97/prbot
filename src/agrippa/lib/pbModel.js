@@ -84,6 +84,22 @@ const NODE_TAGS = new Set([
     'subProcess',
     'transaction',
     'boundaryEvent',
+    // LRP-only (also legal on PBs, just unused there so far):
+    'intermediateCatchEvent',
+    'intermediateThrowEvent',
+    'callActivity',
+    'parallelGateway',
+    'eventBasedGateway',
+]);
+
+// Flow-node types that can carry <xEventDefinition/> children (see
+// parseEventDefinitions/buildEventDefinitions below).
+const EVENT_HOST_TAGS = new Set([
+    'startEvent',
+    'endEvent',
+    'boundaryEvent',
+    'intermediateCatchEvent',
+    'intermediateThrowEvent',
 ]);
 
 const PROMOTED_ATTRS = {
@@ -95,8 +111,14 @@ const PROMOTED_ATTRS = {
     boundaryEvent: ['@_id', '@_name', '@_attachedToRef'],
     startEvent: ['@_id', '@_name'],
     endEvent: ['@_id', '@_name'],
+    intermediateCatchEvent: ['@_id', '@_name'],
+    intermediateThrowEvent: ['@_id', '@_name'],
+    callActivity: ['@_id', '@_name', '@_calledElement', '@_activiti:class'],
+    parallelGateway: ['@_id', '@_name'],
+    eventBasedGateway: ['@_id', '@_name'],
     process_root: ['@_id', '@_name', '@_isExecutable'],
     association: ['@_id', '@_sourceRef', '@_targetRef'],
+    conditionExpression: ['@_xsi:type'],
 };
 
 // Collect the non-promoted attributes into a plain map (prefix stripped),
@@ -111,19 +133,28 @@ function extraAttrs(attrs, type) {
     return out;
 }
 
+// Returns undefined if the node has no <extensionElements> at all (nothing to
+// rebuild); an array (possibly empty) if it does — some real BPMNs carry a
+// bare `<extensionElements/>` with zero activiti:field children, and that
+// empty wrapper must still round-trip (see buildFlowChildren's serviceTask case).
 function parseServiceFields(node) {
     const ext = node.serviceTask?.find((k) => tagOf(k) === 'extensionElements');
-    if (!ext) return [];
+    if (!ext) return undefined;
     const fields = [];
     for (const f of ext.extensionElements) {
         if (tagOf(f) !== 'activiti:field') continue;
         const name = attrsOf(f)['@_name'];
-        const strChild = f['activiti:field'].find((k) => tagOf(k) === 'activiti:string');
-        const exprChild = f['activiti:field'].find((k) => tagOf(k) === 'activiti:expression');
-        if (strChild) {
-            fields.push({ name, string: cdataOf(strChild, 'activiti:string') ?? '' });
-        } else if (exprChild) {
-            fields.push({ name, expression: cdataOf(exprChild, 'activiti:expression') ?? '' });
+        // Normally exactly one of activiti:string/activiti:expression, but the
+        // real corpus has fields carrying both (likely a copy-paste artifact
+        // upstream) — preserve every child, in order, rather than picking one.
+        const parts = f['activiti:field']
+            .filter((k) => tagOf(k) === 'activiti:string' || tagOf(k) === 'activiti:expression')
+            .map((k) => {
+                const kind = tagOf(k) === 'activiti:string' ? 'string' : 'expression';
+                return { kind, value: cdataOf(k, tagOf(k)) ?? '' };
+            });
+        if (parts.length) {
+            fields.push({ name, parts });
         } else {
             fields.push({ name }); // empty <activiti:field/>
         }
@@ -156,10 +187,83 @@ function parseMultiInstance(node, tag) {
     return out;
 }
 
-function parseErrorEventDef(node, type) {
-    const eed = node[type]?.find((k) => tagOf(k) === 'errorEventDefinition');
-    if (!eed) return undefined;
-    return { ...extraAttrs(attrsOf(eed), type) };
+// Restore a prefix-stripped extra-attrs map back to `@_`-prefixed XML attrs.
+function restoreAttr(extra) {
+    const out = {};
+    for (const [k, v] of Object.entries(extra || {})) out[`@_${k}`] = v;
+    return out;
+}
+
+// Event-definition child tags legal on startEvent/endEvent/boundaryEvent/
+// intermediateCatchEvent/intermediateThrowEvent. Each carries only reference
+// attrs (messageRef/errorRef/signalRef) except timerEventDefinition, which
+// nests one of timeDuration/timeDate/timeCycle (text + xsi:type attr).
+const EVENT_DEF_TAGS = new Set([
+    'messageEventDefinition',
+    'errorEventDefinition',
+    'timerEventDefinition',
+    'terminateEventDefinition',
+    'signalEventDefinition',
+]);
+const TIMER_CHILD_TAGS = new Set(['timeDuration', 'timeDate', 'timeCycle']);
+
+function parseTimerChildren(defNode, tag) {
+    const kids = defNode[tag];
+    if (!Array.isArray(kids)) return [];
+    return kids
+        .filter((k) => TIMER_CHILD_TAGS.has(tagOf(k)))
+        .map((k) => ({ tag: tagOf(k), value: textOf(k, tagOf(k)) ?? '', attrs: allAttrs(k) }));
+}
+
+// Parse every event-definition child of a node (order preserved; almost always
+// exactly one, but modeled as an array — never observed >1 in the corpus).
+function parseEventDefinitions(child, tag) {
+    const kids = child[tag];
+    if (!Array.isArray(kids)) return [];
+    const defs = [];
+    for (const k of kids) {
+        const dtag = tagOf(k);
+        if (!EVENT_DEF_TAGS.has(dtag)) continue;
+        const d = { type: dtag, attrs: allAttrs(k) };
+        if (dtag === 'timerEventDefinition') {
+            const timer = parseTimerChildren(k, dtag);
+            if (timer.length) d.timer = timer;
+        }
+        defs.push(d);
+    }
+    return defs;
+}
+
+function buildEventDefinitions(defs) {
+    return (defs || []).map((d) => {
+        const kids = (d.timer || []).map((t) =>
+            el(t.tag, restoreAttr(t.attrs), t.value != null ? [textChild(t.value)] : [])
+        );
+        return el(d.type, restoreAttr(d.attrs), kids);
+    });
+}
+
+// callActivity data mappings live in <extensionElements><activiti:in/out .../>
+// (self-closing, source/target attrs only — same shape both ways).
+function parseCallActivityIO(child) {
+    const ext = child.callActivity?.find((k) => tagOf(k) === 'extensionElements');
+    if (!ext) return [];
+    const io = [];
+    for (const f of ext.extensionElements) {
+        const t = tagOf(f);
+        if (t === 'activiti:in' || t === 'activiti:out') {
+            io.push({ dir: t === 'activiti:in' ? 'in' : 'out', ...allAttrs(f) });
+        }
+    }
+    return io;
+}
+
+function buildCallActivityIO(io) {
+    if (!io || !io.length) return [];
+    const ioEls = io.map((d) =>
+        el(`activiti:${d.dir}`, { '@_source': d.source, '@_target': d.target }, [])
+    );
+    return [el('extensionElements', {}, ioEls)];
 }
 
 // Parse the children of a <process> or <subProcess> element array into model.
@@ -173,26 +277,39 @@ function parseFlowChildren(children, parentId, model) {
             if (parentId === null) model.process.documentation = textOf(child, tag);
             continue;
         }
-        if (tag === 'error') {
-            model.errors.push({ id: attrs['@_id'], name: attrs['@_name'] });
-            continue;
-        }
         if (tag === 'textAnnotation') {
             const txtEl = child.textAnnotation.find((k) => tagOf(k) === 'text');
-            model.annotations.push({
+            const a = {
                 id: attrs['@_id'],
                 attrs: extraAttrs(attrs, 'textAnnotation'),
                 text: txtEl ? textOf(txtEl, 'text') : '',
-            });
+            };
+            if (parentId) a.parent = parentId;
+            model.annotations.push(a);
             continue;
         }
         if (tag === 'association') {
-            model.associations.push({
+            const a = {
                 id: attrs['@_id'],
                 sourceRef: attrs['@_sourceRef'],
                 targetRef: attrs['@_targetRef'],
                 attrs: extraAttrs({ ...attrs }, 'association'),
-            });
+            };
+            if (parentId) a.parent = parentId;
+            model.associations.push(a);
+            continue;
+        }
+        if (tag === 'group') {
+            // Visual grouping box, references a <definitions>-root
+            // categoryValue by id. Has its own bpmndi:BPMNShape (geometry) but
+            // no flow semantics of its own — modeled like an annotation.
+            const g = {
+                id: attrs['@_id'],
+                categoryValueRef: attrs['@_categoryValueRef'],
+                attrs: extraAttrs({ ...attrs }, 'group'),
+            };
+            if (parentId) g.parent = parentId;
+            model.groups.push(g);
             continue;
         }
         if (tag === 'sequenceFlow') {
@@ -206,10 +323,23 @@ function parseFlowChildren(children, parentId, model) {
             if (attrs['@_name'] !== undefined) edge.name = attrs['@_name'];
             if (parentId) edge.parent = parentId;
             if (cond) {
-                edge.condition =
-                    cdataOf(cond, 'conditionExpression') ?? textOf(cond, 'conditionExpression');
-                const xsi = attrsOf(cond)['@_xsi:type'];
+                // A self-closing/childless <conditionExpression/> (xsi:type
+                // only, no text) is real in the corpus — don't synthesize an
+                // empty CDATA body for it on rebuild (see conditionType below).
+                const condKids = cond.conditionExpression;
+                if (Array.isArray(condKids) && condKids.length) {
+                    edge.condition =
+                        cdataOf(cond, 'conditionExpression') ??
+                        textOf(cond, 'conditionExpression') ??
+                        '';
+                }
+                const condAttrs = attrsOf(cond);
+                const xsi = condAttrs['@_xsi:type'];
                 if (xsi) edge.conditionType = xsi;
+                // Rare non-standard attrs (e.g. a stray `language="..."` seen
+                // in the corpus) — preserve verbatim rather than drop.
+                const extra = extraAttrs(condAttrs, 'conditionExpression');
+                if (Object.keys(extra).length) edge.conditionAttrs = extra;
             }
             if (doc) edge.documentation = textOf(doc, 'documentation');
             model.edges.push(edge);
@@ -237,14 +367,22 @@ function parseFlowChildren(children, parentId, model) {
             } else if (tag === 'boundaryEvent') {
                 if (attrs['@_attachedToRef'] !== undefined)
                     n.attachedToRef = attrs['@_attachedToRef'];
-                const eed = parseErrorEventDef(child, tag);
-                if (eed) n.errorEventDefinition = eed;
-            } else if (tag === 'endEvent') {
-                const eed = parseErrorEventDef(child, tag);
-                if (eed) n.errorEventDefinition = eed;
+            } else if (tag === 'callActivity') {
+                if (attrs['@_calledElement'] !== undefined)
+                    n.calledElement = attrs['@_calledElement'];
+                if (attrs['@_activiti:class'] !== undefined) n.class = attrs['@_activiti:class'];
+                const io = parseCallActivityIO(child);
+                if (io.length) n.dataIO = io;
             } else if (CONTAINER_TAGS.has(tag)) {
                 const mi = parseMultiInstance(child, tag);
                 if (mi) n.multiInstance = mi;
+            }
+            // Event-definition children apply across several event-host types
+            // (start/end/boundary/intermediate catch+throw) regardless of the
+            // per-type branch above.
+            if (EVENT_HOST_TAGS.has(tag)) {
+                const defs = parseEventDefinitions(child, tag);
+                if (defs.length) n.eventDefinitions = defs;
             }
             model.nodes.push(n);
 
@@ -278,12 +416,30 @@ function parseProcess(builtPage) {
             if (Object.keys(extra).length) p.attrs = extra;
             return p;
         })(),
+        // Declared at <definitions> root, as siblings of <process> — NOT nested
+        // inside it (verified against the real corpus). messageRef/errorRef/
+        // signalRef on event definitions resolve against these.
+        messages: [],
         errors: [],
+        signals: [],
+        // Any other <definitions>-level child we don't model explicitly
+        // (e.g. <category>/<categoryValue> — rare) — kept as raw preserveOrder
+        // nodes and re-emitted verbatim, so nothing at this level is ever lost.
+        extraDefs: [],
         nodes: [],
         edges: [],
         annotations: [],
         associations: [],
+        groups: [],
     };
+    for (const c of defNode.definitions) {
+        const t = tagOf(c);
+        if (t === 'process' || t === 'bpmndi:BPMNDiagram') continue;
+        if (t === 'message') model.messages.push({ attrs: allAttrs(c) });
+        else if (t === 'error') model.errors.push({ attrs: allAttrs(c) });
+        else if (t === 'signal') model.signals.push({ attrs: allAttrs(c) });
+        else model.extraDefs.push(c);
+    }
     parseFlowChildren(procNode.process, null, model);
 
     return { ns, model, diagram: parseDiagram(builtPage) };
@@ -299,6 +455,20 @@ function num(v) {
     return Number.isNaN(n) ? v : n;
 }
 
+// The DD/DI package (waypoint's namespace) is bound to different prefixes
+// across the corpus — usually `omgdi:` but some exporters use `di:` for the
+// identical namespace URI. Resolve the real prefix from the <definitions>
+// root's xmlns declarations instead of hardcoding one, so both the `<process>`
+// diagram bpmnElement and its waypoint tag stay readable and re-emittable
+// under whichever prefix the source actually declared.
+const DI_NS_URI = 'http://www.omg.org/spec/DD/20100524/DI';
+function diWaypointTag(ns) {
+    for (const [k, v] of Object.entries(ns || {})) {
+        if (v === DI_NS_URI) return `${k.replace(/^@_xmlns:/, '')}:waypoint`;
+    }
+    return 'omgdi:waypoint';
+}
+
 function parseLabel(labelNode) {
     const b = labelNode['bpmndi:BPMNLabel'].find((k) => tagOf(k) === 'omgdc:Bounds');
     return { attrs: allAttrs(labelNode), bounds: b ? mapBounds(allAttrs(b)) : null };
@@ -312,6 +482,8 @@ function mapBounds(a) {
 function parseDiagram(builtPage) {
     const tree = parser.parse(builtPage);
     const defNode = tree.find((n) => tagOf(n) === 'definitions');
+    const ns = attrsOf(defNode);
+    const wpTag = diWaypointTag(ns);
     const dia = defNode.definitions.find((n) => tagOf(n) === 'bpmndi:BPMNDiagram');
     if (!dia) return null;
     const plane = dia['bpmndi:BPMNDiagram'].find((n) => tagOf(n) === 'bpmndi:BPMNPlane');
@@ -330,7 +502,7 @@ function parseDiagram(builtPage) {
             });
         } else if (tg === 'bpmndi:BPMNEdge') {
             const wps = c['bpmndi:BPMNEdge']
-                .filter((x) => tagOf(x) === 'omgdi:waypoint')
+                .filter((x) => tagOf(x) === wpTag)
                 .map((w) => mapBounds(allAttrs(w)));
             const label = c['bpmndi:BPMNEdge'].find((x) => tagOf(x) === 'bpmndi:BPMNLabel');
             edges.push({
@@ -357,8 +529,9 @@ function boundsAttrs(b) {
 // labels are omitted (renderers auto-place them); edge labels use ELK-computed
 // bounds from geo.labelPos when present — only positions, sizes, waypoints and
 // subprocess expand-state are authoritative — see compareDiagram.
-function buildDiagram(model, geo) {
+function buildDiagram(model, geo, ns) {
     if (!geo) return null;
+    const wpTag = diWaypointTag(ns);
     const shapeEls = [];
     const pushShape = (id) => {
         const b = geo.bounds[id];
@@ -369,6 +542,7 @@ function buildDiagram(model, geo) {
     };
     for (const n of model.nodes) pushShape(n.id);
     for (const a of model.annotations || []) pushShape(a.id);
+    for (const g of model.groups || []) pushShape(g.id);
 
     const edgeEls = [];
     const pushEdge = (id) => {
@@ -377,8 +551,9 @@ function buildDiagram(model, geo) {
         const children = [];
         const lp = geo.labelPos?.[id];
         for (const [x, y] of wps)
-            children.push(el('omgdi:waypoint', { '@_x': String(x), '@_y': String(y) }, []));
-        if (lp) children.push(el('bpmndi:BPMNLabel', {}, [el('omgdc:Bounds', boundsAttrs(lp), [])]));
+            children.push(el(wpTag, { '@_x': String(x), '@_y': String(y) }, []));
+        if (lp)
+            children.push(el('bpmndi:BPMNLabel', {}, [el('omgdc:Bounds', boundsAttrs(lp), [])]));
         edgeEls.push(el('bpmndi:BPMNEdge', { '@_id': `${id}_di`, '@_bpmnElement': id }, children));
     };
     for (const e of model.edges) pushEdge(e.id);
@@ -402,18 +577,8 @@ function buildFlowChildren(model, parentId) {
     if (parentId === null && model.process.documentation != null) {
         children.push(el('documentation', {}, [textChild(model.process.documentation)]));
     }
-    // errors (process root only)
-    if (parentId === null) {
-        for (const e of model.errors) {
-            children.push(el('error', { '@_id': e.id, '@_name': e.name }, []));
-        }
-    }
-
-    const restoreAttr = (extra) => {
-        const out = {};
-        for (const [k, v] of Object.entries(extra || {})) out[`@_${k}`] = v;
-        return out;
-    };
+    // message/error/signal declarations are <definitions>-root siblings of
+    // <process>, not process children — built separately in buildProcess().
 
     const incoming = (id) => model.edges.filter((e) => e.target === id).map((e) => e.id);
     const outgoing = (id) => model.edges.filter((e) => e.source === id).map((e) => e.id);
@@ -446,16 +611,15 @@ function buildFlowChildren(model, parentId) {
             if (n.class !== undefined) attrs['@_activiti:class'] = n.class;
             Object.assign(attrs, restoreAttr(n.attrs));
             const kids = [];
-            if (n.fields && n.fields.length) {
+            if (n.fields !== undefined) {
                 const fieldEls = n.fields.map((f) => {
-                    let inner = [];
-                    if (Object.prototype.hasOwnProperty.call(f, 'string')) {
-                        inner = [el('activiti:string', {}, [cdataChild(f.string)])];
-                    } else if (Object.prototype.hasOwnProperty.call(f, 'expression')) {
-                        inner = [el('activiti:expression', {}, [cdataChild(f.expression)])];
-                    }
+                    const inner = (f.parts || []).map((p) =>
+                        el(`activiti:${p.kind}`, {}, [cdataChild(p.value)])
+                    );
                     return el('activiti:field', { '@_name': f.name }, inner);
                 });
+                // Emit the wrapper even with zero fields — some sources carry a
+                // bare <extensionElements/> (see parseServiceFields).
                 kids.push(el('extensionElements', {}, fieldEls));
             }
             kids.push(...baseKids(n));
@@ -469,22 +633,35 @@ function buildFlowChildren(model, parentId) {
             children.push(el('exclusiveGateway', attrs, baseKids(n)));
         } else if (n.type === 'startEvent') {
             Object.assign(attrs, restoreAttr(n.attrs));
-            children.push(el('startEvent', attrs, baseKids(n)));
+            const kids = baseKids(n);
+            kids.push(...buildEventDefinitions(n.eventDefinitions));
+            children.push(el('startEvent', attrs, kids));
         } else if (n.type === 'endEvent') {
             Object.assign(attrs, restoreAttr(n.attrs));
             const kids = baseKids(n);
-            if (n.errorEventDefinition) {
-                kids.push(el('errorEventDefinition', restoreAttr(n.errorEventDefinition), []));
-            }
+            kids.push(...buildEventDefinitions(n.eventDefinitions));
             children.push(el('endEvent', attrs, kids));
         } else if (n.type === 'boundaryEvent') {
             if (n.attachedToRef !== undefined) attrs['@_attachedToRef'] = n.attachedToRef;
             Object.assign(attrs, restoreAttr(n.attrs));
             const kids = baseKids(n);
-            if (n.errorEventDefinition) {
-                kids.push(el('errorEventDefinition', restoreAttr(n.errorEventDefinition), []));
-            }
+            kids.push(...buildEventDefinitions(n.eventDefinitions));
             children.push(el('boundaryEvent', attrs, kids));
+        } else if (n.type === 'intermediateCatchEvent' || n.type === 'intermediateThrowEvent') {
+            Object.assign(attrs, restoreAttr(n.attrs));
+            const kids = baseKids(n);
+            kids.push(...buildEventDefinitions(n.eventDefinitions));
+            children.push(el(n.type, attrs, kids));
+        } else if (n.type === 'callActivity') {
+            if (n.calledElement !== undefined) attrs['@_calledElement'] = n.calledElement;
+            if (n.class !== undefined) attrs['@_activiti:class'] = n.class;
+            Object.assign(attrs, restoreAttr(n.attrs));
+            const kids = buildCallActivityIO(n.dataIO);
+            kids.push(...baseKids(n));
+            children.push(el('callActivity', attrs, kids));
+        } else if (n.type === 'parallelGateway' || n.type === 'eventBasedGateway') {
+            Object.assign(attrs, restoreAttr(n.attrs));
+            children.push(el(n.type, attrs, baseKids(n)));
         } else if (CONTAINER_TAGS.has(n.type)) {
             Object.assign(attrs, restoreAttr(n.attrs));
             const kids = baseKids(n);
@@ -525,45 +702,67 @@ function buildFlowChildren(model, parentId) {
         const kids = [];
         if (e.documentation != null)
             kids.push(el('documentation', {}, [textChild(e.documentation)]));
-        if (e.condition != null) {
-            const cAttrs = e.conditionType ? { '@_xsi:type': e.conditionType } : {};
-            kids.push(el('conditionExpression', cAttrs, [cdataChild(e.condition)]));
+        if (e.condition != null || e.conditionType !== undefined || e.conditionAttrs) {
+            const cAttrs = {
+                ...(e.conditionType ? { '@_xsi:type': e.conditionType } : {}),
+                ...restoreAttr(e.conditionAttrs),
+            };
+            const condKids = e.condition != null ? [cdataChild(e.condition)] : [];
+            kids.push(el('conditionExpression', cAttrs, condKids));
         }
         children.push(el('sequenceFlow', attrs, kids));
     }
 
-    // annotations + associations (process root only)
-    if (parentId === null) {
-        for (const a of model.annotations) {
-            children.push(
-                el('textAnnotation', { '@_id': a.id, ...restoreAttr(a.attrs) }, [
-                    el('text', {}, [textChild(a.text ?? '')]),
-                ])
-            );
-        }
-        for (const a of model.associations) {
-            children.push(
-                el(
-                    'association',
-                    {
-                        '@_id': a.id,
-                        '@_sourceRef': a.sourceRef,
-                        '@_targetRef': a.targetRef,
-                        ...restoreAttr(a.attrs),
-                    },
-                    []
-                )
-            );
-        }
+    // annotations + associations + groups scoped to this parent (nested inside
+    // a subProcess/transaction in the original just as often as at root).
+    for (const a of model.annotations.filter((x) => (x.parent ?? null) === parentId)) {
+        children.push(
+            el('textAnnotation', { '@_id': a.id, ...restoreAttr(a.attrs) }, [
+                el('text', {}, [textChild(a.text ?? '')]),
+            ])
+        );
+    }
+    for (const a of model.associations.filter((x) => (x.parent ?? null) === parentId)) {
+        children.push(
+            el(
+                'association',
+                {
+                    '@_id': a.id,
+                    '@_sourceRef': a.sourceRef,
+                    '@_targetRef': a.targetRef,
+                    ...restoreAttr(a.attrs),
+                },
+                []
+            )
+        );
+    }
+    for (const g of (model.groups || []).filter((x) => (x.parent ?? null) === parentId)) {
+        children.push(
+            el(
+                'group',
+                { '@_id': g.id, '@_categoryValueRef': g.categoryValueRef, ...restoreAttr(g.attrs) },
+                []
+            )
+        );
     }
 
     return children;
 }
 
+// Build one <definitions>-root declaration (<message>/<error>/<signal>), attrs
+// passed through verbatim.
+function buildDefDecl(tag, attrs) {
+    return el(tag, restoreAttr(attrs), []);
+}
+
 // Build the full built_page string from { ns, model, geo }. The <bpmndi> block
 // is regenerated solely from `geo` (structure.yaml geometry) — never a manifest.
+// message/error/signal declarations and any unmodeled <definitions>-level
+// children (model.extraDefs, kept as raw preserveOrder nodes) are re-emitted as
+// siblings of <process>, matching the real corpus layout (process, then decls,
+// then bpmndi).
 function buildProcess({ ns, model, geo }) {
-    const diagramXml = buildDiagram(model, geo);
+    const diagramXml = buildDiagram(model, geo, ns);
     const procAttrs = { '@_id': model.process.id };
     if (model.process.name !== undefined) procAttrs['@_name'] = model.process.name;
     if (model.process.isExecutable !== undefined)
@@ -573,6 +772,14 @@ function buildProcess({ ns, model, geo }) {
     const procNode = el('process', procAttrs, buildFlowChildren(model, null));
     const procXml = builder.build([procNode]).trim();
 
+    const declEls = [
+        ...(model.messages || []).map((m) => buildDefDecl('message', m.attrs)),
+        ...(model.errors || []).map((e) => buildDefDecl('error', e.attrs)),
+        ...(model.signals || []).map((s) => buildDefDecl('signal', s.attrs)),
+    ];
+    const declXml = declEls.length ? builder.build(declEls).trim() : '';
+    const extraXml = (model.extraDefs || []).length ? builder.build(model.extraDefs).trim() : '';
+
     const defAttrs = Object.entries(ns)
         .map(([k, v]) => `${k.replace(/^@_/, '')}="${v}"`)
         .join(' ');
@@ -580,6 +787,8 @@ function buildProcess({ ns, model, geo }) {
     // Whitespace between elements is insignificant in XML. The <process> is
     // compact (format:false) to keep CDATA exact; the diagram is regenerated.
     const parts = ['<?xml version="1.0" encoding="UTF-8"?>', `<definitions ${defAttrs}>`, procXml];
+    if (declXml) parts.push(declXml);
+    if (extraXml) parts.push(extraXml);
     if (diagramXml) parts.push(diagramXml);
     parts.push('</definitions>');
     return parts.join('\n');
@@ -606,7 +815,16 @@ function canon(node) {
     const attrs = {};
     for (const [k, v] of Object.entries(attrsOf(node))) attrs[k] = v;
     const rawKids = Array.isArray(node[tag]) ? node[tag] : [];
-    const kids = rawKids.map(canon).filter((x) => x !== null);
+    // <incoming>/<outgoing> are a redundant echo of sequenceFlow sourceRef/
+    // targetRef (already compared via the sequenceFlow nodes themselves) —
+    // never consulted by the execution engine, and inconsistently omitted by
+    // some exporters/hand-edits in the real corpus. We always regenerate a
+    // complete, correct set from the edge list on rebuild, so comparing their
+    // raw presence/count here would flag a behaviorally meaningless "loss".
+    const kids = rawKids
+        .filter((k) => tagOf(k) !== 'incoming' && tagOf(k) !== 'outgoing')
+        .map(canon)
+        .filter((x) => x !== null);
     kids.sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
     return { tag, attrs, kids };
 }
@@ -621,11 +839,24 @@ function keyOf(c) {
     return `${c.tag}|${id}|${childKey}`;
 }
 
+// Canonicalize both the <process> subtree AND every other <definitions>-level
+// declaration (message/error/signal/category/...) except <process> itself and
+// <bpmndi:BPMNDiagram> (compared separately, by geometry, in compareDiagram).
+// Declarations reference each other by id (messageRef/errorRef/signalRef), so
+// they must be part of the semantic 0-loss gate, not just the flow graph.
 function normalizeProcessTree(builtPage) {
     const tree = parser.parse(builtPage);
     const defNode = tree.find((n) => tagOf(n) === 'definitions');
     const procNode = defNode.definitions.find((n) => tagOf(n) === 'process');
-    return canon(procNode);
+    const decls = defNode.definitions
+        .filter((n) => {
+            const t = tagOf(n);
+            return t !== 'process' && t !== 'bpmndi:BPMNDiagram';
+        })
+        .map(canon)
+        .filter((x) => x !== null)
+        .sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+    return { process: canon(procNode), decls };
 }
 
 // Deep structural comparison; returns first diff path or null if equal.
