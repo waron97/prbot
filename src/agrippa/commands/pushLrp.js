@@ -9,10 +9,10 @@ import { projectReader } from '../lib/pbWorkspace.js';
 // and PATCH the recomposed XML back. Returns a summary; deploy is a separate
 // step (see deploy()), mirroring PB's push-then-publish split.
 //
-// `saved` (the PATCH response) is returned to the caller un-interpreted: it
-// isn't yet verified live whether it echoes a fresh id/version or whether
-// deploy always wants the pre-save row id — confirm against a real save
-// before wiring `deploy` to fire automatically.
+// The save bumps the version and mints a NEW id, so the pre-save id is stale
+// the moment saveLrp returns. Both the deploy target and the post-save
+// version/status must come from a fresh resolve-by-name AFTER the save — never
+// from the pre-save row or the PATCH response (which does not echo the new id).
 async function pushLrpEntry(token, entry, backupDir, backupTs) {
     const read = projectReader(entry.path);
     const localPayload = recompose(read);
@@ -35,10 +35,17 @@ async function pushLrpEntry(token, entry, backupDir, backupTs) {
         description
     );
 
+    // The save minted a new id and bumped the version — re-resolve by name to
+    // get the fresh row. deployBpmn must target this new id (the pre-save id is
+    // now dead: deploying it 200s but activates nothing), and the workspace
+    // entry's version/status must come from here, not the stale pre-save row.
+    const deployRow = await resolveLrpByName(token, entry.name);
+
     return {
         newChecksum: localChecksum(read),
-        newRow: { ...row, description },
+        newRow: { ...deployRow, description },
         saved,
+        deployId: deployRow.id,
     };
 }
 

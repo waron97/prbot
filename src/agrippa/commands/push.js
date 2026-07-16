@@ -185,9 +185,9 @@ async function push(opts = {}) {
                 config.workspace[idx].version = res.newRow.version;
                 config.workspace[idx].status = res.newRow.status;
             }
-            // deployBpmn's expected id (fresh save response vs the pre-save row)
-            // isn't verified live yet — see pushLrp.js.
-            pushedLrp.push({ entry, idx, deployId: res.saved?.id ?? res.newRow.id });
+            // deployId is the fresh post-save id (re-resolved by name in
+            // pushLrpEntry); the pre-save id is dead once the save returns.
+            pushedLrp.push({ entry, idx, deployId: res.deployId });
         } else {
             const code = entry.localCode ?? '';
             if (entry.object_type === 'phase') await updatePhase(token, ripUrl, entry.id, code);
