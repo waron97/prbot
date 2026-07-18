@@ -25,17 +25,21 @@ async function push(opts = {}) {
     if (stale.length) {
         console.log('\nThe following tracked resources no longer exist on disk:');
         stale.forEach((e) => console.log(`  - ${e.path}  (${e.name})`));
-        const { cleanup } = await inquirer.prompt([
-            {
-                type: 'confirm',
-                name: 'cleanup',
-                message: 'Remove these entries from the workspace config?',
-                default: true,
-            },
-        ]);
-        if (cleanup) {
-            config.workspace = config.workspace.filter((e) => fileExists(e.path));
-            writeConfig(config);
+        if (opts.nonInteractive) {
+            console.log('  (non-interactive: leaving them tracked; run interactively to clean up)');
+        } else {
+            const { cleanup } = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'cleanup',
+                    message: 'Remove these entries from the workspace config?',
+                    default: true,
+                },
+            ]);
+            if (cleanup) {
+                config.workspace = config.workspace.filter((e) => fileExists(e.path));
+                writeConfig(config);
+            }
         }
     }
 
@@ -127,7 +131,7 @@ async function push(opts = {}) {
         return;
     }
 
-    const selected = await selectEntries(changed, 'push (overwrites remote)', 'push');
+    const selected = await selectEntries(changed, 'push (overwrites remote)', opts);
     if (!selected.length) {
         console.log('Nothing selected. No changes made.');
         return;
@@ -216,6 +220,8 @@ async function handlePublish(token, pushedPb, config, opts) {
         let doPublish;
         if (opts.skipPublish) doPublish = false;
         else if (opts.publish) doPublish = true;
+        else if (opts.nonInteractive)
+            doPublish = false; // no stdin to prompt on; default to safe
         else {
             ({ doPublish } = await inquirer.prompt([
                 {
@@ -239,6 +245,8 @@ async function handleDeploy(token, pushedLrp, config, opts) {
         let doDeploy;
         if (opts.skipPublish) doDeploy = false;
         else if (opts.publish) doDeploy = true;
+        else if (opts.nonInteractive)
+            doDeploy = false; // no stdin to prompt on; default to safe
         else {
             ({ doDeploy } = await inquirer.prompt([
                 {

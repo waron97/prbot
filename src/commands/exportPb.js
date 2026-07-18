@@ -36,13 +36,30 @@ async function initiateExport(guid, token) {
     if (!response.ok) throw new Error(await response.text());
 }
 
+// No job/request id is returned by initiateExport, so the poll still
+// correlates by GUID + a corrected date window over the last few results —
+// a heuristic, not a stable identifier (see REL-ADP-PB-001; a real fix
+// depends on the ImportExport API exposing a request id, EXT-002). What we
+// can and do own locally is not hanging forever: an overall deadline.
+const PB_EXPORT_POLL_INTERVAL_MS = 3_000;
+const PB_EXPORT_POLL_TIMEOUT_MS = 120_000;
+
 async function pollExportResult(guid, requestTime, token) {
     const url = `${process.env.IMPORTEXPORT_URL}/export/info/processKey=ExportElement&subProcess=true&status=FAILED,COMPLETED&referenceId=process_builder`;
     // Server createDate is offset -1hr from system time; subtract 1hr+5s buffer
     const cutoff = requestTime - 3_605_000;
+    const deadline = requestTime + PB_EXPORT_POLL_TIMEOUT_MS;
 
     while (true) {
-        await new Promise((r) => setTimeout(r, 3000));
+        if (Date.now() > deadline) {
+            throw new Error(
+                `REMOTE_TIMEOUT: Process Builder export for guid ${guid} did not complete within ${
+                    PB_EXPORT_POLL_TIMEOUT_MS / 1000
+                }s`
+            );
+        }
+
+        await new Promise((r) => setTimeout(r, PB_EXPORT_POLL_INTERVAL_MS));
 
         const response = await fetch(url, {
             method: 'POST',
@@ -153,4 +170,4 @@ async function exportPb(opts) {
     }
 }
 
-export { exportPb };
+export { exportPb, pollExportResult };

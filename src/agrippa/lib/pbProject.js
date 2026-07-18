@@ -18,7 +18,15 @@
 import slugify from 'slugify';
 import { Document, visit, parse as yamlParse, stringify as yamlStringify } from 'yaml';
 import { computeChecksum } from './checksum.js';
-import { buildProcess, compareDiagram, compareProcess, diff, parseProcess } from './pbModel.js';
+import {
+    buildProcess,
+    compareDiagram,
+    compareProcess,
+    diagramGeometry,
+    diff,
+    normalizeProcessTree,
+    parseProcess,
+} from './pbModel.js';
 
 const MANIFEST_FILE = '.agrippa-pb.json';
 const STRUCTURE_FILE = 'structure.yaml';
@@ -355,10 +363,69 @@ function stableStringify(value) {
     return JSON.stringify(value ?? null);
 }
 
+// Canonical form of a recomposed payload used ONLY for change-detection
+// checksums — never for the actual push payload (recompose() itself, and
+// what gets sent on push, are untouched). Routes built_page through the same
+// formatting/order-insensitive canonicalization already used by
+// comparePayload()'s 0-loss round-trip verification:
+//   - normalizeProcessTree drops insignificant whitespace text nodes (incl.
+//     the extraDefs `#text` padding between <definitions>-root siblings) and
+//     sorts declarations by id, so cosmetic reformatting doesn't count;
+//   - diagramGeometry keeps only x/y/width/height/isExpanded/waypoints, so
+//     `format`-only artifacts like labelPos never enter the comparison.
+// Without this, a push followed by an unmodified re-fetch could classify as
+// a phantom `conflict` instead of `unchanged` — see
+// ai_tasks/2026-07-16-lrp-clone/deferred_work.md items 1, 3, 4.
+//
+// `updated_date`/`modified_by` are server-managed bookkeeping, not process
+// content — Odoo/Symple bump them on any touch of the record, including ones
+// with no semantic effect (observed live: an integration service account
+// re-saving the wizard moved `updated_date`/`modified_by` on both the
+// top-level payload and a page wrapper with zero content diff otherwise, via
+// comparePayload). They exist at two levels: the top-level payload scalars,
+// and per-entry inside `payload.pages` (each page's audit wrapper, distinct
+// from the page *content* under `.page`, which is left untouched). Left in,
+// they permanently pin the object to `conflict` the moment anything server-
+// side touches it, regardless of actual content — worse than the cosmetic
+// built_page diffs above, since nothing local or an agrippa push causes them
+// to resync.
+const VOLATILE_AUDIT_FIELDS = ['updated_date', 'modified_by'];
+
+function canonicalForChecksum(payload) {
+    const { process, decls } = normalizeProcessTree(payload.built_page);
+    const rest = omit(payload, ['built_page', 'pages', ...VOLATILE_AUDIT_FIELDS]);
+    // Page order is not a stable identity — locally it's whatever order the
+    // manifest happened to record at last decompose, while a live upstream
+    // fetch can return the same set of pages in a different order (observed
+    // live: a fresh fetch came back with pages 1-3 cyclically rotated versus
+    // the local manifest, same guids, zero content difference). Sort by the
+    // page's own guid — stable, unlike array position — before hashing, the
+    // same trick normalizeProcessTree already uses for extraDefs decls.
+    const pages = [...(payload.pages || [])]
+        .sort((a, b) => (a.guid ?? '').localeCompare(b.guid ?? ''))
+        .map((p) => omit(p, VOLATILE_AUDIT_FIELDS));
+    return {
+        ...rest,
+        pages,
+        built_page_process: process,
+        built_page_decls: decls,
+        built_page_diagram: diagramGeometry(payload.built_page),
+    };
+}
+
+// Checksum of a recomposed payload, canonicalized so cosmetic round-trip
+// differences don't register as a change. Used for checksum_at_pull baselines
+// (clone/pull) and for the push/pull classifier (localChecksum/
+// remoteChecksumPb below) — keep every PB/LRP checksum call site on this one
+// function so baselines and comparisons stay on the same normalization.
+function checksumOfPayload(payload) {
+    return computeChecksum(stableStringify(canonicalForChecksum(payload)));
+}
+
 // Checksum of the recomposed payload — stable across runs, changes only when the
 // local files change. clonePb stores this as checksum_at_pull; push recomputes it.
 function localChecksum(read) {
-    return computeChecksum(stableStringify(recompose(read)));
+    return checksumOfPayload(recompose(read));
 }
 
 // Semantic checksum of a remote payload. Decompose → recompose normalises field
@@ -367,7 +434,7 @@ function localChecksum(read) {
 function remoteChecksumPb(payload) {
     const { files } = decompose(payload);
     const read = (p) => files[p] ?? '';
-    return computeChecksum(stableStringify(recompose(read)));
+    return checksumOfPayload(recompose(read));
 }
 
 // Enumerate the wizard's pages from the pages/*.yml files (the authoritative
@@ -406,6 +473,7 @@ export {
     comparePayload,
     verifyRoundTrip,
     stableStringify,
+    checksumOfPayload,
     localChecksum,
     remoteChecksumPb,
     enumeratePages,

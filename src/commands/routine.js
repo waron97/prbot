@@ -54,11 +54,14 @@ function isNothingToCommit(err) {
 async function runRoutine(routine) {
     console.log(`Running Routine: ${routine.name}`);
 
+    const failures = [];
+
     for (const step of routine.steps) {
         const label = `[${step.name}]`;
         const fn = COMMAND_MAP[step.command];
         if (!fn) {
             console.log(`${label} Unknown command: ${step.command}`);
+            failures.push(`${step.name}: unknown command "${step.command}"`);
             continue;
         }
 
@@ -73,10 +76,18 @@ async function runRoutine(routine) {
                 console.log(`${label} Done (nothing to commit)`);
             } else {
                 console.log(`${label} Failed: ${err.message}`);
+                failures.push(`${step.name}: ${err.message}`);
             }
         } finally {
             setSilent(false);
         }
+    }
+
+    if (failures.length) {
+        throw new Error(
+            `Routine "${routine.name}" completed with ${failures.length} failed step(s):\n` +
+                failures.map((f) => `  - ${f}`).join('\n')
+        );
     }
 }
 

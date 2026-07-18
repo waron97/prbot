@@ -18,7 +18,25 @@ async function getToken() {
         body: payload.toString(),
     });
 
-    const json = await response.json();
+    if (!response.ok) {
+        // Never log the response body: on a password-grant endpoint it can
+        // echo back the submitted credentials.
+        throw new Error(
+            `AUTH_FAILED: Keycloak token request failed with status ${response.status}`
+        );
+    }
+
+    let json;
+    try {
+        json = await response.json();
+    } catch {
+        throw new Error('AUTH_FAILED: Keycloak response was not valid JSON');
+    }
+
+    if (!json || typeof json.access_token !== 'string' || !json.access_token) {
+        throw new Error('AUTH_FAILED: Keycloak response did not contain an access_token');
+    }
+
     return json.access_token;
 }
 

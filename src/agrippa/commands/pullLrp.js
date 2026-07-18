@@ -1,8 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
-import { computeChecksum } from '../lib/checksum.js';
 import { fetchUpstream } from '../lib/lrpApi.js';
-import { comparePayload, decompose, recompose, stableStringify } from '../lib/pbProject.js';
+import { checksumOfPayload, comparePayload, decompose, recompose } from '../lib/pbProject.js';
 import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 
 // Delete files under <baseDir>/scripts that are not in the fresh decompose
@@ -46,7 +45,7 @@ async function pullLrpEntry(token, entry, backupDir, backupTs) {
     const diffs = comparePayload(upstream.payload, rebuilt).filter((d) => !d.startsWith('pages:'));
 
     return {
-        newChecksum: computeChecksum(stableStringify(rebuilt)),
+        newChecksum: checksumOfPayload(rebuilt),
         newRow: upstream.row,
         diffs,
     };

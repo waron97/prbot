@@ -926,6 +926,7 @@ export {
     buildProcess,
     parseDiagram,
     normalizeProcessTree,
+    diagramGeometry,
     compareProcess,
     compareDiagram,
     diff,

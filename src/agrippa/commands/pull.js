@@ -18,7 +18,7 @@ import {
 import { pullLrpEntry } from './pullLrp.js';
 import { pullPbEntry } from './pullPb.js';
 
-async function pull() {
+async function pull(opts = {}) {
     const config = readConfig();
     loadEffectiveEnv(config);
 
@@ -31,17 +31,21 @@ async function pull() {
     if (stale.length) {
         console.log('\nThe following tracked files no longer exist on disk:');
         stale.forEach((e) => console.log(`  - ${e.path}  (${e.name})`));
-        const { cleanup } = await inquirer.prompt([
-            {
-                type: 'confirm',
-                name: 'cleanup',
-                message: 'Remove these entries from the workspace config?',
-                default: true,
-            },
-        ]);
-        if (cleanup) {
-            config.workspace = config.workspace.filter((e) => fileExists(e.path));
-            writeConfig(config);
+        if (opts.nonInteractive) {
+            console.log('  (non-interactive: leaving them tracked; run interactively to clean up)');
+        } else {
+            const { cleanup } = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'cleanup',
+                    message: 'Remove these entries from the workspace config?',
+                    default: true,
+                },
+            ]);
+            if (cleanup) {
+                config.workspace = config.workspace.filter((e) => fileExists(e.path));
+                writeConfig(config);
+            }
         }
     }
 
@@ -87,7 +91,7 @@ async function pull() {
         if (!changed.length) {
             console.log('Everything is up to date.');
         } else {
-            const selected = await selectEntries(changed, 'pull (overwrites local files)');
+            const selected = await selectEntries(changed, 'pull (overwrites local files)', opts);
 
             if (!selected.length) {
                 console.log('Nothing selected. No changes made.');
@@ -113,10 +117,10 @@ async function pull() {
     }
 
     // ── refresh tracked process-builder wizards ───────────────────────────────
-    await pullPbEntries(token, config);
+    await pullPbEntries(token, config, opts);
 
     // ── refresh tracked long-running processes ────────────────────────────────
-    await pullLrpEntries(token, config);
+    await pullLrpEntries(token, config, opts);
 
     // ── discover new phases on tracked workflows ──────────────────────────────
     await discoverNewPhases(token, ripUrl, config, changedWorkflowIds);
@@ -127,7 +131,7 @@ async function pull() {
 //   unchanged    local === remote semantically → nothing to do
 //   fast-forward remote changed, local untouched since pull → safe overwrite
 //   conflict     local diverged from checksum_at_pull → overwrite loses local work
-async function pullPbEntries(token, config) {
+async function pullPbEntries(token, config, opts = {}) {
     const entries = config.workspace.filter((e) => e.object_type === 'process_builder');
     if (!entries.length) return;
     if (!process.env.PB_URL)
@@ -162,7 +166,7 @@ async function pullPbEntries(token, config) {
         return;
     }
 
-    const selected = await selectEntries(changed, 'pull (overwrites local wizard files)');
+    const selected = await selectEntries(changed, 'pull (overwrites local wizard files)', opts);
     if (!selected.length) {
         console.log('No wizards selected.');
         return;
@@ -189,7 +193,7 @@ async function pullPbEntries(token, config) {
 // Refresh tracked long-running processes from upstream. Same classification
 // concern as pullPbEntries, but entries are located by NAME (the tabulator id
 // changes on every save/version — never a stable key).
-async function pullLrpEntries(token, config) {
+async function pullLrpEntries(token, config, opts = {}) {
     const entries = config.workspace.filter((e) => e.object_type === 'long_running_process');
     if (!entries.length) return;
     if (!process.env.IMPORTEXPORT_URL)
@@ -226,7 +230,7 @@ async function pullLrpEntries(token, config) {
         return;
     }
 
-    const selected = await selectEntries(changed, 'pull (overwrites local LRP files)');
+    const selected = await selectEntries(changed, 'pull (overwrites local LRP files)', opts);
     if (!selected.length) {
         console.log('No long-running processes selected.');
         return;
@@ -343,18 +347,32 @@ async function fetchRemoteCode(token, ripUrl, workspace) {
     return map;
 }
 
-async function selectEntries(changed, verb, mode = 'pull') {
-    const badgeFor = (status) => {
-        if (mode === 'push') {
-            return status === 'fast-forward' ? '↑ safe' : '⚠ conflict';
+// `changed` only ever contains `fast-forward` and `conflict` entries (the
+// caller already filtered out `unchanged`). `conflict` means local and remote
+// have both diverged from the last-known-good baseline — applying it blindly
+// can silently lose either side's work, so it is never preselected and is
+// refused outright in `--non-interactive` mode instead of being silently
+// skipped or applied.
+async function selectEntries(changed, verb, opts = {}) {
+    const conflicts = changed.filter((e) => e.status === 'conflict');
+
+    if (opts.nonInteractive) {
+        if (conflicts.length) {
+            throw new Error(
+                `CONFLICT: refusing to ${verb} non-interactively — ${conflicts.length} resource(s) ` +
+                    `in conflict: ${conflicts.map((e) => e.name).join(', ')}. Resolve interactively ` +
+                    `or re-run once the conflicting side is reconciled.`
+            );
         }
-        return status === 'fast-forward' ? '↑ safe' : '⚠ conflict';
-    };
+        return changed;
+    }
+
+    const badgeFor = (status) => (status === 'fast-forward' ? '↑ safe' : '⚠ conflict');
 
     const choices = changed.map((e) => ({
         name: `${e.name}  [${badgeFor(e.status)}]`,
         value: e,
-        checked: true,
+        checked: e.status !== 'conflict',
     }));
 
     const { selected } = await inquirer.prompt([

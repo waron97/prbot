@@ -1,10 +1,9 @@
 import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
-import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
 import { getLrpXml, listLrps, resolveLrpByName } from '../lib/lrpApi.js';
-import { comparePayload, decompose, recompose, stableStringify } from '../lib/pbProject.js';
+import { checksumOfPayload, comparePayload, decompose, recompose } from '../lib/pbProject.js';
 import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 
 // Clone a long-running process (LRP). Structurally identical to a PB clone
@@ -102,7 +101,7 @@ async function cloneLrp(opts) {
         description,
         // Baseline for push classification (see pull.js/push.js): checksum of
         // the *recomposed* payload, changes only when local files change.
-        checksum_at_pull: computeChecksum(stableStringify(rebuilt)),
+        checksum_at_pull: checksumOfPayload(rebuilt),
         version: chosen.version,
         status: chosen.status,
     };

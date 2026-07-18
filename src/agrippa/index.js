@@ -62,8 +62,12 @@ program
 program
     .command('pull')
     .description('Pull remote changes into local files')
-    .action(() =>
-        pull().catch((err) => {
+    .option(
+        '--non-interactive',
+        'No prompts; auto-select safe (fast-forward) entries and fail if any is in conflict'
+    )
+    .action((opts) =>
+        pull(opts).catch((err) => {
             console.error(`Error: ${err.message}`);
             process.exit(1);
         })
@@ -74,6 +78,10 @@ program
     .description('Push local changes to RIP / Process Builder / LRP (backs up remote first)')
     .option('--publish', 'Auto-publish pushed wizards and auto-deploy pushed LRPs')
     .option('--skip-publish', 'Skip publishing/deploying pushed wizards and LRPs (no prompt)')
+    .option(
+        '--non-interactive',
+        'No prompts; auto-select safe (fast-forward) entries and fail if any is in conflict'
+    )
     .action((opts) =>
         push(opts).catch((err) => {
             console.error(`Error: ${err.message}`);

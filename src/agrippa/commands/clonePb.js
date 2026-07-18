@@ -2,10 +2,9 @@ import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
-import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
 import { getProcess, listProcesses } from '../lib/pbApi.js';
-import { comparePayload, decompose, recompose, stableStringify } from '../lib/pbProject.js';
+import { checksumOfPayload, comparePayload, decompose, recompose } from '../lib/pbProject.js';
 import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 
 async function clonePb(opts) {
@@ -95,7 +94,7 @@ async function clonePb(opts) {
         name: chosen.process_name,
         // Baselines for `push` classification: checksum of the *recomposed* payload
         // (changes only when local files change) + upstream updated_date/status.
-        checksum_at_pull: computeChecksum(stableStringify(rebuilt)),
+        checksum_at_pull: checksumOfPayload(rebuilt),
         updated_date: payload.updated_date,
         status: payload.status,
     };

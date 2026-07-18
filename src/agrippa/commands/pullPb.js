@@ -1,8 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
-import { computeChecksum } from '../lib/checksum.js';
 import { getProcess } from '../lib/pbApi.js';
-import { comparePayload, decompose, recompose, stableStringify } from '../lib/pbProject.js';
+import { checksumOfPayload, comparePayload, decompose, recompose } from '../lib/pbProject.js';
 import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 
 // Delete files under <baseDir>/<sub> that are not in the fresh decompose map, so
@@ -44,7 +43,7 @@ async function pullPbEntry(token, entry, backupDir, backupTs) {
     const diffs = comparePayload(upstream, rebuilt);
 
     return {
-        newChecksum: computeChecksum(stableStringify(rebuilt)),
+        newChecksum: checksumOfPayload(rebuilt),
         newUpdatedDate: upstream.updated_date,
         newStatus: upstream.status,
         diffs,

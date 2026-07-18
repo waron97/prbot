@@ -21,12 +21,35 @@ import { CONFIG_FILE } from './config.js';
 import { setSilent } from './lib/logger.js';
 import { checkForUpdate, currentVersion } from './lib/updateCheck.js';
 
+// Commands that never talk to RIP/DevOps/Trident/Keycloak. They still read
+// non-secret config (e.g. ADDONS_PATH) from the same file, but must not end
+// up holding credentials in their process env — a coding agent invoking one
+// of these should not even technically be able to leak or reuse a secret it
+// never needed.
+const LOCAL_COMMANDS = new Set(['init', 'ver', 'commit', 'changelog']);
+const SECRET_ENV_KEYS = [
+    'KC_USER',
+    'KC_PASSWORD',
+    'KC_ID',
+    'KC_SECRET',
+    'DEVOPS_TOKEN',
+    'TRIDENT_TOKEN',
+];
+const OFFLINE = process.env.PRBOT_OFFLINE === '1' || process.argv.includes('--offline');
+
 configDotenv({ path: CONFIG_FILE, quiet: true });
 
+const invokedCommand = process.argv[2];
+if (LOCAL_COMMANDS.has(invokedCommand)) {
+    for (const key of SECRET_ENV_KEYS) delete process.env[key];
+}
+
 let _updateAvailable = null;
-checkForUpdate().then((v) => {
-    _updateAvailable = v;
-});
+if (!OFFLINE) {
+    checkForUpdate().then((v) => {
+        _updateAvailable = v;
+    });
+}
 
 process.on('exit', () => {
     if (_updateAvailable) {
@@ -36,36 +59,65 @@ process.on('exit', () => {
     }
 });
 
+// Single point of convergence for every command's failure. Exit code 0 must
+// mean the requested operation actually succeeded; nothing downstream of
+// this should ever swallow an error into a zero exit.
+function fail(err) {
+    console.error(`Error: ${err?.message ?? err}`);
+    process.exitCode = 1;
+}
+
+process.on('unhandledRejection', (err) => {
+    fail(err instanceof Error ? err : new Error(String(err)));
+});
+process.on('uncaughtException', (err) => {
+    fail(err);
+});
+
+/**
+ * Adds `--quiet`/`--silent` to a command and returns a helper that reads
+ * both, warning once if the deprecated `--silent` alias is used. `--silent`
+ * used to also swallow errors (so a failed export could report success);
+ * it no longer does — both flags only suppress informational output.
+ */
+function withQuiet(cmd) {
+    return cmd
+        .option('-q, --quiet', 'Suppress informational output (errors still fail the command)')
+        .option('-s, --silent', 'Deprecated alias of --quiet; no longer swallows errors');
+}
+
+function resolveQuiet(opts) {
+    if (opts.silent) {
+        console.error(
+            'Warning: --silent is deprecated and no longer swallows errors; use --quiet.'
+        );
+    }
+    return Boolean(opts.quiet || opts.silent);
+}
+
 program
     .command('pr <module>')
     .option('-b, --bump <level>')
-    .action((module, opts) => {
-        prMain(module)
-            .then(() => {
-                if (opts.bump) {
-                    return verbot(module, opts.bump);
-                }
-            })
-            .catch((err) => {
-                throw err;
-            });
+    .action(async (module, opts) => {
+        await prMain(module);
+        if (opts.bump) await verbot(module, opts.bump);
     });
 
 program
     .command('ver <module>')
     .option('-b, --bump <level>')
-    .action((module, opts) => {
+    .action(async (module, opts) => {
         if (!opts.bump) {
             throw new Error('No bump level specified');
         }
-        verbot(module, opts.bump);
+        await verbot(module, opts.bump);
     });
 
 program
     .command('init')
     .description('Create config file')
-    .action(() => {
-        init();
+    .action(async () => {
+        await init();
     });
 
 const collect = (val, prev) => [...(prev ?? []), val];
@@ -75,10 +127,8 @@ program
     .option('-t, --trident <code>', 'Trident issue codes (repeatable)', collect)
     .option('-j, --jira <code>', 'JIRA issue codes (repeatable)', collect)
     .option('-m, --message <text>', 'Changelog entry message')
-    .action((prNumber, opts) => {
-        changelog(prNumber, opts).catch((err) => {
-            throw err;
-        });
+    .action(async (prNumber, opts) => {
+        await changelog(prNumber, opts);
     });
 
 program
@@ -89,107 +139,86 @@ program
     .option('-b, --branch <name>', 'Branch name (default: autopr_<taskId>)')
     .option('-n, --name <text>', 'PR title (default: task name from Odoo)')
     .option('--amend', 'Amend existing PR on current branch with new trident/jira refs')
-    .action((opts) => {
-        autopr(opts).catch((err) => {
-            throw err;
-        });
+    .action(async (opts) => {
+        await autopr(opts);
     });
 
-program.command('commit').action((opts) => {
-    commit(opts).catch((err) => {
-        throw err;
-    });
+program.command('commit').action(async (opts) => {
+    await commit(opts);
 });
 
 const exportCmd = program.command('export');
 
-exportCmd
-    .command('workflow')
-    .option('--no-commit')
-    .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
-    .option('-m, --module <id>', 'Module/workflow ID to export (skips interactive selection)')
-    .option('-s, --silent', 'Suppress all output and swallow errors')
-    .option(
-        '--auto-premigrate',
-        'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
-    )
-    .action((opts) => {
-        if (opts.silent) setSilent(true);
-        exportWorkflow(opts).catch((err) => {
-            if (!opts.silent) throw err;
-        });
-    });
+withQuiet(
+    exportCmd
+        .command('workflow')
+        .option('--no-commit')
+        .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
+        .option('-m, --module <id>', 'Module/workflow ID to export (skips interactive selection)')
+        .option(
+            '--auto-premigrate',
+            'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
+        )
+).action(async (opts) => {
+    if (resolveQuiet(opts)) setSilent(true);
+    await exportWorkflow(opts);
+});
 
 exportCmd.command('rip').action(() => exportRip());
 
-exportCmd
-    .command('pb')
-    .option('--no-commit')
-    .option('-s, --silent', 'Suppress all output and swallow errors')
-    .action((opts) => {
-        if (opts.silent) setSilent(true);
-        exportPb(opts).catch((err) => {
-            if (!opts.silent) throw err;
-        });
-    });
-
-exportCmd
-    .command('imperex')
-    .option('--no-commit')
-    .option('-s, --silent', 'Suppress all output and swallow errors')
-    .action((opts) => {
-        if (opts.silent) setSilent(true);
-        exportImperex(opts).catch((err) => {
-            if (!opts.silent) throw err;
-        });
-    });
-
-exportCmd
-    .command('lrp')
-    .option('--no-commit')
-    .option('-s, --silent', 'Suppress all output and swallow errors')
-    .action((opts) => {
-        if (opts.silent) setSilent(true);
-        exportLrp(opts).catch((err) => {
-            if (!opts.silent) throw err;
-        });
-    });
-
-exportCmd
-    .command('email-templates')
-    .option('--no-commit')
-    .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
-    .option('-e, --exclude <value...>', 'exclude templates matching id, name, or template_code')
-    .option('-m, --module <name>', 'module directory name (skip prompt)')
-    .option('-w, --workflow <value>', 'workflow name or id (skip prompt)')
-    .option('-s, --silent', 'Suppress all output and swallow errors')
-    .option(
-        '--auto-premigrate',
-        'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
-    )
-    .action((opts) => {
-        if (opts.silent) setSilent(true);
-        exportEmailTemplates(opts).catch((err) => {
-            if (!opts.silent) throw err;
-        });
-    });
-
-program.command('routine').action(() => {
-    routine().catch((err) => {
-        throw err;
-    });
+withQuiet(exportCmd.command('pb').option('--no-commit')).action(async (opts) => {
+    if (resolveQuiet(opts)) setSilent(true);
+    await exportPb(opts);
 });
 
-program.command('update').action(() => {
-    console.log('Updating prbot...');
-    execFile('npm', ['i', '-g', '@waron97/prbot'], (error, stdout, stderr) => {
-        if (error) {
-            console.error(stderr || error.message);
-            process.exit(1);
-        }
-        console.log(stdout);
-        console.log('Done.');
-    });
+withQuiet(exportCmd.command('imperex').option('--no-commit')).action(async (opts) => {
+    if (resolveQuiet(opts)) setSilent(true);
+    await exportImperex(opts);
 });
 
-program.parse();
+withQuiet(exportCmd.command('lrp').option('--no-commit')).action(async (opts) => {
+    if (resolveQuiet(opts)) setSilent(true);
+    await exportLrp(opts);
+});
+
+withQuiet(
+    exportCmd
+        .command('email-templates')
+        .option('--no-commit')
+        .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
+        .option('-e, --exclude <value...>', 'exclude templates matching id, name, or template_code')
+        .option('-m, --module <name>', 'module directory name (skip prompt)')
+        .option('-w, --workflow <value>', 'workflow name or id (skip prompt)')
+        .option(
+            '--auto-premigrate',
+            'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
+        )
+).action(async (opts) => {
+    if (resolveQuiet(opts)) setSilent(true);
+    await exportEmailTemplates(opts);
+});
+
+program.command('routine').action(async () => {
+    await routine();
+});
+
+program
+    .command('update [version]')
+    .description('Update the global prbot install (defaults to latest if no version given)')
+    .action(async (version) => {
+        const target = version ? `@waron97/prbot@${version}` : '@waron97/prbot';
+        console.log(version ? `Updating prbot to ${version}...` : 'Updating prbot to latest...');
+        await new Promise((resolve, reject) => {
+            execFile('npm', ['i', '-g', target], (error, stdout, stderr) => {
+                if (error) {
+                    reject(new Error(stderr || error.message));
+                    return;
+                }
+                console.log(stdout);
+                console.log('Done.');
+                resolve();
+            });
+        });
+    });
+
+program.parseAsync().catch(fail);
