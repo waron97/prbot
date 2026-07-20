@@ -4,6 +4,8 @@ CLI tool for managing PRs, changelogs, and Odoo workflow XML files in the addons
 
 ## Install
 
+Requires Node >= 20.
+
 ```bash
 npm install -g @waron97/prbot
 ```
@@ -129,9 +131,11 @@ prbot export workflow --no-commit
 
 Options:
 
-| Flag          | Description              |
-| ------------- | ------------------------ |
-| `--no-commit` | Skip the git commit step |
+| Flag           | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `--no-commit`  | Skip the git commit step                                      |
+| `-q, --quiet`  | Suppress informational output — errors still fail the command |
+| `-s, --silent` | Deprecated alias of `--quiet`; no longer swallows errors      |
 
 ### `prbot export pb`
 
@@ -144,9 +148,11 @@ prbot export pb --no-commit
 
 Options:
 
-| Flag          | Description              |
-| ------------- | ------------------------ |
-| `--no-commit` | Skip the git commit step |
+| Flag           | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `--no-commit`  | Skip the git commit step                                      |
+| `-q, --quiet`  | Suppress informational output — errors still fail the command |
+| `-s, --silent` | Deprecated alias of `--quiet`; no longer swallows errors      |
 
 ### `prbot export imperex`
 
@@ -159,9 +165,11 @@ prbot export imperex --no-commit
 
 Options:
 
-| Flag          | Description              |
-| ------------- | ------------------------ |
-| `--no-commit` | Skip the git commit step |
+| Flag           | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `--no-commit`  | Skip the git commit step                                      |
+| `-q, --quiet`  | Suppress informational output — errors still fail the command |
+| `-s, --silent` | Deprecated alias of `--quiet`; no longer swallows errors      |
 
 ### `prbot export email-templates`
 
@@ -174,9 +182,11 @@ prbot export email-templates --no-commit
 
 Options:
 
-| Flag          | Description              |
-| ------------- | ------------------------ |
-| `--no-commit` | Skip the git commit step |
+| Flag           | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `--no-commit`  | Skip the git commit step                                      |
+| `-q, --quiet`  | Suppress informational output — errors still fail the command |
+| `-s, --silent` | Deprecated alias of `--quiet`; no longer swallows errors      |
 
 ### `prbot init`
 
@@ -184,10 +194,11 @@ Interactive setup: writes `~/.config/prbot/config`.
 
 ### `prbot update`
 
-Reinstalls the latest published version from npm.
+Reinstalls prbot from npm — latest by default, or a pinned version.
 
 ```bash
-prbot update
+prbot update           # latest
+prbot update 3.4.0     # pin an exact version
 ```
 
 ---
@@ -225,26 +236,27 @@ agrippa clone --lrp --name B2WA_ml_IFS_passive_trigger --path my-lrp/
 
 Options:
 
-| Flag              | Description                                                                |
-| ----------------- | --------------------------------------------------------------------------- |
-| `--phase`         | Clone a phase (select a workflow)                                          |
-| `--mfa`           | Clone an MFA record                                                        |
-| `--pb`            | Clone a process-builder wizard                                             |
-| `--lrp`           | Clone a long-running process                                               |
-| `--id <id>`       | Skip selection, clone by ID (phase/mfa)                                    |
-| `--name <name>`   | Skip selection: `document_id` (with `--pb`) or process name (with `--lrp`) |
-| `--path <path>`   | Destination path (base dir for phases/wizard/lrp, file for MFA)            |
+| Flag            | Description                                                                |
+| --------------- | -------------------------------------------------------------------------- |
+| `--phase`       | Clone a phase (select a workflow)                                          |
+| `--mfa`         | Clone an MFA record                                                        |
+| `--pb`          | Clone a process-builder wizard                                             |
+| `--lrp`         | Clone a long-running process                                               |
+| `--id <id>`     | Skip selection, clone by ID (phase/mfa)                                    |
+| `--name <name>` | Skip selection: `document_id` (with `--pb`) or process name (with `--lrp`) |
+| `--path <path>` | Destination path (base dir for phases/wizard/lrp, file for MFA)            |
 
 ### `agrippa pull`
 
-Fetches remote code for all tracked entries and shows what changed. Classifies each as `fast-forward` (safe overwrite) or `conflict` (local edits would be lost). Lets you select which to pull.
+Fetches remote code for all tracked entries and shows what changed. Classifies each as `fast-forward` (safe overwrite) or `conflict` (local edits would be lost). `conflict` entries are shown but **not** preselected — you opt in explicitly. Lets you select which to pull.
 
 After pulling, also checks tracked workflows for newly added `from_code` phases and auto-clones any not yet present locally.
 
-Tracked **process-builder wizards** and **long-running processes** are also refreshed from upstream: the local project is re-decomposed from the latest payload (orphan script files pruned; PB wizards also prune orphan pages), with the same `fast-forward`/`conflict` classification (PB: upstream `updated_date`; LRP: re-resolved-by-name payload checksum vs. the last pulled state — LRPs have no stable id, so every pull re-resolves the current id/tenantId by name first). The current local state is backed up to `.backup/<timestamp>/<path>/local.json` first.
+Tracked **process-builder wizards** and **long-running processes** are also refreshed from upstream: the local project is re-decomposed from the latest payload (orphan script files pruned; PB wizards also prune orphan pages), with the same `fast-forward`/`conflict` classification — a semantic checksum of the recomposed payload (not raw `updated_date`), canonicalized so cosmetic noise never triggers a false conflict: whitespace-only BPMN text nodes, `format`-only `labelPos`, page ordering, and the `updated_date`/`modified_by` audit fields Odoo/Symple bump on any server touch are all excluded from the comparison. The current local state is backed up to `.backup/<timestamp>/<path>/local.json` first.
 
 ```bash
 agrippa pull
+agrippa pull --non-interactive  # no prompts: auto-select fast-forward, fail if any conflict
 ```
 
 ### `agrippa push`
@@ -257,6 +269,8 @@ Pushing a wizard saves it as a **draft**; publish it so live consumers see the c
 agrippa push                 # prompts whether to publish/deploy each pushed wizard/LRP
 agrippa push --publish       # auto-publish wizards, auto-deploy LRPs
 agrippa push --skip-publish  # never publish/deploy (no prompt)
+agrippa push --non-interactive  # no prompts: auto-select fast-forward, fail if any conflict;
+                                 # publish/deploy defaults to skip unless --publish is also passed
 ```
 
 ### `agrippa diff [path]`
