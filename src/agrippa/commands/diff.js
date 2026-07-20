@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { getToken } from '../../lib/auth.js';
+import { error, log } from '../../lib/logger.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig } from '../lib/config.js';
 import { getProcess } from '../lib/pbApi.js';
@@ -25,13 +26,13 @@ async function diff(targetArg) {
     loadEffectiveEnv(config);
 
     if (!config.workspace.length) {
-        console.log('No tracked resources. Run `agrippa clone` first.');
+        log('No tracked resources. Run `agrippa clone` first.');
         return;
     }
 
     const entries = filterEntries(config.workspace, targetArg);
     if (!entries.length) {
-        console.log('No tracked files match the given path.');
+        log('No tracked files match the given path.');
         return;
     }
 
@@ -43,7 +44,7 @@ async function diff(targetArg) {
     if (pbEntries.length && !process.env.PB_URL)
         throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
-    console.log('Fetching remote code...');
+    log('Fetching remote code...');
     const token = await getToken();
 
     let diffCount = 0;
@@ -65,13 +66,13 @@ async function diff(targetArg) {
     }
 
     if (diffCount === 0) {
-        console.log('No differences found — all tracked files match the remote.');
+        log('No differences found — all tracked files match the remote.');
     } else {
         const combined = Buffer.concat(chunks);
         const pager = process.env.PAGER || 'less';
         const pagerArgs = pager === 'less' ? ['-R', '-F'] : [];
         spawnSync(pager, pagerArgs, { input: combined, stdio: ['pipe', 'inherit', 'inherit'] });
-        console.log(`\n${diffCount} file(s) differ from remote.`);
+        log(`\n${diffCount} file(s) differ from remote.`);
     }
 }
 
@@ -90,7 +91,7 @@ function diffCodeEntries(entries, remoteCodeMap) {
             if (computeChecksum(localCode) === computeChecksum(remoteCode)) continue;
 
             if (!fileExists(entry.path)) {
-                console.log(`\n--- ${entry.path} (local file missing)`);
+                log(`\n--- ${entry.path} (local file missing)`);
                 continue;
             }
 
@@ -105,7 +106,7 @@ function diffCodeEntries(entries, remoteCodeMap) {
             );
             // exit code 1 means differences found (normal), 0 means identical, >1 means error
             if (result.status !== null && result.status > 1) {
-                console.error(`git diff failed for ${entry.path}`);
+                error(`git diff failed for ${entry.path}`);
             }
             const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] ===\n`);
             chunks.push(Buffer.concat([header, result.stdout ?? Buffer.alloc(0)]));
@@ -156,7 +157,7 @@ async function diffPbEntry(token, entry) {
             { cwd: tmpRoot, stdio: ['ignore', 'pipe', 'pipe'] }
         );
         if (result.status !== null && result.status > 1) {
-            console.error(`git diff failed for ${entry.path}`);
+            error(`git diff failed for ${entry.path}`);
         }
         const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] (process-builder) ===\n`);
         const chunk = Buffer.concat([header, result.stdout ?? Buffer.alloc(0)]);

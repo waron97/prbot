@@ -3,7 +3,7 @@ import path from 'path';
 import { select } from '@inquirer/prompts';
 import { parse } from 'yaml';
 import { CONFIG_DIR } from '../config.js';
-import { setSilent } from '../lib/logger.js';
+import { log, setSilent } from '../lib/logger.js';
 import { exportEmailTemplates } from './exportEmailTemplates.js';
 import { exportImperex } from './exportImperex.js';
 import { exportLrp } from './exportLrp.js';
@@ -52,7 +52,7 @@ function isNothingToCommit(err) {
 }
 
 async function runRoutine(routine) {
-    console.log(`Running Routine: ${routine.name}`);
+    log(`Running Routine: ${routine.name}`);
 
     const failures = [];
 
@@ -60,22 +60,22 @@ async function runRoutine(routine) {
         const label = `[${step.name}]`;
         const fn = COMMAND_MAP[step.command];
         if (!fn) {
-            console.log(`${label} Unknown command: ${step.command}`);
+            log(`${label} Unknown command: ${step.command}`);
             failures.push(`${step.name}: unknown command "${step.command}"`);
             continue;
         }
 
-        console.log(`${label} Job started`);
+        log(`${label} Job started`);
         setSilent(true);
 
         try {
             await fn(stepOpts(step));
-            console.log(`${label} Done (committed)`);
+            log(`${label} Done (committed)`);
         } catch (err) {
             if (isNothingToCommit(err)) {
-                console.log(`${label} Done (nothing to commit)`);
+                log(`${label} Done (nothing to commit)`);
             } else {
-                console.log(`${label} Failed: ${err.message}`);
+                log(`${label} Failed: ${err.message}`);
                 failures.push(`${step.name}: ${err.message}`);
             }
         } finally {
@@ -95,7 +95,7 @@ async function routine() {
     const routines = loadRoutines();
 
     if (!routines.length) {
-        console.log(
+        log(
             'No routines defined. Create ~/.config/prbot/routines.yaml or add routines: to agrippa.yaml.'
         );
         return;

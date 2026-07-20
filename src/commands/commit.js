@@ -3,6 +3,7 @@ import inquirer from 'inquirer';
 import searchList from 'inquirer-search-list';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { execGit } from '../lib/git.js';
+import { log } from '../lib/logger.js';
 
 inquirer.registerPrompt('search-list', searchList);
 
@@ -50,7 +51,7 @@ function validateSameModule(files) {
     const allSameModule = modules.every((module) => `[${module}]` === currentModule);
 
     if (!allSameModule) {
-        console.log(chalk.red('Selected files are not of the same module'));
+        log(chalk.red('Selected files are not of the same module'));
         return null;
     }
 
@@ -59,8 +60,8 @@ function validateSameModule(files) {
 
 async function getFilesToCommit(stagedChanges, unstagedChanges) {
     if (stagedChanges.trim()) {
-        console.log(chalk.green('Staged changes:'));
-        console.log(stagedChanges);
+        log(chalk.green('Staged changes:'));
+        log(stagedChanges);
 
         return {
             filesToCheck: stagedChanges.trim().split('\n'),
@@ -71,9 +72,9 @@ async function getFilesToCommit(stagedChanges, unstagedChanges) {
     const unstagedFiles = unstagedChanges.trim().split('\n');
 
     while (true) {
-        console.log(chalk.yellow('No staged changes found.'));
-        console.log(chalk.yellow('Unstaged changes:'));
-        console.log(unstagedChanges);
+        log(chalk.yellow('No staged changes found.'));
+        log(chalk.yellow('Unstaged changes:'));
+        log(unstagedChanges);
 
         const answers = await inquirer.prompt([
             {
@@ -104,7 +105,7 @@ async function commit() {
         const stagedChanges = await execGit(['diff', '--cached', '--name-only'], ADDONS_PATH);
 
         if (!unstagedChanges.trim() && !stagedChanges.trim()) {
-            console.log(chalk.red('No changes found to commit.'));
+            log(chalk.red('No changes found to commit.'));
             return;
         }
 
@@ -115,7 +116,7 @@ async function commit() {
         } = await getFilesToCommit(stagedChanges, unstagedChanges);
 
         if (filesToCheck.length === 0) {
-            console.log(chalk.red('No files selected.'));
+            log(chalk.red('No files selected.'));
             return;
         }
 
@@ -167,13 +168,13 @@ async function commit() {
         }
 
         await execGit(['commit', '-m', commitMessage], ADDONS_PATH);
-        console.log(chalk.green('Commit created successfully!'));
+        log(chalk.green('Commit created successfully!'));
 
         const remainingUnstaged = await execGit(['diff', '--name-only'], ADDONS_PATH);
         const remainingStaged = await execGit(['diff', '--cached', '--name-only'], ADDONS_PATH);
 
         if (!remainingUnstaged.trim() && !remainingStaged.trim()) {
-            console.log(chalk.green('No more changes to commit.'));
+            log(chalk.green('No more changes to commit.'));
             break;
         }
 

@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
+import { log } from '../../lib/logger.js';
 import { updateMfa, updatePhase } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
@@ -23,10 +24,10 @@ async function push(opts = {}) {
     // Stale-entry check (a path may be a file for phase/mfa or a dir for pb).
     const stale = config.workspace.filter((e) => !fileExists(e.path));
     if (stale.length) {
-        console.log('\nThe following tracked resources no longer exist on disk:');
-        stale.forEach((e) => console.log(`  - ${e.path}  (${e.name})`));
+        log('\nThe following tracked resources no longer exist on disk:');
+        stale.forEach((e) => log(`  - ${e.path}  (${e.name})`));
         if (opts.nonInteractive) {
-            console.log('  (non-interactive: leaving them tracked; run interactively to clean up)');
+            log('  (non-interactive: leaving them tracked; run interactively to clean up)');
         } else {
             const { cleanup } = await inquirer.prompt([
                 {
@@ -44,7 +45,7 @@ async function push(opts = {}) {
     }
 
     if (!config.workspace.length) {
-        console.log('No tracked resources. Run `agrippa clone` first.');
+        log('No tracked resources. Run `agrippa clone` first.');
         return;
     }
 
@@ -63,7 +64,7 @@ async function push(opts = {}) {
             'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
         );
 
-    console.log('Fetching remote state...');
+    log('Fetching remote state...');
     const token = await getToken();
 
     const remoteCodeMap = hasCode
@@ -127,13 +128,13 @@ async function push(opts = {}) {
 
     const changed = classified.filter((e) => e.status !== 'unchanged');
     if (!changed.length) {
-        console.log('Nothing to push — everything matches the last-pulled state.');
+        log('Nothing to push — everything matches the last-pulled state.');
         return;
     }
 
     const selected = await selectEntries(changed, 'push (overwrites remote)', opts);
     if (!selected.length) {
-        console.log('Nothing selected. No changes made.');
+        log('Nothing selected. No changes made.');
         return;
     }
 
@@ -172,7 +173,7 @@ async function push(opts = {}) {
             ]
                 .filter(Boolean)
                 .join(', ');
-            console.log(`  ${entry.name} → saved (draft)${note ? ` [${note}]` : ''}`);
+            log(`  ${entry.name} → saved (draft)${note ? ` [${note}]` : ''}`);
             if (idx !== -1) {
                 config.workspace[idx].checksum_at_pull = res.newChecksum;
                 if (res.newUpdatedDate) config.workspace[idx].updated_date = res.newUpdatedDate;
@@ -181,7 +182,7 @@ async function push(opts = {}) {
             pushedPb.push({ entry, idx });
         } else if (entry.object_type === 'long_running_process') {
             const res = await pushLrpEntry(token, entry, BACKUP_DIR, backupTs);
-            console.log(`  ${entry.name} → saved`);
+            log(`  ${entry.name} → saved`);
             if (idx !== -1) {
                 config.workspace[idx].checksum_at_pull = res.newChecksum;
                 config.workspace[idx].tenant_id = res.newRow.tenantId;
@@ -201,7 +202,7 @@ async function push(opts = {}) {
         pushed++;
     }
 
-    console.log(`\nRemote backups written to ${BACKUP_DIR}/${backupTs}/`);
+    log(`\nRemote backups written to ${BACKUP_DIR}/${backupTs}/`);
 
     // Publish/deploy step for pushed wizards and LRPs.
     if (pushedPb.length) {
@@ -212,7 +213,7 @@ async function push(opts = {}) {
     }
 
     writeConfig(config);
-    console.log(`\nPushed ${pushed} record(s).`);
+    log(`\nPushed ${pushed} record(s).`);
 }
 
 async function handlePublish(token, pushedPb, config, opts) {
@@ -235,7 +236,7 @@ async function handlePublish(token, pushedPb, config, opts) {
         if (doPublish) {
             await publish(token, entry.guid);
             if (idx !== -1) config.workspace[idx].status = 'published';
-            console.log(`  published ${entry.name}`);
+            log(`  published ${entry.name}`);
         }
     }
 }
@@ -260,7 +261,7 @@ async function handleDeploy(token, pushedLrp, config, opts) {
         if (doDeploy) {
             await deploy(token, deployId);
             if (idx !== -1) config.workspace[idx].status = 'deployed';
-            console.log(`  deployed ${entry.name}`);
+            log(`  deployed ${entry.name}`);
         }
     }
 }

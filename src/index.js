@@ -18,7 +18,7 @@ import { main as prMain } from './commands/pr.js';
 import { routine } from './commands/routine.js';
 import { verbot } from './commands/ver.js';
 import { CONFIG_FILE } from './config.js';
-import { setSilent } from './lib/logger.js';
+import { error, log, setSilent } from './lib/logger.js';
 import { checkForUpdate, currentVersion } from './lib/updateCheck.js';
 
 // Commands that never talk to RIP/DevOps/Trident/Keycloak. They still read
@@ -53,9 +53,7 @@ if (!OFFLINE) {
 
 process.on('exit', () => {
     if (_updateAvailable) {
-        console.log(
-            `\nUpdate available: ${currentVersion} → ${_updateAvailable}\nRun: prbot update`
-        );
+        log(`\nUpdate available: ${currentVersion} → ${_updateAvailable}\nRun: prbot update`);
     }
 });
 
@@ -63,7 +61,7 @@ process.on('exit', () => {
 // mean the requested operation actually succeeded; nothing downstream of
 // this should ever swallow an error into a zero exit.
 function fail(err) {
-    console.error(`Error: ${err?.message ?? err}`);
+    error(`Error: ${err?.message ?? err}`);
     process.exitCode = 1;
 }
 
@@ -88,9 +86,7 @@ function withQuiet(cmd) {
 
 function resolveQuiet(opts) {
     if (opts.silent) {
-        console.error(
-            'Warning: --silent is deprecated and no longer swallows errors; use --quiet.'
-        );
+        error('Warning: --silent is deprecated and no longer swallows errors; use --quiet.');
     }
     return Boolean(opts.quiet || opts.silent);
 }
@@ -207,15 +203,15 @@ program
     .description('Update the global prbot install (defaults to latest if no version given)')
     .action(async (version) => {
         const target = version ? `@waron97/prbot@${version}` : '@waron97/prbot';
-        console.log(version ? `Updating prbot to ${version}...` : 'Updating prbot to latest...');
+        log(version ? `Updating prbot to ${version}...` : 'Updating prbot to latest...');
         await new Promise((resolve, reject) => {
-            execFile('npm', ['i', '-g', target], (error, stdout, stderr) => {
-                if (error) {
-                    reject(new Error(stderr || error.message));
+            execFile('npm', ['i', '-g', target], (err, stdout, stderr) => {
+                if (err) {
+                    reject(new Error(stderr || err.message));
                     return;
                 }
-                console.log(stdout);
-                console.log('Done.');
+                log(stdout);
+                log('Done.');
                 resolve();
             });
         });

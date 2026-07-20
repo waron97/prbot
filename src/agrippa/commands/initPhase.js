@@ -2,6 +2,7 @@ import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
+import { log } from '../../lib/logger.js';
 import {
     createConfigurator,
     deleteConfigurator,
@@ -75,12 +76,12 @@ async function initPhase() {
     if (!ripUrl)
         throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
-    console.log('Fetching workflows...');
+    log('Fetching workflows...');
     const token = await getToken();
     const workflows = await listWorkflows(token, ripUrl);
 
     if (!workflows.length) {
-        console.log('No workflows found.');
+        log('No workflows found.');
         return;
     }
 
@@ -92,11 +93,11 @@ async function initPhase() {
         },
     });
 
-    console.log(`Fetching phases for "${workflow.name}"...`);
+    log(`Fetching phases for "${workflow.name}"...`);
     const phases = await getPhasesByWorkflow(token, ripUrl, workflow.id);
 
     if (!phases.length) {
-        console.log('No phases found for this workflow.');
+        log('No phases found for this workflow.');
         return;
     }
 
@@ -111,7 +112,7 @@ async function initPhase() {
     ]);
 
     if (!selectedPhases.length) {
-        console.log('No phases selected. Aborted.');
+        log('No phases selected. Aborted.');
         return;
     }
 
@@ -125,7 +126,7 @@ async function initPhase() {
     ]);
 
     if (!confirm) {
-        console.log('Aborted.');
+        log('Aborted.');
         return;
     }
 
@@ -157,15 +158,13 @@ async function initPhase() {
             });
         }
 
-        console.log(`Initialized phase "${phase.name}".`);
+        log(`Initialized phase "${phase.name}".`);
         if (results.length > 0) {
-            console.log(`  ${results.length} configurator(s) created: ${vars.join(', ')}`);
+            log(`  ${results.length} configurator(s) created: ${vars.join(', ')}`);
         }
     }
 
-    console.log(
-        `Run 'agrippa pull' in workspaces that track this workflow to fetch the updated code.`
-    );
+    log(`Run 'agrippa pull' in workspaces that track this workflow to fetch the updated code.`);
 }
 
 export { initPhase };

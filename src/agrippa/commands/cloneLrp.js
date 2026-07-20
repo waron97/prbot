@@ -1,6 +1,7 @@
 import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
+import { log, warn } from '../../lib/logger.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
 import { getLrpXml, listLrps, resolveLrpByName } from '../lib/lrpApi.js';
 import { checksumOfPayload, comparePayload, decompose, recompose } from '../lib/pbProject.js';
@@ -31,7 +32,7 @@ async function cloneLrp(opts) {
     if (opts.name) {
         chosen = await resolveLrpByName(token, opts.name);
     } else {
-        console.log('Fetching long-running process list...');
+        log('Fetching long-running process list...');
         const initial = await listLrps(token, null);
         let controller = null;
         chosen = await search({
@@ -64,7 +65,7 @@ async function cloneLrp(opts) {
         dest = inputPath;
     }
 
-    console.log(`Fetching "${chosen.name}"...`);
+    log(`Fetching "${chosen.name}"...`);
     const { xml, description } = await getLrpXml(token, chosen.id);
     const payload = { built_page: xml };
 
@@ -72,7 +73,7 @@ async function cloneLrp(opts) {
     writeProject(dest, files);
 
     const scriptCount = Object.keys(files).filter((p) => p.startsWith('scripts/')).length;
-    console.log(`Cloned to ${dest}/  (${scriptCount} script(s)).`);
+    log(`Cloned to ${dest}/  (${scriptCount} script(s)).`);
 
     // Prove the clone reconstructs the original XML (0-loss bar A). LRPs have
     // no `pages` at all — recompose always synthesizes `pages: []`, which
@@ -81,10 +82,10 @@ async function cloneLrp(opts) {
     const rebuilt = recompose(projectReader(dest));
     const diffs = comparePayload(payload, rebuilt).filter((d) => !d.startsWith('pages:'));
     if (diffs.length) {
-        console.warn('WARNING: round-trip verification found differences:');
-        diffs.forEach((d) => console.warn('  - ' + d));
+        warn('WARNING: round-trip verification found differences:');
+        diffs.forEach((d) => warn('  - ' + d));
     } else {
-        console.log('Round-trip verified: recomposed payload is identical (0 information loss).');
+        log('Round-trip verified: recomposed payload is identical (0 information loss).');
     }
 
     // Register in the workspace for later pull/push — keyed by NAME, not id.

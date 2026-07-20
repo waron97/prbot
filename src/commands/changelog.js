@@ -4,6 +4,7 @@ import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
+import { log } from '../lib/logger.js';
 
 function buildRefString(tridents, jiras, prNumber) {
     const refs = [];
@@ -116,7 +117,7 @@ async function changelog(prNumber, options) {
     const duplicate = findDuplicateLine(content, tridents, jiras);
     let appendMode = false;
     if (duplicate) {
-        console.log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
+        log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
         const { confirm } = await inquirer.prompt([
             {
                 type: 'confirm',
@@ -132,7 +133,7 @@ async function changelog(prNumber, options) {
         const lines = content.split('\n');
         lines[duplicate.lineNumber] = appendPrToLine(lines[duplicate.lineNumber], prNumber);
         await fs.writeFile(changelogPath, lines.join('\n'));
-        console.log('Updated existing line');
+        log('Updated existing line');
         return;
     }
 
@@ -176,7 +177,7 @@ async function changelog(prNumber, options) {
     lines.splice(endLine + 1, 0, newEntry);
 
     await fs.writeFile(changelogPath, lines.join('\n'));
-    console.log('Changelog entry added');
+    log('Changelog entry added');
 }
 
 function findLineByPrNumber(content, prNumber) {

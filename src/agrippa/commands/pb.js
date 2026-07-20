@@ -18,6 +18,7 @@ import { dirname, join } from 'path';
 import search from '@inquirer/search';
 import { parse as yamlParse } from 'yaml';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
+import { log, warn } from '../../lib/logger.js';
 import { readConfig } from '../lib/config.js';
 import {
     addNode,
@@ -120,7 +121,7 @@ function validate(dir) {
     try {
         recompose(projectReader(dir));
     } catch (e) {
-        console.warn(`WARNING: project no longer recomposes cleanly: ${e.message}`);
+        warn(`WARNING: project no longer recomposes cleanly: ${e.message}`);
     }
 }
 
@@ -139,13 +140,13 @@ async function pbFormat(opts) {
         if (!n.layout) missing++;
     });
     validate(dir);
-    console.log(
+    log(
         `Formatted ${dir} (${nodes} node(s) laid out${missing ? `, ${missing} without layout` : ''}).`
     );
     const issues = lintAll(structure);
     if (issues.length) {
-        console.warn('Diagram issues:');
-        for (const w of issues) console.warn(`  ! ${w}`);
+        warn('Diagram issues:');
+        for (const w of issues) warn(`  ! ${w}`);
     }
 }
 
@@ -180,13 +181,13 @@ async function pbAdd(opts) {
         saveStructure(dir, structure);
         saveManifest(dir, manifest);
         validate(dir);
-        console.log(
+        log(
             `Added ${result.type} ${result.id}${result.file ? ` (${result.file})` : ''} between ${opts.from} → ${opts.to}.`
         );
-        console.log(`  ${opts.from} → ${result.id}  (${result.edgeId}, retargeted)`);
-        console.log(`  ${result.id} → ${opts.to}  (${result.newEdgeId})`);
-        for (const w of result.warnings || []) console.warn(`  ! ${w}`);
-        console.log('Run `agrippa pb format` to lay it out.');
+        log(`  ${opts.from} → ${result.id}  (${result.edgeId}, retargeted)`);
+        log(`  ${result.id} → ${opts.to}  (${result.newEdgeId})`);
+        for (const w of result.warnings || []) warn(`  ! ${w}`);
+        log('Run `agrippa pb format` to lay it out.');
         return;
     }
 
@@ -200,10 +201,8 @@ async function pbAdd(opts) {
     saveStructure(dir, structure);
     saveManifest(dir, manifest);
     validate(dir);
-    console.log(`Added ${result.type} ${result.id}${result.file ? ` (${result.file})` : ''}.`);
-    console.log(
-        'Connect it with `agrippa pb connect`, then run `agrippa pb format` to lay it out.'
-    );
+    log(`Added ${result.type} ${result.id}${result.file ? ` (${result.file})` : ''}.`);
+    log('Connect it with `agrippa pb connect`, then run `agrippa pb format` to lay it out.');
 }
 
 async function pbRemove(opts) {
@@ -215,7 +214,7 @@ async function pbRemove(opts) {
     saveStructure(dir, structure);
     saveManifest(dir, manifest);
     validate(dir);
-    console.log(
+    log(
         `Removed ${result.removed.length} node(s) [${result.removed.join(', ')}], ` +
             `${result.removedEdges} dangling edge(s), ${deletes.length} file(s).`
     );
@@ -235,11 +234,11 @@ async function pbConnect(opts) {
     });
     saveStructure(dir, structure);
     validate(dir);
-    console.log(
+    log(
         `Connected ${result.from} → ${result.to} (${result.id})${opts.default ? ' [default]' : ''}.`
     );
-    for (const w of result.warnings || []) console.warn(`  ! ${w}`);
-    console.log('Run `agrippa pb format` to route it.');
+    for (const w of result.warnings || []) warn(`  ! ${w}`);
+    log('Run `agrippa pb format` to route it.');
 }
 
 async function pbDisconnect(opts) {
@@ -250,7 +249,7 @@ async function pbDisconnect(opts) {
     const { result } = disconnect(structure, { id: opts.id, from: opts.from, to: opts.to });
     saveStructure(dir, structure);
     validate(dir);
-    console.log(`Removed ${result.removed} edge(s)${result.id ? ` (${result.id})` : ''}.`);
+    log(`Removed ${result.removed} edge(s)${result.id ? ` (${result.id})` : ''}.`);
 }
 
 async function pbSetDefault(opts) {
@@ -261,11 +260,11 @@ async function pbSetDefault(opts) {
     const { result } = setDefault(structure, { id: opts.id, from: opts.from, to: opts.to });
     saveStructure(dir, structure);
     validate(dir);
-    console.log(
+    log(
         `Default flow on ${result.from} is now ${result.id} (→ ${result.to})` +
             `${result.prev && result.prev !== result.id ? `, was ${result.prev}` : ''}.`
     );
-    for (const w of result.warnings || []) console.warn(`  ! ${w}`);
+    for (const w of result.warnings || []) warn(`  ! ${w}`);
 }
 
 async function pbList(opts) {
@@ -275,7 +274,7 @@ async function pbList(opts) {
     for (const r of rows) {
         const where = r.parent ? `  [in ${r.parent}]` : '';
         const label = r.name ? `  "${r.name}"` : '';
-        console.log(`${r.id}  (${r.type})${label}${where}`);
+        log(`${r.id}  (${r.type})${label}${where}`);
         for (const e of r.edges) {
             const tag = [
                 e.isDefault && '[default]',
@@ -284,10 +283,10 @@ async function pbList(opts) {
             ]
                 .filter(Boolean)
                 .join(' ');
-            console.log(`    → ${e.target}  (${e.id})${tag ? `  ${tag}` : ''}`);
+            log(`    → ${e.target}  (${e.id})${tag ? `  ${tag}` : ''}`);
         }
     }
-    console.log(`\n${rows.length} node(s).`);
+    log(`\n${rows.length} node(s).`);
 }
 
 async function pbPreview(opts) {
@@ -296,7 +295,7 @@ async function pbPreview(opts) {
     const svg = toSvg(structure);
     const out = opts.out || join(dir, 'preview.svg');
     writeFileSync(out, svg, 'utf-8');
-    console.log(`Wrote ${out} (${svg.length} bytes).`);
+    log(`Wrote ${out} (${svg.length} bytes).`);
 }
 
 async function pbLint(opts) {
@@ -304,9 +303,9 @@ async function pbLint(opts) {
     const { structure } = loadProject(dir);
     const issues = lintAll(structure);
     if (!issues.length) {
-        console.log('No issues.');
+        log('No issues.');
     } else {
-        for (const w of issues) console.warn(`  ! ${w}`);
+        for (const w of issues) warn(`  ! ${w}`);
         process.exitCode = 1;
     }
 }

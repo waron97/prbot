@@ -12,5 +12,11 @@ export default defineConfig(
         rules: {
             'no-console': 'warn',
         },
+    },
+    {
+        files: ['src/lib/logger.js'],
+        rules: {
+            'no-console': 'off',
+        },
     }
 );

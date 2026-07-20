@@ -92,8 +92,12 @@ function toSvg(structure) {
         );
         if (e.name) {
             const lp = e.labelPos;
-            const lx = lp ? lp.x + lp.width / 2 : e.waypoints[Math.floor(e.waypoints.length / 2)][0];
-            const ly = lp ? lp.y + lp.height / 2 : e.waypoints[Math.floor(e.waypoints.length / 2)][1] - 4;
+            const lx = lp
+                ? lp.x + lp.width / 2
+                : e.waypoints[Math.floor(e.waypoints.length / 2)][0];
+            const ly = lp
+                ? lp.y + lp.height / 2
+                : e.waypoints[Math.floor(e.waypoints.length / 2)][1] - 4;
             out.push(
                 `<text x="${lx + ox}" y="${ly + oy}" text-anchor="middle" fill="#666" font-size="9">${esc(e.name)}</text>`
             );

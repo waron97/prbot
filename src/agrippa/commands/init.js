@@ -9,6 +9,7 @@ import {
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import inquirer from 'inquirer';
+import { log } from '../../lib/logger.js';
 import { WORKSPACE_FILE } from '../lib/config.js';
 
 const TEMPLATE = `# agrippa workspace configuration
@@ -93,23 +94,23 @@ async function init() {
             },
         ]);
         if (!overwrite) {
-            console.log('Skipped workspace file.');
+            log('Skipped workspace file.');
         } else {
             writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
-            console.log(`Created ${WORKSPACE_FILE}`);
-            console.log(`Run 'agrippa clone' to add resources to this workspace.`);
-            console.log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
+            log(`Created ${WORKSPACE_FILE}`);
+            log(`Run 'agrippa clone' to add resources to this workspace.`);
+            log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
         }
     } else {
         writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
-        console.log(`Created ${WORKSPACE_FILE}`);
-        console.log(`Run 'agrippa clone' to add resources to this workspace.`);
-        console.log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
+        log(`Created ${WORKSPACE_FILE}`);
+        log(`Run 'agrippa clone' to add resources to this workspace.`);
+        log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
     }
 
     if (!existsSync('pyproject.toml')) {
         writeFileSync('pyproject.toml', PYPROJECT_TOML, 'utf-8');
-        console.log('Created pyproject.toml (ruff builtins)');
+        log('Created pyproject.toml (ruff builtins)');
     }
 
     const { importTypings } = await inquirer.prompt([
@@ -124,7 +125,7 @@ async function init() {
     if (importTypings) {
         if (!existsSync('pyrightconfig.json')) {
             writeFileSync('pyrightconfig.json', PYRIGHTCONFIG, 'utf-8');
-            console.log('Created pyrightconfig.json');
+            log('Created pyrightconfig.json');
         }
 
         const typingsDir = fileURLToPath(new URL('../../../agrippa_typings', import.meta.url));
@@ -132,7 +133,7 @@ async function init() {
         for (const file of TYPING_FILES) {
             copyFileSync(join(typingsDir, file), join('typings', file));
         }
-        console.log(`Copied ${TYPING_FILES.length} type stubs to typings/`);
+        log(`Copied ${TYPING_FILES.length} type stubs to typings/`);
     }
 
     const { importInstructions } = await inquirer.prompt([
@@ -149,13 +150,13 @@ async function init() {
         const block = pbBlock(readFileSync(guidePath, 'utf-8'));
         if (!existsSync('CLAUDE.md')) {
             writeFileSync('CLAUDE.md', block, 'utf-8');
-            console.log('Created CLAUDE.md with agrippa-pb guidance');
+            log('Created CLAUDE.md with agrippa-pb guidance');
         } else {
             const current = readFileSync('CLAUDE.md', 'utf-8');
             const begin = current.indexOf(PB_BEGIN);
             if (begin === -1) {
                 appendFileSync('CLAUDE.md', `\n${block}`, 'utf-8');
-                console.log('Appended agrippa-pb guidance to CLAUDE.md');
+                log('Appended agrippa-pb guidance to CLAUDE.md');
             } else {
                 // Replace the existing managed block in place; leave the rest as-is.
                 const endIdx = current.indexOf(PB_END, begin);
@@ -165,7 +166,7 @@ async function init() {
                     );
                 const after = current.slice(endIdx + PB_END.length).replace(/^\n/, '');
                 writeFileSync('CLAUDE.md', current.slice(0, begin) + block + after, 'utf-8');
-                console.log('Refreshed agrippa-pb guidance in CLAUDE.md');
+                log('Refreshed agrippa-pb guidance in CLAUDE.md');
             }
         }
     }

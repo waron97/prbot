@@ -2,6 +2,7 @@ import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
+import { log, warn } from '../../lib/logger.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
 import { getProcess, listProcesses } from '../lib/pbApi.js';
 import { checksumOfPayload, comparePayload, decompose, recompose } from '../lib/pbProject.js';
@@ -15,11 +16,11 @@ async function clonePb(opts) {
         throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
     }
 
-    console.log('Fetching process list...');
+    log('Fetching process list...');
     const token = await getToken();
     const processes = await listProcesses(token);
     if (!processes.length) {
-        console.log('No process-builder wizards found.');
+        log('No process-builder wizards found.');
         return;
     }
 
@@ -60,7 +61,7 @@ async function clonePb(opts) {
         dest = inputPath;
     }
 
-    console.log(`Fetching "${chosen.process_name}"...`);
+    log(`Fetching "${chosen.process_name}"...`);
     const payload = await getProcess(token, chosen.guid);
 
     const { files } = decompose(payload);
@@ -68,17 +69,17 @@ async function clonePb(opts) {
 
     const scriptCount = Object.keys(files).filter((p) => p.startsWith('scripts/')).length;
     const pageCount = Object.keys(files).filter((p) => p.startsWith('pages/')).length;
-    console.log(`Cloned to ${dest}/  (${scriptCount} script(s), ${pageCount} page(s))`);
+    log(`Cloned to ${dest}/  (${scriptCount} script(s), ${pageCount} page(s))`);
 
     // Prove the clone reconstructs the original payload (0-loss bar A) by
     // reading the files back from disk and recomposing.
     const rebuilt = recompose(projectReader(dest));
     const diffs = comparePayload(payload, rebuilt);
     if (diffs.length) {
-        console.warn('WARNING: round-trip verification found differences:');
-        diffs.forEach((d) => console.warn('  - ' + d));
+        warn('WARNING: round-trip verification found differences:');
+        diffs.forEach((d) => warn('  - ' + d));
     } else {
-        console.log('Round-trip verified: recomposed payload is identical (0 information loss).');
+        log('Round-trip verified: recomposed payload is identical (0 information loss).');
     }
 
     // Register in the workspace for later pull/push.

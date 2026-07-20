@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import inquirer from 'inquirer';
 import { CONFIG_DIR, CONFIG_FILE } from '../config.js';
+import { log } from '../lib/logger.js';
 
 async function init() {
     if (!existsSync(CONFIG_DIR)) {
@@ -142,7 +143,7 @@ async function init() {
             .map(([k, v]) => `${k}=${v}`)
             .join('\n') + '\n'
     );
-    console.log(`Config written to ${CONFIG_FILE}`);
+    log(`Config written to ${CONFIG_FILE}`);
 }
 
 export { init };

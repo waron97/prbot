@@ -154,7 +154,14 @@ async function autoLayout(structure) {
                 targets: [e.target],
                 sourcePort,
                 labels: e.name
-                    ? [{ id: `${e.id}__lbl`, text: e.name, width: Math.min(e.name.length * 6, 140), height: 14 }]
+                    ? [
+                          {
+                              id: `${e.id}__lbl`,
+                              text: e.name,
+                              width: Math.min(e.name.length * 6, 140),
+                              height: 14,
+                          },
+                      ]
                     : [],
                 layoutOptions: {
                     'elk.layered.priority.straightness': isHappy ? '10' : 1,

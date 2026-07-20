@@ -3,6 +3,7 @@ import select from '@inquirer/select';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
+import { log, warn } from '../../lib/logger.js';
 import { describeWorkflow, getPhasesByWorkflow, listMfas, listWorkflows } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
@@ -42,7 +43,7 @@ async function clone(opts) {
     if (!ripUrl)
         throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
-    console.log('Fetching records...');
+    log('Fetching records...');
     const token = await getToken();
 
     let records;
@@ -53,7 +54,7 @@ async function clone(opts) {
     }
 
     if (!records.length) {
-        console.log(`No ${objectType} records found.`);
+        log(`No ${objectType} records found.`);
         return;
     }
 
@@ -92,11 +93,11 @@ async function clone(opts) {
             basePath = inputPath;
         }
 
-        console.log(`Fetching phases for "${record.name}"...`);
+        log(`Fetching phases for "${record.name}"...`);
         const phases = await getPhasesByWorkflow(token, ripUrl, record.id, { fromCode: true });
 
         if (!phases.length) {
-            console.log('No phases found.');
+            log('No phases found.');
             return;
         }
 
@@ -112,19 +113,19 @@ async function clone(opts) {
                 checksum_at_pull: computeChecksum(phase.code),
                 name: `${record.name} / ${phase.name}`,
             });
-            console.log(`  wrote ${filePath}`);
+            log(`  wrote ${filePath}`);
         }
 
         // Drop the workflow graph alongside the phase files as read-only context.
         try {
             const structure = await describeWorkflow(token, ripUrl, record.id);
             const docPath = writeWorkflowDoc(basePath, structure);
-            console.log(`  wrote ${docPath}`);
+            log(`  wrote ${docPath}`);
         } catch (err) {
-            console.warn(`  could not fetch workflow structure: ${err.message}`);
+            warn(`  could not fetch workflow structure: ${err.message}`);
         }
 
-        console.log(`Cloned ${phases.length} phase(s) to ${basePath}/`);
+        log(`Cloned ${phases.length} phase(s) to ${basePath}/`);
     } else {
         const defaultPath = defaultMfaPath(record.model_name, record.name);
         if (!basePath) {
@@ -147,7 +148,7 @@ async function clone(opts) {
             checksum_at_pull: computeChecksum(record.code),
             name: `${record.model_name} / ${record.name}`,
         });
-        console.log(`Cloned MFA to ${basePath}`);
+        log(`Cloned MFA to ${basePath}`);
     }
 
     writeConfig(config);

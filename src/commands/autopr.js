@@ -6,6 +6,7 @@ import fetch from 'node-fetch';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
+import { log } from '../lib/logger.js';
 import {
     appendPrToLine,
     appendRefsToLine,
@@ -120,7 +121,7 @@ async function createDevopsPR(branch, title, description) {
     return { id: data.pullRequestId, url: prUrl };
 }
 
-async function appendChecklistPrLink(taskId, currentChecklist, prUrl, prNumber) {
+async function appendChecklistPrLink(taskId, currentChecklist, prUrl) {
     const link = `<a href="${prUrl}">${prUrl}</a><br/>`;
     const updated = currentChecklist ? `${currentChecklist}\n${link}` : link;
     const url = `${process.env.TRIDENT_URL}/jsonrpc`;
@@ -191,8 +192,8 @@ async function selectSection(sections, candidates) {
     const scored = candidates.length > 0 ? scoreSections(sections, candidates) : [];
 
     if (candidates.length > 0) {
-        console.log(`\nTask fields: ${candidates.join(' | ')}`);
-        if (scored.length === 0) console.log('No matching sections found.');
+        log(`\nTask fields: ${candidates.join(' | ')}`);
+        if (scored.length === 0) log('No matching sections found.');
     }
 
     const scoredHeadings = new Set(scored.map((s) => s.heading));
@@ -224,13 +225,13 @@ async function autoprAmend(options) {
     const pr = await fetchActivePr(branch);
     const prNumber = pr.pullRequestId;
     const prUrl = `https://dev.azure.com/${DEVOPS_ORG}/${DEVOPS_PROJECT}/_git/${DEVOPS_REPO}/pullrequest/${prNumber}`;
-    console.log(`Found PR #${prNumber}: ${prUrl}`);
+    log(`Found PR #${prNumber}: ${prUrl}`);
 
     const ids = options.trident ?? [];
     const jiras = options.jira ?? [];
 
     const tasks = ids.length > 0 ? await Promise.all(ids.map(fetchTask)) : [];
-    tasks.forEach((t) => console.log(`Task: ${t.name}`));
+    tasks.forEach((t) => log(`Task: ${t.name}`));
 
     const newLinks = [
         ...ids.map((id) => `${process.env.TRIDENT_URL}/odoo/my-tasks/${id}`),
@@ -241,20 +242,18 @@ async function autoprAmend(options) {
             ? `${pr.description}\n${newLinks.join('\n')}`
             : newLinks.join('\n');
         await patchDevopsPrDescription(prNumber, updatedDescription);
-        console.log('PR description updated');
+        log('PR description updated');
     }
 
     for (let i = 0; i < ids.length; i++) {
-        await appendChecklistPrLink(ids[i], tasks[i].x_release_checklist, prUrl, prNumber);
+        await appendChecklistPrLink(ids[i], tasks[i].x_release_checklist, prUrl);
     }
-    if (ids.length > 0) console.log('Checklist updated');
+    if (ids.length > 0) log('Checklist updated');
 
     const content = readFileSync(changelogPath, 'utf-8');
     const existing = findLineByPrNumber(content, prNumber);
     if (!existing) {
-        console.log(
-            `Warning: no changelog line found for PR #${prNumber} — skipping changelog update`
-        );
+        log(`Warning: no changelog line found for PR #${prNumber} — skipping changelog update`);
         return;
     }
     const lines = content.split('\n');
@@ -264,8 +263,8 @@ async function autoprAmend(options) {
     await execGit(['add', 'CHANGELOG.md'], ADDONS_PATH);
     await execGit(['commit', '-m', '[DOC][CHANGELOG] Changelog'], ADDONS_PATH);
     await execGit(['push'], ADDONS_PATH);
-    console.log('Changelog updated and pushed');
-    console.log('\nReminder: squash the two changelog commits before merging the PR.');
+    log('Changelog updated and pushed');
+    log('\nReminder: squash the two changelog commits before merging the PR.');
 }
 
 async function autopr(options) {
@@ -278,7 +277,7 @@ async function autopr(options) {
     const hasTridents = ids.length > 0;
 
     const tasks = hasTridents ? await Promise.all(ids.map((id) => fetchTask(id))) : [];
-    tasks.forEach((t) => console.log(`Task: ${t.name}`));
+    tasks.forEach((t) => log(`Task: ${t.name}`));
 
     const content = readFileSync(changelogPath, 'utf-8');
 
@@ -286,7 +285,7 @@ async function autopr(options) {
 
     let appendMode = false;
     if (duplicate) {
-        console.log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
+        log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
         const { confirm } = await inquirer.prompt([
             {
                 type: 'confirm',
@@ -315,19 +314,19 @@ async function autopr(options) {
     }
 
     await execGit(['checkout', '-b', branch], ADDONS_PATH);
-    console.log(`Branch created: ${branch}`);
+    log(`Branch created: ${branch}`);
     await execGit(['push', '-u', 'origin', branch], ADDONS_PATH);
 
     const prTitle = options.name ?? tasks[0]?.name ?? branch;
     const prDescription = buildPrDescription(ids, options.jira ?? []);
     const { id: prNumber, url: prUrl } = await createDevopsPR(branch, prTitle, prDescription);
-    console.log(`PR opened: #${prNumber} — ${prUrl}`);
+    log(`PR opened: #${prNumber} — ${prUrl}`);
 
     if (hasTridents) {
         for (let i = 0; i < ids.length; i++) {
-            await appendChecklistPrLink(ids[i], tasks[i].x_release_checklist, prUrl, prNumber);
+            await appendChecklistPrLink(ids[i], tasks[i].x_release_checklist, prUrl);
         }
-        console.log('Checklist updated');
+        log('Checklist updated');
     }
 
     const lines = content.split('\n');
@@ -365,12 +364,12 @@ async function autopr(options) {
     }
 
     await fs.writeFile(changelogPath, lines.join('\n'));
-    console.log('Changelog entry written');
+    log('Changelog entry written');
 
     await execGit(['add', 'CHANGELOG.md'], ADDONS_PATH);
     await execGit(['commit', '-m', '[DOC][CHANGELOG] Changelog'], ADDONS_PATH);
     await execGit(['push'], ADDONS_PATH);
-    console.log('Changelog committed and pushed');
+    log('Changelog committed and pushed');
 }
 
 export { autopr };

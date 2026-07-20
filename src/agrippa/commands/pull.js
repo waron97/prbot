@@ -1,6 +1,7 @@
 import { dirname } from 'path';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
+import { log, warn } from '../../lib/logger.js';
 import { describeWorkflow, getPhasesByIds, getPhasesByWorkflow, listMfas } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
@@ -29,10 +30,10 @@ async function pull(opts = {}) {
     // Stale-file check
     const stale = config.workspace.filter((e) => !fileExists(e.path));
     if (stale.length) {
-        console.log('\nThe following tracked files no longer exist on disk:');
-        stale.forEach((e) => console.log(`  - ${e.path}  (${e.name})`));
+        log('\nThe following tracked files no longer exist on disk:');
+        stale.forEach((e) => log(`  - ${e.path}  (${e.name})`));
         if (opts.nonInteractive) {
-            console.log('  (non-interactive: leaving them tracked; run interactively to clean up)');
+            log('  (non-interactive: leaving them tracked; run interactively to clean up)');
         } else {
             const { cleanup } = await inquirer.prompt([
                 {
@@ -62,7 +63,7 @@ async function pull(opts = {}) {
         (e) => e.object_type !== 'process_builder' && e.object_type !== 'long_running_process'
     );
     if (pullable.length) {
-        console.log('Fetching remote code...');
+        log('Fetching remote code...');
         const remoteCodeMap = await fetchRemoteCode(token, ripUrl, pullable);
 
         const classified = pullable.map((entry) => {
@@ -89,12 +90,12 @@ async function pull(opts = {}) {
         const changed = classified.filter((e) => e.status !== 'unchanged');
 
         if (!changed.length) {
-            console.log('Everything is up to date.');
+            log('Everything is up to date.');
         } else {
             const selected = await selectEntries(changed, 'pull (overwrites local files)', opts);
 
             if (!selected.length) {
-                console.log('Nothing selected. No changes made.');
+                log('Nothing selected. No changes made.');
             } else {
                 for (const entry of selected) {
                     writeCodeFile(entry.path, entry.remoteCode);
@@ -109,11 +110,11 @@ async function pull(opts = {}) {
                     }
                 }
                 writeConfig(config);
-                console.log(`\nPulled ${selected.length} record(s).`);
+                log(`\nPulled ${selected.length} record(s).`);
             }
         }
     } else {
-        console.log('No tracked resources. Run `agrippa clone` first.');
+        log('No tracked resources. Run `agrippa clone` first.');
     }
 
     // ── refresh tracked process-builder wizards ───────────────────────────────
@@ -137,7 +138,7 @@ async function pullPbEntries(token, config, opts = {}) {
     if (!process.env.PB_URL)
         throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
 
-    console.log('Checking process-builder wizards...');
+    log('Checking process-builder wizards...');
     const classified = [];
     for (const entry of entries) {
         let upstream = null;
@@ -147,7 +148,7 @@ async function pullPbEntries(token, config, opts = {}) {
             upstream = null;
         }
         if (!upstream) {
-            console.warn(`  ${entry.name}: could not fetch upstream, skipping`);
+            warn(`  ${entry.name}: could not fetch upstream, skipping`);
             continue;
         }
         const localSemantic = localChecksum(projectReader(entry.path));
@@ -162,13 +163,13 @@ async function pullPbEntries(token, config, opts = {}) {
 
     const changed = classified.filter((e) => e.status !== 'unchanged');
     if (!changed.length) {
-        console.log('Wizards are up to date.');
+        log('Wizards are up to date.');
         return;
     }
 
     const selected = await selectEntries(changed, 'pull (overwrites local wizard files)', opts);
     if (!selected.length) {
-        console.log('No wizards selected.');
+        log('No wizards selected.');
         return;
     }
 
@@ -184,10 +185,10 @@ async function pullPbEntries(token, config, opts = {}) {
             if (res.newStatus) config.workspace[idx].status = res.newStatus;
         }
         const note = res.diffs.length ? ` (WARNING: ${res.diffs.length} round-trip diff(s))` : '';
-        console.log(`  ${entry.name} → refreshed${note}`);
+        log(`  ${entry.name} → refreshed${note}`);
     }
     writeConfig(config);
-    console.log(`\nPulled ${selected.length} wizard(s). Local backups in .backup/${backupTs}/`);
+    log(`\nPulled ${selected.length} wizard(s). Local backups in .backup/${backupTs}/`);
 }
 
 // Refresh tracked long-running processes from upstream. Same classification
@@ -201,7 +202,7 @@ async function pullLrpEntries(token, config, opts = {}) {
             'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
         );
 
-    console.log('Checking long-running processes...');
+    log('Checking long-running processes...');
     const classified = [];
     for (const entry of entries) {
         let upstream = null;
@@ -211,7 +212,7 @@ async function pullLrpEntries(token, config, opts = {}) {
             upstream = null;
         }
         if (!upstream) {
-            console.warn(`  ${entry.name}: could not fetch upstream, skipping`);
+            warn(`  ${entry.name}: could not fetch upstream, skipping`);
             continue;
         }
         const localSemantic = localChecksum(projectReader(entry.path));
@@ -226,13 +227,13 @@ async function pullLrpEntries(token, config, opts = {}) {
 
     const changed = classified.filter((e) => e.status !== 'unchanged');
     if (!changed.length) {
-        console.log('Long-running processes are up to date.');
+        log('Long-running processes are up to date.');
         return;
     }
 
     const selected = await selectEntries(changed, 'pull (overwrites local LRP files)', opts);
     if (!selected.length) {
-        console.log('No long-running processes selected.');
+        log('No long-running processes selected.');
         return;
     }
 
@@ -251,10 +252,10 @@ async function pullLrpEntries(token, config, opts = {}) {
             config.workspace[idx].status = res.newRow.status;
         }
         const note = res.diffs.length ? ` (WARNING: ${res.diffs.length} round-trip diff(s))` : '';
-        console.log(`  ${entry.name} → refreshed${note}`);
+        log(`  ${entry.name} → refreshed${note}`);
     }
     writeConfig(config);
-    console.log(
+    log(
         `\nPulled ${selected.length} long-running process(es). Local backups in .backup/${backupTs}/`
     );
 }
@@ -298,7 +299,7 @@ async function discoverNewPhases(token, ripUrl, config, changedWorkflowIds = new
                 checksum_at_pull: computeChecksum(phase.code),
                 name: `${wfName} / ${phase.name}`,
             });
-            console.log(`  new phase: ${filePath}`);
+            log(`  new phase: ${filePath}`);
             newCount++;
             wfChanged = true;
         }
@@ -311,14 +312,14 @@ async function discoverNewPhases(token, ripUrl, config, changedWorkflowIds = new
                 const structure = await describeWorkflow(token, ripUrl, wfId);
                 writeWorkflowDoc(basePath, structure);
             } catch (err) {
-                console.warn(`  could not refresh workflow.yml for ${wfName}: ${err.message}`);
+                warn(`  could not refresh workflow.yml for ${wfName}: ${err.message}`);
             }
         }
     }
 
     if (newCount) {
         writeConfig(config);
-        console.log(`Added ${newCount} new phase(s) from tracked workflows.`);
+        log(`Added ${newCount} new phase(s) from tracked workflows.`);
     }
 }
 

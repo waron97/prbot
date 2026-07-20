@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { createRequire } from 'module';
 import { program } from 'commander';
+import { error } from '../lib/logger.js';
 import { clone } from './commands/clone.js';
 import { diff } from './commands/diff.js';
 import { init } from './commands/init.js';
@@ -24,7 +25,7 @@ const require = createRequire(import.meta.url);
 const { version } = require('../../package.json');
 
 process.on('unhandledRejection', (err) => {
-    console.error(`Error: ${err.message}`);
+    error(`Error: ${err.message}`);
     process.exit(1);
 });
 
@@ -35,7 +36,7 @@ program
     .description('Create agrippa.yaml workspace config in the current directory')
     .action(() =>
         init().catch((err) => {
-            console.error(`Error: ${err.message}`);
+            error(`Error: ${err.message}`);
             process.exit(1);
         })
     );
@@ -54,7 +55,7 @@ program
     .option('--path <path>', 'Destination path (file for MFA, base dir for workflow/pb/lrp)')
     .action((opts) =>
         clone(opts).catch((err) => {
-            console.error(`Error: ${err.message}`);
+            error(`Error: ${err.message}`);
             process.exit(1);
         })
     );
@@ -68,7 +69,7 @@ program
     )
     .action((opts) =>
         pull(opts).catch((err) => {
-            console.error(`Error: ${err.message}`);
+            error(`Error: ${err.message}`);
             process.exit(1);
         })
     );
@@ -84,7 +85,7 @@ program
     )
     .action((opts) =>
         push(opts).catch((err) => {
-            console.error(`Error: ${err.message}`);
+            error(`Error: ${err.message}`);
             process.exit(1);
         })
     );
@@ -94,7 +95,7 @@ program
     .description('Show differences between local files and remote code')
     .action((path) =>
         diff(path).catch((err) => {
-            console.error(`Error: ${err.message}`);
+            error(`Error: ${err.message}`);
             process.exit(1);
         })
     );
@@ -104,7 +105,7 @@ program
     .description('Initialize a phase with default code template and result vars')
     .action(() =>
         initPhase().catch((err) => {
-            console.error(`Error: ${err.message}`);
+            error(`Error: ${err.message}`);
             process.exit(1);
         })
     );
@@ -114,14 +115,14 @@ program
     .description('Remove stale workspace entries where local file no longer exists')
     .action(() =>
         repair().catch((err) => {
-            console.error(`Error: ${err.message}`);
+            error(`Error: ${err.message}`);
             process.exit(1);
         })
     );
 
 // ---- pb: local editing helpers for a cloned process-builder wizard or LRP ----
 const die = (err) => {
-    console.error(`Error: ${err.message}`);
+    error(`Error: ${err.message}`);
     process.exit(1);
 };
 const pb = program
