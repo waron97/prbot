@@ -273,16 +273,17 @@ agrippa push --non-interactive  # no prompts: auto-select fast-forward, fail if 
                                  # publish/deploy defaults to skip unless --publish is also passed
 ```
 
-### `agrippa diff [path]`
+### `agrippa diff [target]`
 
-Shows a diff between local files and remote code. Optionally filter to a specific file path.
+Shows a diff between local files and remote code. `[target]` optionally narrows it to a single file, a workflow folder, a cloned project directory, or a `document_id`/name; omit it for the whole workspace.
 
-For process-builder wizards, diffs the whole project tree against what the workspace would look like if the wizard were decomposed fresh from upstream right now (`.backup/` and `preview.svg` are excluded as local-only artifacts).
+For process-builder wizards and long-running processes, diffs the whole project tree against what the workspace would look like if the project were decomposed fresh from upstream right now (`.backup/` and `preview.svg` are excluded as local-only artifacts).
 
 ```bash
 agrippa diff
 agrippa diff my-workflow/some-phase.py
 agrippa diff ml_review_billing      # a cloned wizard's directory
+agrippa diff B2WA_M2C_passthrough   # a cloned LRP, by directory or name
 ```
 
 ### `agrippa init-phase`
@@ -309,15 +310,16 @@ These commands exist mainly so an **AI agent** can add/remove/connect blocks wit
 
 Newly added blocks get placeholder geometry. `pb format` re-lays-out the **whole** diagram (discarding any hand-tuned layout), so running it is a deliberate **human decision** — the alternative is positioning the new blocks by hand in the UI. Agents are expected to make structural edits but **not** to run `format` or to `pull`/`push`; a human reviews and syncs.
 
-| Command         | Purpose                                                                              |
-| --------------- | ------------------------------------------------------------------------------------ |
-| `pb format`     | Re-lay-out the **entire** diagram (elkjs, left→right); overwrites existing layout    |
-| `pb add`        | Add a node (`--type`, `--name`, `--parent`); scaffolds script/page files             |
-| `pb rm`         | Remove a node (`--id`), its edges, and its script/page files                         |
-| `pb connect`    | Add a flow (`--from`, `--to`, `--condition`, `--default`); enforces the gateway rule |
-| `pb disconnect` | Remove a flow (`--id`, or `--from`/`--to`)                                           |
-| `pb ls`         | List nodes and edges with their ids (discover targets without reading the YAML)      |
-| `pb preview`    | Render the diagram to an SVG (`--out`) for a quick visual check                      |
+| Command         | Purpose                                                                                                                                            |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pb format`     | Re-lay-out the **entire** diagram (elkjs, left→right); overwrites existing layout                                                                  |
+| `pb add`        | Add a node (`--type`, `--name`, `--parent`); scaffolds script/page files                                                                           |
+| `pb rm`         | Remove a node (`--id`), its edges, and its script/page files                                                                                       |
+| `pb connect`    | Add a flow (`--from`, `--to`, `--condition`, `--default`); enforces the gateway rule                                                               |
+| `pb disconnect` | Remove a flow (`--id`, or `--from`/`--to`); clears the source gateway's `default` if it pointed at that flow                                       |
+| `pb lint`       | Check the structural rules: gateway defaults/conditions, branch names, incoming-flow limits, and `default`s pointing at flows that no longer exist |
+| `pb ls`         | List nodes and edges with their ids (discover targets without reading the YAML)                                                                    |
+| `pb preview`    | Render the diagram to an SVG (`--out`) for a quick visual check                                                                                    |
 
 ```bash
 agrippa pb ls --pb ml_review_billing

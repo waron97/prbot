@@ -218,6 +218,8 @@ async function pbRemove(opts) {
         `Removed ${result.removed.length} node(s) [${result.removed.join(', ')}], ` +
             `${result.removedEdges} dangling edge(s), ${deletes.length} file(s).`
     );
+    for (const c of result.clearedDefaults || [])
+        log(`  cleared dangling default ${c.edge} on ${c.node}.`);
 }
 
 async function pbConnect(opts) {
@@ -250,6 +252,8 @@ async function pbDisconnect(opts) {
     saveStructure(dir, structure);
     validate(dir);
     log(`Removed ${result.removed} edge(s)${result.id ? ` (${result.id})` : ''}.`);
+    for (const c of result.clearedDefaults || [])
+        log(`  cleared dangling default ${c.edge} on ${c.node}.`);
 }
 
 async function pbSetDefault(opts) {

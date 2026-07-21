@@ -15,6 +15,7 @@ import { getToken } from '../../lib/auth.js';
 import { error, log } from '../../lib/logger.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig } from '../lib/config.js';
+import { fetchUpstream } from '../lib/lrpApi.js';
 import { getProcess } from '../lib/pbApi.js';
 import { decompose, localChecksum } from '../lib/pbProject.js';
 import { projectReader, writeProject } from '../lib/pbWorkspace.js';
@@ -36,13 +37,24 @@ async function diff(targetArg) {
         return;
     }
 
-    const pbEntries = entries.filter((e) => e.object_type === 'process_builder');
-    const codeEntries = entries.filter((e) => e.object_type !== 'process_builder');
+    // Decomposed projects (pb + lrp) diff as whole directory trees; phases and
+    // MFAs are single code files. An LRP left in the code bucket used to reach
+    // readCodeFile() with a directory path and blow up with EISDIR, so the
+    // split is by "is this a project" rather than "is this a wizard".
+    const projectEntries = entries.filter((e) => PROJECT_TYPES.has(e.object_type));
+    const codeEntries = entries.filter((e) => !PROJECT_TYPES.has(e.object_type));
 
     if (codeEntries.length && !process.env.RIP_URL)
         throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
-    if (pbEntries.length && !process.env.PB_URL)
+    if (projectEntries.some((e) => e.object_type === 'process_builder') && !process.env.PB_URL)
         throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+    if (
+        projectEntries.some((e) => e.object_type === 'long_running_process') &&
+        !process.env.IMPORTEXPORT_URL
+    )
+        throw new Error(
+            'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
+        );
 
     log('Fetching remote code...');
     const token = await getToken();
@@ -57,8 +69,8 @@ async function diff(targetArg) {
         chunks.push(...cs);
     }
 
-    for (const entry of pbEntries) {
-        const { hasDiff, chunk } = await diffPbEntry(token, entry);
+    for (const entry of projectEntries) {
+        const { hasDiff, chunk } = await diffProjectEntry(token, entry);
         if (hasDiff) {
             diffCount++;
             chunks.push(chunk);
@@ -124,14 +136,33 @@ function diffCodeEntries(entries, remoteCodeMap) {
     return { diffCount, chunks };
 }
 
-// Process-builder wizard: decompose the upstream payload into a throwaway
-// project tree (exactly what re-cloning now would produce) and diff it against
-// a copy of the local project, recursively. `.backup/` and `preview.svg` are
-// local-only artifacts (push backups, dev preview render) with no upstream
-// counterpart, so they're stripped from the local copy before diffing.
-async function diffPbEntry(token, entry) {
+// Decomposed project (process-builder wizard or long-running process): fetch
+// the upstream payload, decompose it into a throwaway project tree (exactly
+// what re-cloning now would produce) and diff it against a copy of the local
+// project, recursively. `.backup/` and `preview.svg` are local-only artifacts
+// (push backups, dev preview render) with no upstream counterpart, so they're
+// stripped from the local copy before diffing.
+//
+// The two types differ only in how upstream is reached: a wizard by guid, an
+// LRP by name (its tabulator id changes on every save — never a stable key,
+// see pullLrpEntry). Everything downstream is the shared decompose pipeline.
+const PROJECT_TYPES = new Set(['process_builder', 'long_running_process']);
+
+async function fetchProjectUpstream(token, entry) {
+    if (entry.object_type === 'long_running_process') {
+        const res = await fetchUpstream(token, entry.name);
+        if (!res?.payload) throw new Error(`could not fetch upstream LRP "${entry.name}"`);
+        return res.payload;
+    }
     const upstream = await getProcess(token, entry.guid);
     if (!upstream) throw new Error(`could not fetch upstream wizard ${entry.guid}`);
+    return upstream;
+}
+
+async function diffProjectEntry(token, entry) {
+    const upstream = await fetchProjectUpstream(token, entry);
+    const label =
+        entry.object_type === 'long_running_process' ? 'long-running process' : 'process-builder';
 
     const tmpRoot = mkdtempSync(join(tmpdir(), 'agrippa-pb-diff-'));
     try {
@@ -159,7 +190,7 @@ async function diffPbEntry(token, entry) {
         if (result.status !== null && result.status > 1) {
             error(`git diff failed for ${entry.path}`);
         }
-        const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] (process-builder) ===\n`);
+        const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] (${label}) ===\n`);
         const chunk = Buffer.concat([header, result.stdout ?? Buffer.alloc(0)]);
         return { hasDiff: true, chunk };
     } finally {
@@ -173,14 +204,21 @@ function filterEntries(workspace, targetArg) {
     // Normalise: strip trailing slash
     const target = targetArg.replace(/\/$/, '');
 
-    // If it exists on disk and is a directory, filter by prefix
+    // If it exists on disk and is a directory, take both the entries *under* it
+    // (a workflow folder holding one file per phase) and any entry that *is* it
+    // — a pb/lrp project is tracked as the directory itself, so prefix matching
+    // alone silently returned nothing for the most common target.
     if (existsSync(target) && statSync(target).isDirectory()) {
-        const prefix = target.endsWith('/') ? target : target + '/';
-        return workspace.filter((e) => e.path.startsWith(prefix));
+        const prefix = target + '/';
+        const matches = workspace.filter((e) => e.path === target || e.path.startsWith(prefix));
+        if (matches.length) return matches;
     }
 
-    // Otherwise treat as exact file path (whether it exists yet or not)
-    return workspace.filter((e) => e.path === target);
+    // Exact file path (whether it exists yet or not), else fall back to the
+    // identifiers the other commands accept — document_id (`--pb`) and name.
+    const byPath = workspace.filter((e) => e.path === target);
+    if (byPath.length) return byPath;
+    return workspace.filter((e) => e.document_id === target || e.name === target);
 }
 
 export { diff };

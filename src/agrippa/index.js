@@ -91,8 +91,11 @@ program
     );
 
 program
-    .command('diff [path]')
-    .description('Show differences between local files and remote code')
+    .command('diff [target]')
+    .description(
+        'Show differences between local files and remote code. [target] = file, folder, ' +
+            'project dir, document_id or name; omit for the whole workspace'
+    )
     .action((path) =>
         diff(path).catch((err) => {
             error(`Error: ${err.message}`);

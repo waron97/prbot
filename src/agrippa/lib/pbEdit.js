@@ -317,7 +317,13 @@ function removeNode(structure, manifest, { id }) {
         );
     }
 
-    return { writes: {}, deletes, result: { removed: [...victimIds], removedEdges } };
+    const clearedDefaults = clearDanglingDefaults(structure);
+
+    return {
+        writes: {},
+        deletes,
+        result: { removed: [...victimIds], removedEdges, clearedDefaults },
+    };
 }
 
 // ---------- connect / disconnect ----------
@@ -492,13 +498,53 @@ function lintIncomingEdges(structure) {
     return issues;
 }
 
+// Flag `attrs.default` values that don't name an outgoing edge of their own
+// node. lintGateways only covers the inverse (a gateway that needs a default
+// and hasn't got a valid one), so a node left with a single outgoing flow and a
+// default pointing at a deleted one used to pass clean — and then fail at
+// publish with Activiti's null-reference NPE. The edits that delete edges now
+// clear these themselves (clearDanglingDefaults); this rule is the net for
+// hand-edited structure.yaml and for projects predating that fix.
+function lintDanglingDefaults(structure) {
+    const issues = [];
+    eachNode(structure.nodes, null, (n) => {
+        const def = n.attrs?.default;
+        if (!def) return;
+        if ((n.edges || []).some((e) => e.id === def)) return;
+        issues.push(
+            `${n.id} (${n.name || n.type}): default flow ${def} does not exist on this node — ` +
+                `Activiti fails the deploy on the dangling reference.`
+        );
+    });
+    return issues;
+}
+
 // Run all lint rules and return combined issues.
 function lintAll(structure) {
     return [
         ...lintGateways(structure),
+        ...lintDanglingDefaults(structure),
         ...lintEdgeNames(structure),
         ...lintIncomingEdges(structure),
     ];
+}
+
+// Drop every `attrs.default` that no longer names an outgoing edge of its own
+// node. Must run after any edit that deletes edges: a default referencing a
+// removed flow recomposes fine and passes the other lint rules, but Activiti
+// resolves the reference at deploy time, gets null, and the publish fails with
+// an unattributed `Could not deploy the XML: null. Error: null`. Returns the
+// cleared [nodeId, edgeId] pairs so callers can report them.
+function clearDanglingDefaults(structure) {
+    const cleared = [];
+    eachNode(structure.nodes, null, (n) => {
+        const def = n.attrs?.default;
+        if (!def) return;
+        if ((n.edges || []).some((e) => e.id === def)) return;
+        delete n.attrs.default;
+        cleared.push({ node: n.id, edge: def });
+    });
+    return cleared;
 }
 
 // Remove an edge by id, or by --from/--to pair.
@@ -516,7 +562,8 @@ function disconnect(structure, { id, from, to }) {
         removed += before - n.edges.length;
     });
     if (!removed) throw new Error(id ? `edge not found: ${id}` : `no edge from ${from} to ${to}`);
-    return { writes: {}, deletes: [], result: { removed, id: removedId } };
+    const clearedDefaults = clearDanglingDefaults(structure);
+    return { writes: {}, deletes: [], result: { removed, id: removedId, clearedDefaults } };
 }
 
 // ---------- list ----------
