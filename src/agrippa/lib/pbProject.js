@@ -391,9 +391,29 @@ function stableStringify(value) {
 // to resync.
 const VOLATILE_AUDIT_FIELDS = ['updated_date', 'modified_by'];
 
+// `status`/`version` are the server's publication lifecycle, not content —
+// excluded for the same reason as the audit fields above, but only at the top
+// level (page wrappers carry neither). They surface in process.yaml via
+// EDITABLE_SCALARS and are still sent on push; they just don't count as a
+// change. Every PATCH flips the wizard server-side to draft/modified while
+// process.yaml keeps whatever status was recorded at the last clone/pull, and
+// push stores the *local* checksum as the new baseline — so a push not
+// followed by a publish guaranteed a phantom `conflict` on the next push,
+// with zero content difference on either side (observed live 2026-07-21 on
+// ml_voltura_fibra_data_input: upstream came back `modified` against a
+// `published` process.yaml, shifting the remote checksum off the baseline on
+// its own). `version` is worse still: a publish that bumps it server-side
+// pins the object to `conflict` permanently, since nothing local resyncs it.
+const VOLATILE_LIFECYCLE_FIELDS = ['status', 'version'];
+
 function canonicalForChecksum(payload) {
     const { process, decls } = normalizeProcessTree(payload.built_page);
-    const rest = omit(payload, ['built_page', 'pages', ...VOLATILE_AUDIT_FIELDS]);
+    const rest = omit(payload, [
+        'built_page',
+        'pages',
+        ...VOLATILE_AUDIT_FIELDS,
+        ...VOLATILE_LIFECYCLE_FIELDS,
+    ]);
     // Page order is not a stable identity — locally it's whatever order the
     // manifest happened to record at last decompose, while a live upstream
     // fetch can return the same set of pages in a different order (observed
