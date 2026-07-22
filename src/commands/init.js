@@ -23,7 +23,8 @@ async function init() {
         {
             type: 'input',
             name: 'ADDONS_PATH',
-            message: 'Addons path:',
+            message:
+                "Addons path ('.' or blank = use the repo in the current directory, e.g. a worktree):",
             default: existing.ADDONS_PATH ?? '~/codebase/sorgenia/addons',
         },
         {
