@@ -5,6 +5,7 @@ import { configDotenv } from 'dotenv';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
+import { doc } from './commands/doc.js';
 import {
     exportEmailTemplates,
     exportImperex,
@@ -142,6 +143,13 @@ program
 program.command('commit').action(async (opts) => {
     await commit(opts);
 });
+
+program
+    .command('doc')
+    .option('-t, --trident <id>', 'Trident task IDs (repeatable)', collect)
+    .action(async (opts) => {
+        await doc(opts);
+    });
 
 const exportCmd = program.command('export');
 

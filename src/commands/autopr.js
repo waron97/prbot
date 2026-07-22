@@ -7,6 +7,7 @@ import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
 import { log } from '../lib/logger.js';
+import { tridentRpc } from '../lib/trident.js';
 import {
     appendPrToLine,
     appendRefsToLine,
@@ -27,42 +28,11 @@ function devopsHeaders() {
 }
 
 async function fetchTask(taskId) {
-    const url = `${process.env.TRIDENT_URL}/jsonrpc`;
-    const body = {
-        jsonrpc: '2.0',
-        method: 'call',
-        id: 1,
-        params: {
-            service: 'object',
-            method: 'execute_kw',
-            args: [
-                process.env.TRIDENT_DB,
-                parseInt(process.env.TRIDENT_UID, 10),
-                process.env.TRIDENT_TOKEN,
-                'project.task',
-                'read',
-                [[parseInt(taskId, 10)]],
-                {
-                    fields: [
-                        'name',
-                        'x_subpackage_id',
-                        'x_workflow',
-                        'x_cluster_id',
-                        'x_release_checklist',
-                    ],
-                },
-            ],
-        },
-    };
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+    const result = await tridentRpc('project.task', 'read', [[parseInt(taskId, 10)]], {
+        fields: ['name', 'x_subpackage_id', 'x_workflow', 'x_cluster_id', 'x_release_checklist'],
     });
-    const data = await res.json();
-    if (data.error) throw new Error(`Trident error: ${JSON.stringify(data.error)}`);
-    if (!data.result || !data.result[0]) throw new Error(`Task ${taskId} not found`);
-    return data.result[0];
+    if (!result || !result[0]) throw new Error(`Task ${taskId} not found`);
+    return result[0];
 }
 
 function buildPrDescription(taskIds, jiras) {
@@ -124,30 +94,10 @@ async function createDevopsPR(branch, title, description) {
 async function appendChecklistPrLink(taskId, currentChecklist, prUrl) {
     const link = `<a href="${prUrl}">${prUrl}</a><br/>`;
     const updated = currentChecklist ? `${currentChecklist}\n${link}` : link;
-    const url = `${process.env.TRIDENT_URL}/jsonrpc`;
-    const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'call',
-            id: 2,
-            params: {
-                service: 'object',
-                method: 'execute_kw',
-                args: [
-                    process.env.TRIDENT_DB,
-                    parseInt(process.env.TRIDENT_UID, 10),
-                    process.env.TRIDENT_TOKEN,
-                    'project.task',
-                    'write',
-                    [[parseInt(taskId, 10)], { x_release_checklist: updated }],
-                ],
-            },
-        }),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(`Trident write error: ${JSON.stringify(data.error)}`);
+    await tridentRpc('project.task', 'write', [
+        [parseInt(taskId, 10)],
+        { x_release_checklist: updated },
+    ]);
 }
 
 function scoreSections(sections, candidates) {
