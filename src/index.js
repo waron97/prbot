@@ -136,6 +136,10 @@ program
     .option('-b, --branch <name>', 'Branch name (default: autopr_<taskId>)')
     .option('-n, --name <text>', 'PR title (default: task name from Odoo)')
     .option('--amend', 'Amend existing PR on current branch with new trident/jira refs')
+    .option(
+        '--worktree [path]',
+        'Create the branch in a new git worktree instead of switching the current checkout; optional path overrides the default sibling directory'
+    )
     .action(async (opts) => {
         await autopr(opts);
     });

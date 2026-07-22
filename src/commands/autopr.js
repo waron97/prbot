@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import fs from 'fs/promises';
+import path from 'path';
 import search from '@inquirer/search';
 import inquirer from 'inquirer';
 import fetch from 'node-fetch';
@@ -218,6 +219,11 @@ async function autoprAmend(options) {
 }
 
 async function autopr(options) {
+    if (options.worktree && options.amend) {
+        throw new Error(
+            '--worktree cannot be combined with --amend (amend operates on the already-checked-out branch)'
+        );
+    }
     if (options.amend) return autoprAmend(options);
 
     const ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
@@ -263,9 +269,20 @@ async function autopr(options) {
         }
     }
 
-    await execGit(['checkout', '-b', branch], ADDONS_PATH);
-    log(`Branch created: ${branch}`);
-    await execGit(['push', '-u', 'origin', branch], ADDONS_PATH);
+    let repoRoot = ADDONS_PATH;
+    if (options.worktree) {
+        const worktreePath =
+            typeof options.worktree === 'string'
+                ? path.resolve(options.worktree)
+                : path.join(path.dirname(ADDONS_PATH), `${path.basename(ADDONS_PATH)}-${branch}`);
+        await execGit(['worktree', 'add', worktreePath, '-b', branch], ADDONS_PATH);
+        log(`Worktree created: ${worktreePath}`);
+        repoRoot = worktreePath;
+    } else {
+        await execGit(['checkout', '-b', branch], ADDONS_PATH);
+        log(`Branch created: ${branch}`);
+    }
+    await execGit(['push', '-u', 'origin', branch], repoRoot);
 
     const prTitle = options.name ?? tasks[0]?.name ?? branch;
     const prDescription = buildPrDescription(ids, options.jira ?? []);
@@ -313,13 +330,17 @@ async function autopr(options) {
         lines.splice(endLine + 1, 0, newEntry);
     }
 
-    await fs.writeFile(changelogPath, lines.join('\n'));
+    await fs.writeFile(`${repoRoot}/CHANGELOG.md`, lines.join('\n'));
     log('Changelog entry written');
 
-    await execGit(['add', 'CHANGELOG.md'], ADDONS_PATH);
-    await execGit(['commit', '-m', '[DOC][CHANGELOG] Changelog'], ADDONS_PATH);
-    await execGit(['push'], ADDONS_PATH);
+    await execGit(['add', 'CHANGELOG.md'], repoRoot);
+    await execGit(['commit', '-m', '[DOC][CHANGELOG] Changelog'], repoRoot);
+    await execGit(['push'], repoRoot);
     log('Changelog committed and pushed');
+
+    if (repoRoot !== ADDONS_PATH) {
+        log(`\nContinue working in: ${repoRoot}`);
+    }
 }
 
 export { autopr };
