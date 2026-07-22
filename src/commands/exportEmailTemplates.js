@@ -73,6 +73,7 @@ function generateXml(templates) {
             <field name="subject">${escapeXml(t.subject)}</field>
             <field name="email_from">${escapeXml(t.email_from)}</field>
             <field name="email_to">${escapeXml(t.email_to)}</field>
+            <field name="lang">${escapeXml(t.lang)}</field>
             <field name="body_html" type="html">
                 ${sanitizeBodyHtml(t.body_html)}
             </field>
