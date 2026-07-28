@@ -107,36 +107,36 @@ from odoo_records import _SiiReport, _SmsApi, _SmsCancel, _SmsComposer, _SmsRese
 from odoo_records import _SmsSms, _SmsTemplate, _SmsTemplatePreview, _SmsTicketComposer, _SnailmailConfirm, _SnailmailConfirmInvoice
 from odoo_records import _SnailmailLetter, _SnailmailLetterCancel, _SnailmailLetterFormatError, _SnailmailLetterMissingRequiredFields, _SocialBonus, _SocialBonusFileLine
 from odoo_records import _SocialBonusInstance, _SocialBonusLine, _SocialBonusNotification, _SocialBonusNotificationResult, _SocialBonusNotificationResultLine, _SocialBonusResult
-from odoo_records import _SocialBonusResultLine, _SocialBonusSiiReport, _SorgeniaAntifraud, _SorgeniaContracts, _SorgeniaDigitalLogin, _SorgeniaDigitalLoginPartner
-from odoo_records import _SorgeniaFilterWizard, _SorgeniaInvoiceExternalServiceFtpPdfQueue, _SorgeniaInvoiceExternalServiceFtpServer, _SorgeniaLoyaltyExternalServiceFtpServer, _SorgeniaMdmGdpr, _SorgeniaPostalizerDocument
-from odoo_records import _SorgeniaQuestionInput, _SorgeniaResponseInput, _SorgeniaSmsFtpServer, _SorgeniaSurveyInput, _SorgeniaTis, _SorgeniaTisLine
-from odoo_records import _SorgeniaTisg, _SorgeniaTisgLine, _SorgeniaUpsa, _SorgeniaUpsaLine, _SorgeniaWarranty, _SpreadsheetContributor
-from odoo_records import _SpreadsheetRevision, _SpreadsheetTemplate, _StudioApprovalEntry, _StudioApprovalRule, _StudioMixin, _SupervipLine
-from odoo_records import _SupplyDateConfig, _SymphonyCaseId, _SymphonyConfigCcq, _SymphonyConfigCuscinetto, _SymphonyConfigMetodoPagamento, _SymphonyConfigRivalutazione
-from odoo_records import _SymphonyConfigVerificaCarta, _SymphonyCustomerPricelist, _SymphonyFastwebCommunication, _SymphonyMarketCommunication, _SymphonyOpenfiberCommunication, _SymphonyOrderManagement
-from odoo_records import _SymphonyPointOrderManagement, _SymphonyTaskOrderManagement, _SymphonyWalletDashboard, _SymphonyWebcomponentDashboardBlacklist, _SymphonyWebcomponentDashboardCreditCheck, _SymphonyWebcomponentDashboardFiberCoverage
-from odoo_records import _SymphonyWebcomponentDashboardFiberUpselling, _SymphonyWebcomponentDashboardIntegrationFlow, _SymphonyWebcomponentDashboardSwitchActivation, _SymphonyWebcomponentDashboardTableau, _SympleAiAutomation, _SympleAiTag
-from odoo_records import _SympleAiTagConfidence, _SympleAiTagConfidenceHistory, _SympleAiTagMixin, _SympleCluster, _SympleDmsFolder, _SympleDmsServer
-from odoo_records import _SympleDmsToken, _SympleImporterImportCase, _SympleImporterLine, _SympleInboundMessageRegistry, _SympleInteraction, _SympleInteractionCancelReason
-from odoo_records import _SympleMail, _SympleMailImportMailMail, _SympleMailReport, _SympleMessageRegistry, _SympleMessageRegistryMixin, _SympleOutboundMessageRegistry
-from odoo_records import _SymplePbInstanceKey, _SymplePbInstanceKeyMixin, _SymplePbLauncher, _SymplePbProcess, _SymplePbProcessData, _SymplePbProcessElement
-from odoo_records import _SymplePbSummaryLauncher, _SymplePbWebcomponent, _SymplePbWebcomponentEvent, _SymplePdfUtils, _SympleRcu, _SympleRcuCancelCaseWizard
-from odoo_records import _SympleRcuCheckWorkWizard, _SympleRcuCommodityOperation, _SympleRcuCreateCaseWizard, _SympleRcuForceResolvedWizard, _SympleRcuLine, _SympleRcuMassiveProcedureResultFcVatWizard
-from odoo_records import _SympleRcuMassiveProcedureWizard, _SympleRcuOperation, _SympleRcuOperationType, _SympleRcuOperationTypeCode, _SympleRcuPmax, _SympleRcuRefreshDeactivationWizard
-from odoo_records import _SympleRcuResolvedOkWizard, _SympleRcuResolvedWorkWizard, _SympleRcuSendingResolvedWizard, _SympleRcuSendingWorkWizard, _SympleRcuShowErrorMessageCaseWizard, _SympleRcuWorkCheckWizard
-from odoo_records import _SympleRcuWorkSendingWizard, _SympleRefunderAx, _SympleRefunderAxLine, _SympleRefunderDoxee, _SympleRefunderDoxeeLine, _SympleRefunderImportWizard
-from odoo_records import _SympleRefunderLine, _SympleRefunderLineMixin, _SympleRefunderMixin, _SympleRefunderProcessWizard, _SympleRefunderResult, _SympleRefunderUpdate
-from odoo_records import _SympleRefunderUpdateLine, _SympleSlideoutMenu, _SympleTripletPhase, _SympleTripletPhaseHistory, _SympleTripletPhaseResult, _SympleTripletPhaseType
-from odoo_records import _SympleTripletSubtype, _SympleTripletType, _SympleTripletType, _SympleTripletUnsuccessReason, _SympleWorkflow, _TabVisibility
-from odoo_records import _TaxAdjustmentsWizard, _TemporaryClient, _TimoeTimgCheckType, _TimoeTimgTable, _Trader, _TraderImportWizard
-from odoo_records import _TransportNetworkMapManagement, _TransportNetworkMapManagementHistory, _TransporterDistributorMixin, _UnexecutedFile, _UnexecutedRecord, _Unknown
-from odoo_records import _UomCategory, _UomUom, _UpdateCadastreData, _UtmCampaign, _UtmMedium, _UtmMixin
-from odoo_records import _UtmSource, _UtmStage, _UtmTag, _ValidateAccountMove, _VulnerabilityDashboard, _VulnerabilityDashboardLine
-from odoo_records import _VulnerabilityHistory, _VulnerabilityNotifyAdmissibility, _VulnerabilityNotifyAdmissibilityLine, _VulnerabilityNotifyOutgoing, _WalletImportWizard, _WalletManagementLine
-from odoo_records import _WatchlistAddWizard, _WatchlistDownloadWizard, _WatchlistRemoveWizard, _WebEditorAssets, _WebEditorConverterTest, _WebEditorConverterTestSub
-from odoo_records import _WebTourTour, _WelcomeAttachmentTable, _WizardIrModelMenuCreate, _WizardUploadVulnerability, _X, _XCcq
-from odoo_records import _XMktCom, _XPod, _XPrecheck, _XTopny, _XmlgeneratorDataAggregator, _XmlgeneratorDataField
-from odoo_records import _XmlgeneratorDataModel
+from odoo_records import _SocialBonusResultLine, _SocialBonusSiiReport, _SocialBonusSiiReportDownloadWizard, _SorgeniaAntifraud, _SorgeniaContracts, _SorgeniaDigitalLogin
+from odoo_records import _SorgeniaDigitalLoginPartner, _SorgeniaFilterWizard, _SorgeniaInvoiceExternalServiceFtpPdfQueue, _SorgeniaInvoiceExternalServiceFtpServer, _SorgeniaLoyaltyExternalServiceFtpServer, _SorgeniaMdmGdpr
+from odoo_records import _SorgeniaPostalizerDocument, _SorgeniaQuestionInput, _SorgeniaResponseInput, _SorgeniaSmsFtpServer, _SorgeniaSurveyInput, _SorgeniaTis
+from odoo_records import _SorgeniaTisLine, _SorgeniaTisg, _SorgeniaTisgLine, _SorgeniaUpsa, _SorgeniaUpsaLine, _SorgeniaWarranty
+from odoo_records import _SpreadsheetContributor, _SpreadsheetRevision, _SpreadsheetTemplate, _StudioApprovalEntry, _StudioApprovalRule, _StudioMixin
+from odoo_records import _SupervipLine, _SupplyDateConfig, _SymphonyCaseId, _SymphonyConfigCcq, _SymphonyConfigCuscinetto, _SymphonyConfigMetodoPagamento
+from odoo_records import _SymphonyConfigRivalutazione, _SymphonyConfigVerificaCarta, _SymphonyCustomerPricelist, _SymphonyFastwebCommunication, _SymphonyFiberActivation, _SymphonyFiberDeactivation
+from odoo_records import _SymphonyMarketCommunication, _SymphonyOpenfiberCommunication, _SymphonyOrderManagement, _SymphonyPointOrderManagement, _SymphonyTaskOrderManagement, _SymphonyWalletDashboard
+from odoo_records import _SymphonyWebcomponentDashboardBlacklist, _SymphonyWebcomponentDashboardCreditCheck, _SymphonyWebcomponentDashboardFiberCoverage, _SymphonyWebcomponentDashboardFiberUpselling, _SymphonyWebcomponentDashboardIntegrationFlow, _SymphonyWebcomponentDashboardSwitchActivation
+from odoo_records import _SymphonyWebcomponentDashboardTableau, _SympleAiAutomation, _SympleAiTag, _SympleAiTagConfidence, _SympleAiTagConfidenceHistory, _SympleAiTagMixin
+from odoo_records import _SympleCluster, _SympleDmsFolder, _SympleDmsServer, _SympleDmsToken, _SympleImporterImportCase, _SympleImporterLine
+from odoo_records import _SympleInboundMessageRegistry, _SympleInteraction, _SympleInteractionCancelReason, _SympleMail, _SympleMailImportMailMail, _SympleMailReport
+from odoo_records import _SympleMessageRegistry, _SympleMessageRegistryMixin, _SympleOutboundMessageRegistry, _SymplePbInstanceKey, _SymplePbInstanceKeyMixin, _SymplePbLauncher
+from odoo_records import _SymplePbProcess, _SymplePbProcessData, _SymplePbProcessElement, _SymplePbSummaryLauncher, _SymplePbWebcomponent, _SymplePbWebcomponentEvent
+from odoo_records import _SymplePdfUtils, _SympleRcu, _SympleRcuCancelCaseWizard, _SympleRcuCheckWorkWizard, _SympleRcuCommodityOperation, _SympleRcuCreateCaseWizard
+from odoo_records import _SympleRcuForceResolvedWizard, _SympleRcuLine, _SympleRcuMassiveProcedureResultFcVatWizard, _SympleRcuMassiveProcedureWizard, _SympleRcuOperation, _SympleRcuOperationType
+from odoo_records import _SympleRcuOperationTypeCode, _SympleRcuPmax, _SympleRcuRefreshDeactivationWizard, _SympleRcuResolvedOkWizard, _SympleRcuResolvedWorkWizard, _SympleRcuSendingResolvedWizard
+from odoo_records import _SympleRcuSendingWorkWizard, _SympleRcuShowErrorMessageCaseWizard, _SympleRcuWorkCheckWizard, _SympleRcuWorkSendingWizard, _SympleRefunderAx, _SympleRefunderAxLine
+from odoo_records import _SympleRefunderDoxee, _SympleRefunderDoxeeLine, _SympleRefunderImportWizard, _SympleRefunderLine, _SympleRefunderLineMixin, _SympleRefunderMixin
+from odoo_records import _SympleRefunderProcessWizard, _SympleRefunderResult, _SympleRefunderUpdate, _SympleRefunderUpdateLine, _SympleSlideoutMenu, _SympleTripletPhase
+from odoo_records import _SympleTripletPhaseHistory, _SympleTripletPhaseResult, _SympleTripletPhaseType, _SympleTripletSubtype, _SympleTripletType, _SympleTripletType
+from odoo_records import _SympleTripletUnsuccessReason, _SympleWorkflow, _TabVisibility, _TaxAdjustmentsWizard, _TemporaryClient, _TimoeTimgCheckType
+from odoo_records import _TimoeTimgTable, _Trader, _TraderImportWizard, _TransportNetworkMapManagement, _TransportNetworkMapManagementHistory, _TransporterDistributorMixin
+from odoo_records import _UnexecutedFile, _UnexecutedRecord, _Unknown, _UomCategory, _UomUom, _UpdateCadastreData
+from odoo_records import _UtmCampaign, _UtmMedium, _UtmMixin, _UtmSource, _UtmStage, _UtmTag
+from odoo_records import _ValidateAccountMove, _VulnerabilityDashboard, _VulnerabilityDashboardLine, _VulnerabilityHistory, _VulnerabilityNotifyAdmissibility, _VulnerabilityNotifyOutgoing
+from odoo_records import _WalletImportWizard, _WalletManagementLine, _WatchlistAddWizard, _WatchlistDownloadWizard, _WatchlistRemoveWizard, _WebEditorAssets
+from odoo_records import _WebEditorConverterTest, _WebEditorConverterTestSub, _WebTourTour, _WelcomeAttachmentTable, _WizardIrModelMenuCreate, _WizardUploadVulnerability
+from odoo_records import _X, _XCcq, _XMktCom, _XPod, _XPrecheck, _XTopny
+from odoo_records import _XmlgeneratorDataAggregator, _XmlgeneratorDataField, _XmlgeneratorDataModel
 
 
 class OdooEnvironment:
@@ -1544,6 +1544,10 @@ class OdooEnvironment:
     @overload
     def __getitem__(self, model_name: Literal["social.bonus.sii.report"]) -> _SocialBonusSiiReport: ...
     @overload
+    def __getitem__(
+        self, model_name: Literal["social.bonus.sii.report.download.wizard"]
+    ) -> _SocialBonusSiiReportDownloadWizard: ...
+    @overload
     def __getitem__(self, model_name: Literal["sorgenia.antifraud"]) -> _SorgeniaAntifraud: ...
     @overload
     def __getitem__(self, model_name: Literal["sorgenia.contracts"]) -> _SorgeniaContracts: ...
@@ -1625,6 +1629,10 @@ class OdooEnvironment:
     def __getitem__(self, model_name: Literal["symphony.customer_pricelist"]) -> _SymphonyCustomerPricelist: ...
     @overload
     def __getitem__(self, model_name: Literal["symphony.fastweb.communication"]) -> _SymphonyFastwebCommunication: ...
+    @overload
+    def __getitem__(self, model_name: Literal["symphony.fiber.activation"]) -> _SymphonyFiberActivation: ...
+    @overload
+    def __getitem__(self, model_name: Literal["symphony.fiber.deactivation"]) -> _SymphonyFiberDeactivation: ...
     @overload
     def __getitem__(self, model_name: Literal["symphony.market.communication"]) -> _SymphonyMarketCommunication: ...
     @overload
@@ -1887,10 +1895,6 @@ class OdooEnvironment:
     def __getitem__(
         self, model_name: Literal["vulnerability.notify.admissibility"]
     ) -> _VulnerabilityNotifyAdmissibility: ...
-    @overload
-    def __getitem__(
-        self, model_name: Literal["vulnerability.notify.admissibility.line"]
-    ) -> _VulnerabilityNotifyAdmissibilityLine: ...
     @overload
     def __getitem__(self, model_name: Literal["vulnerability.notify.outgoing"]) -> _VulnerabilityNotifyOutgoing: ...
     @overload
