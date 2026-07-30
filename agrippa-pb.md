@@ -150,7 +150,7 @@ case. It exposes 4 methods:
 
 - `get("key")`
 - `set("key", "value")`
-- `get_many("key", "key2")` → `a, b = case_id.sudo().kv_store().get_many("a, b")`
+- `get_many("key1", "key2")` → `a, b = case_id.sudo().kv_store().get_many("key1", "key2")`
 - `set_many({"a": 1, "b": 2})`
 
 When possible, prefer the kv_store over manually creating and searching process-data
