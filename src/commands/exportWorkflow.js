@@ -5,7 +5,7 @@ import search from '@inquirer/search';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
-import { isSilent, log } from '../lib/logger.js';
+import { emitJson, isJsonMode, isSilent, log } from '../lib/logger.js';
 import {
     computeMigrationVersion,
     detectRenames,
@@ -128,6 +128,17 @@ async function exportWorkflow(opts) {
         if (bumpLevel && bumpLevel !== 'none') {
             await verbot(module, bumpLevel, { ...opts, commit: false });
         }
+        if (isJsonMode()) {
+            emitJson({
+                ok: true,
+                module,
+                bumpLevel: bumpLevel && bumpLevel !== 'none' ? bumpLevel : null,
+                renames,
+                preMigratePath,
+                commitMessage: null,
+                filesWritten: [],
+            });
+        }
         return;
     }
 
@@ -147,6 +158,18 @@ async function exportWorkflow(opts) {
 
     if (bumpLevel && bumpLevel !== 'none') {
         await verbot(module, bumpLevel, opts);
+    }
+
+    if (isJsonMode()) {
+        emitJson({
+            ok: true,
+            module,
+            bumpLevel: bumpLevel && bumpLevel !== 'none' ? bumpLevel : null,
+            renames,
+            preMigratePath,
+            commitMessage,
+            filesWritten: filesToAdd,
+        });
     }
 }
 

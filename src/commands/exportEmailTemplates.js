@@ -7,7 +7,7 @@ import { resolveAddonsPath } from '../lib/addons.js';
 import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
-import { isSilent, log } from '../lib/logger.js';
+import { emitJson, isJsonMode, isSilent, log } from '../lib/logger.js';
 import {
     computeMigrationVersion,
     detectEmailRenames,
@@ -155,7 +155,11 @@ async function exportEmailTemplates(opts) {
         });
 
     if (!templates.length) {
-        log('No email templates found for this workflow.');
+        if (isJsonMode()) {
+            emitJson({ ok: true, module, workflowId, templateCount: 0, outPath: null });
+        } else {
+            log('No email templates found for this workflow.');
+        }
         return;
     }
 
@@ -227,6 +231,19 @@ async function exportEmailTemplates(opts) {
         if (bumpLevel && bumpLevel !== 'none') {
             await verbot(module, bumpLevel, { ...opts, commit: false });
         }
+        if (isJsonMode()) {
+            emitJson({
+                ok: true,
+                module,
+                workflowId,
+                templateCount: templates.length,
+                outPath,
+                renames,
+                preMigratePath,
+                bumpLevel: bumpLevel && bumpLevel !== 'none' ? bumpLevel : null,
+                committed: false,
+            });
+        }
         return;
     }
 
@@ -242,6 +259,20 @@ async function exportEmailTemplates(opts) {
 
     if (bumpLevel && bumpLevel !== 'none') {
         await verbot(module, bumpLevel, opts);
+    }
+
+    if (isJsonMode()) {
+        emitJson({
+            ok: true,
+            module,
+            workflowId,
+            templateCount: templates.length,
+            outPath,
+            renames,
+            preMigratePath,
+            bumpLevel: bumpLevel && bumpLevel !== 'none' ? bumpLevel : null,
+            committed: true,
+        });
     }
 }
 

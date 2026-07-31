@@ -6,7 +6,7 @@ import { resolveAddonsPath } from '../lib/addons.js';
 import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
-import { log } from '../lib/logger.js';
+import { emitJson, isJsonMode, log } from '../lib/logger.js';
 import { requireInteractive } from '../lib/tty.js';
 
 async function getProcessList(token) {
@@ -128,8 +128,14 @@ async function exportPb(opts) {
     }));
 
     if (opts.list) {
-        const matches = opts.query ? choices.filter((c) => fuzzyMatch(c.name, opts.query)) : choices;
-        for (const c of matches) log(`${c.value.document_id}\t${c.value.guid}\t${c.name}`);
+        const matches = opts.query
+            ? choices.filter((c) => fuzzyMatch(c.name, opts.query))
+            : choices;
+        if (isJsonMode()) {
+            emitJson({ ok: true, matches: matches.map((c) => c.value) });
+        } else {
+            for (const c of matches) log(`${c.value.document_id}\t${c.value.guid}\t${c.name}`);
+        }
         return;
     }
 
@@ -168,12 +174,15 @@ async function exportPb(opts) {
 
     const existing = await findExistingZip(processesDir, filename);
     let savePath;
+    let action;
     if (existing) {
         savePath = existing;
+        action = 'updated';
         await fs.writeFile(savePath, zipBuffer);
         log(`Updated existing file at ${savePath}`);
     } else {
         savePath = path.join(processesDir, 'all', filename);
+        action = 'created';
         await fs.mkdir(path.dirname(savePath), { recursive: true });
         await fs.writeFile(savePath, zipBuffer);
         log(`Created new file at ${savePath}`);
@@ -183,6 +192,19 @@ async function exportPb(opts) {
         await execGit(['add', savePath], ADDONS_PATH);
         await execGit(['commit', '-m', '[IMP][.cloudbuild] Update wizard'], ADDONS_PATH);
         log('Committed.');
+    }
+
+    if (isJsonMode()) {
+        emitJson({
+            ok: true,
+            documentId: document_id,
+            guid,
+            requestId,
+            filename,
+            savePath,
+            action,
+            committed: opts.commit !== false,
+        });
     }
 }
 

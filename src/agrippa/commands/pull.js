@@ -10,6 +10,7 @@ import { getProcess } from '../lib/pbApi.js';
 import { localChecksum, remoteChecksumPb } from '../lib/pbProject.js';
 import { projectReader } from '../lib/pbWorkspace.js';
 import {
+    backupTimestamp,
     fileExists,
     readCodeFile,
     toSlug,
@@ -173,7 +174,7 @@ async function pullPbEntries(token, config, opts = {}) {
         return;
     }
 
-    const backupTs = new Date().toISOString().replace(/:/g, '-').replace('T', '_').slice(0, 19);
+    const backupTs = backupTimestamp();
     for (const entry of selected) {
         const res = await pullPbEntry(token, entry, '.backup', backupTs);
         const idx = config.workspace.findIndex(
@@ -237,7 +238,7 @@ async function pullLrpEntries(token, config, opts = {}) {
         return;
     }
 
-    const backupTs = new Date().toISOString().replace(/:/g, '-').replace('T', '_').slice(0, 19);
+    const backupTs = backupTimestamp();
     for (const entry of selected) {
         const res = await pullLrpEntry(token, entry, '.backup', backupTs);
         const idx = config.workspace.findIndex(

@@ -6,7 +6,7 @@ import { resolveAddonsPath } from '../lib/addons.js';
 import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
-import { log } from '../lib/logger.js';
+import { emitJson, isJsonMode, log } from '../lib/logger.js';
 import { requireInteractive } from '../lib/tty.js';
 
 function getSymphonyBase() {
@@ -110,7 +110,8 @@ async function exportLrp(opts) {
         const matches = opts.query
             ? initialChoices.filter((c) => fuzzyMatch(c.name, opts.query))
             : initialChoices;
-        for (const c of matches) log(`${c.value}\t${c.name}`);
+        if (isJsonMode()) emitJson({ ok: true, matches });
+        else for (const c of matches) log(`${c.value}\t${c.name}`);
         return;
     }
 
@@ -151,12 +152,15 @@ async function exportLrp(opts) {
 
     const existing = await findExistingFile(processesDir, bpmnFilename);
     let savePath;
+    let action;
     if (existing) {
         savePath = existing;
+        action = 'updated';
         await fs.writeFile(savePath, xml, 'utf-8');
         log(`Updated: ${savePath}`);
     } else {
         savePath = path.join(processesDir, 'all', bpmnFilename);
+        action = 'created';
         await fs.mkdir(path.dirname(savePath), { recursive: true });
         await fs.writeFile(savePath, xml, 'utf-8');
         log(`Created: ${savePath}`);
@@ -169,6 +173,17 @@ async function exportLrp(opts) {
             ADDONS_PATH
         );
         log('Committed.');
+    }
+
+    if (isJsonMode()) {
+        emitJson({
+            ok: true,
+            id: selectedId,
+            filename: bpmnFilename,
+            savePath,
+            action,
+            committed: opts.commit !== false,
+        });
     }
 }
 

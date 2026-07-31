@@ -6,7 +6,7 @@ import { resolveAddonsPath } from '../lib/addons.js';
 import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
-import { log } from '../lib/logger.js';
+import { emitJson, isJsonMode, log } from '../lib/logger.js';
 import { requireInteractive } from '../lib/tty.js';
 
 const IMPEREX_REL = 'sorgenia_imperex_metadata/migrations/0.0.0/imperex';
@@ -59,7 +59,8 @@ async function exportImperex(opts) {
         const matches = opts.query
             ? modelChoices.filter((c) => fuzzyMatch(c.name, opts.query))
             : modelChoices;
-        for (const c of matches) log(c.value);
+        if (isJsonMode()) emitJson({ ok: true, models: matches.map((c) => c.value) });
+        else for (const c of matches) log(c.value);
         return;
     } else {
         requireInteractive('use --model <name>');
@@ -77,15 +78,19 @@ async function exportImperex(opts) {
     const recChoices = records.map((r) => ({ name: String(r.name ?? r.id), value: r.id }));
 
     if (opts.list) {
-        const matches = opts.query ? recChoices.filter((c) => fuzzyMatch(c.name, opts.query)) : recChoices;
-        for (const c of matches) log(`${c.value}\t${c.name}`);
+        const matches = opts.query
+            ? recChoices.filter((c) => fuzzyMatch(c.name, opts.query))
+            : recChoices;
+        if (isJsonMode()) emitJson({ ok: true, records: matches });
+        else for (const c of matches) log(`${c.value}\t${c.name}`);
         return;
     }
 
     let recordId;
     if (opts.record) {
         const match = recChoices.find((c) => String(c.value) === String(opts.record));
-        if (!match) throw new Error(`No record found with id "${opts.record}" for model "${model}"`);
+        if (!match)
+            throw new Error(`No record found with id "${opts.record}" for model "${model}"`);
         recordId = match.value;
     } else {
         requireInteractive('use --record <id>');
@@ -122,6 +127,16 @@ async function exportImperex(opts) {
             ADDONS_PATH
         );
         log('Committed.');
+    }
+
+    if (isJsonMode()) {
+        emitJson({
+            ok: true,
+            model,
+            recordId,
+            filesWritten: saved,
+            committed: opts.commit !== false,
+        });
     }
 }
 

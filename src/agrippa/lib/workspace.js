@@ -40,6 +40,16 @@ function fileExists(filePath) {
     return existsSync(filePath);
 }
 
+// Backup folder/timestamp naming, shared by push/pull. Keeps the trailing Z
+// so the name is unambiguously UTC, not misread as local time.
+function backupTimestamp() {
+    return new Date()
+        .toISOString()
+        .replace(/:/g, '-')
+        .replace('T', '_')
+        .replace(/\.\d+Z$/, 'Z');
+}
+
 // Auto-generated, read-only context: dumps the workflow graph returned by the
 // `agrippa_describe_workflow` MFA to `<dirPath>/workflow.yml`. Not tracked in the
 // workspace -- it is not pushable, it is regenerated on every clone/pull.
@@ -59,4 +69,5 @@ export {
     readCodeFile,
     fileExists,
     writeWorkflowDoc,
+    backupTimestamp,
 };

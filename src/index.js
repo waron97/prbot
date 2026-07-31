@@ -19,7 +19,7 @@ import { main as prMain } from './commands/pr.js';
 import { routine } from './commands/routine.js';
 import { verbot } from './commands/ver.js';
 import { CONFIG_FILE } from './config.js';
-import { error, log, setSilent } from './lib/logger.js';
+import { emitJson, error, isJsonMode, log, setJsonMode, setSilent } from './lib/logger.js';
 import { checkForUpdate, currentVersion } from './lib/updateCheck.js';
 
 // Commands that never talk to RIP/DevOps/Trident/Keycloak. They still read
@@ -62,7 +62,9 @@ process.on('exit', () => {
 // mean the requested operation actually succeeded; nothing downstream of
 // this should ever swallow an error into a zero exit.
 function fail(err) {
-    error(`Error: ${err?.message ?? err}`);
+    const message = err?.message ?? String(err);
+    if (isJsonMode()) emitJson({ ok: false, error: message });
+    error(`Error: ${message}`);
     process.exitCode = 1;
 }
 
@@ -90,6 +92,12 @@ function resolveQuiet(opts) {
         error('Warning: --silent is deprecated and no longer swallows errors; use --quiet.');
     }
     return Boolean(opts.quiet || opts.silent);
+}
+
+// Adds `--json` to a command. Machine-readable mode: suppresses informational
+// output and has the command emit a single JSON result object to stdout instead.
+function withJson(cmd) {
+    return cmd.option('--json', 'Emit a single JSON result object to stdout instead of human logs');
 }
 
 program.name('prbot').version(currentVersion);
@@ -164,77 +172,104 @@ program
 
 const exportCmd = program.command('export');
 
-withQuiet(
-    exportCmd
-        .command('workflow')
-        .option('--no-commit')
-        .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
-        .option('-m, --module <id>', 'Module/workflow ID to export (skips interactive selection)')
-        .option(
-            '--auto-premigrate',
-            'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
-        )
+withJson(
+    withQuiet(
+        exportCmd
+            .command('workflow')
+            .option('--no-commit')
+            .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
+            .option(
+                '-m, --module <id>',
+                'Module/workflow ID to export (skips interactive selection)'
+            )
+            .option(
+                '--auto-premigrate',
+                'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
+            )
+    )
 ).action(async (opts) => {
-    if (resolveQuiet(opts)) setSilent(true);
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
     await exportWorkflow(opts);
 });
 
 exportCmd.command('rip').action(() => exportRip());
 
-withQuiet(
-    exportCmd
-        .command('pb')
-        .option('--no-commit')
-        .option('-m, --id <document_id>', 'PB process document_id to export (skips interactive selection)')
-        .option('-l, --list', 'List matching PB processes (document_id + name) instead of exporting')
-        .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+withJson(
+    withQuiet(
+        exportCmd
+            .command('pb')
+            .option('--no-commit')
+            .option(
+                '-m, --id <document_id>',
+                'PB process document_id to export (skips interactive selection)'
+            )
+            .option(
+                '-l, --list',
+                'List matching PB processes (document_id + name) instead of exporting'
+            )
+            .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+    )
 ).action(async (opts) => {
-    if (resolveQuiet(opts)) setSilent(true);
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
     await exportPb(opts);
 });
 
-withQuiet(
-    exportCmd
-        .command('imperex')
-        .option('--no-commit')
-        .option('--model <name>', 'Imperex model to export (skips model prompt)')
-        .option('--record <id>', 'Record id to export (skips record prompt)')
-        .option(
-            '-l, --list',
-            'List matching models (or, with --model, matching records) instead of exporting'
-        )
-        .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+withJson(
+    withQuiet(
+        exportCmd
+            .command('imperex')
+            .option('--no-commit')
+            .option('--model <name>', 'Imperex model to export (skips model prompt)')
+            .option('--record <id>', 'Record id to export (skips record prompt)')
+            .option(
+                '-l, --list',
+                'List matching models (or, with --model, matching records) instead of exporting'
+            )
+            .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+    )
 ).action(async (opts) => {
-    if (resolveQuiet(opts)) setSilent(true);
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
     await exportImperex(opts);
 });
 
-withQuiet(
-    exportCmd
-        .command('lrp')
-        .option('--no-commit')
-        .option('-m, --id <id>', 'LRP process id to export (skips interactive selection)')
-        .option('-l, --list', 'List matching LRP processes (id + name) instead of exporting')
-        .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+withJson(
+    withQuiet(
+        exportCmd
+            .command('lrp')
+            .option('--no-commit')
+            .option('-m, --id <id>', 'LRP process id to export (skips interactive selection)')
+            .option('-l, --list', 'List matching LRP processes (id + name) instead of exporting')
+            .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+    )
 ).action(async (opts) => {
-    if (resolveQuiet(opts)) setSilent(true);
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
     await exportLrp(opts);
 });
 
-withQuiet(
-    exportCmd
-        .command('email-templates')
-        .option('--no-commit')
-        .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
-        .option('-e, --exclude <value...>', 'exclude templates matching id, name, or template_code')
-        .option('-m, --module <name>', 'module directory name (skip prompt)')
-        .option('-w, --workflow <value>', 'workflow name or id (skip prompt)')
-        .option(
-            '--auto-premigrate',
-            'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
-        )
+withJson(
+    withQuiet(
+        exportCmd
+            .command('email-templates')
+            .option('--no-commit')
+            .option('-b, --bump <level>', 'Version bump level (patch, minor, major)')
+            .option(
+                '-e, --exclude <value...>',
+                'exclude templates matching id, name, or template_code'
+            )
+            .option('-m, --module <name>', 'module directory name (skip prompt)')
+            .option('-w, --workflow <value>', 'workflow name or id (skip prompt)')
+            .option(
+                '--auto-premigrate',
+                'Auto-generate pre-migrate script when XML ID renames are detected (no prompt)'
+            )
+    )
 ).action(async (opts) => {
-    if (resolveQuiet(opts)) setSilent(true);
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
     await exportEmailTemplates(opts);
 });
 

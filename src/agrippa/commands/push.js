@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
-import { log } from '../../lib/logger.js';
+import { emitJson, log } from '../../lib/logger.js';
 import { updateMfa, updatePhase } from '../lib/api.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig, writeConfig } from '../lib/config.js';
@@ -10,7 +10,7 @@ import { fetchUpstream } from '../lib/lrpApi.js';
 import { getProcess } from '../lib/pbApi.js';
 import { localChecksum, remoteChecksumPb } from '../lib/pbProject.js';
 import { projectReader } from '../lib/pbWorkspace.js';
-import { fileExists, readCodeFile } from '../lib/workspace.js';
+import { backupTimestamp, fileExists, readCodeFile } from '../lib/workspace.js';
 import { fetchRemoteCode, selectEntries } from './pull.js';
 import { deploy, pushLrpEntry } from './pushLrp.js';
 import { publish, pushPbEntry } from './pushPb.js';
@@ -45,7 +45,9 @@ async function push(opts = {}) {
     }
 
     if (!config.workspace.length) {
-        log('No tracked resources. Run `agrippa clone` first.');
+        if (opts.json)
+            emitJson({ ok: true, backupDir: null, pushed: [], published: [], deployed: [] });
+        else log('No tracked resources. Run `agrippa clone` first.');
         return;
     }
 
@@ -128,22 +130,21 @@ async function push(opts = {}) {
 
     const changed = classified.filter((e) => e.status !== 'unchanged');
     if (!changed.length) {
-        log('Nothing to push — everything matches the last-pulled state.');
+        if (opts.json)
+            emitJson({ ok: true, backupDir: null, pushed: [], published: [], deployed: [] });
+        else log('Nothing to push — everything matches the last-pulled state.');
         return;
     }
 
     const selected = await selectEntries(changed, 'push (overwrites remote)', opts);
     if (!selected.length) {
-        log('Nothing selected. No changes made.');
+        if (opts.json)
+            emitJson({ ok: true, backupDir: null, pushed: [], published: [], deployed: [] });
+        else log('Nothing selected. No changes made.');
         return;
     }
 
-    // Keep the trailing Z so the folder name is unambiguously UTC, not read as local time.
-    const backupTs = new Date()
-        .toISOString()
-        .replace(/:/g, '-')
-        .replace('T', '_')
-        .replace(/\.\d+Z$/, 'Z');
+    const backupTs = backupTimestamp();
 
     // Back up remote code for phase/mfa before overwriting (pb/lrp back up
     // their own full upstream payload inside pushPbEntry/pushLrpEntry).
@@ -161,6 +162,7 @@ async function push(opts = {}) {
 
     const pushedPb = [];
     const pushedLrp = [];
+    const results = [];
     let pushed = 0;
     for (const entry of selected) {
         const idx = config.workspace.findIndex((e) => {
@@ -185,6 +187,17 @@ async function push(opts = {}) {
                 config.workspace[idx].status = res.newStatus || 'draft';
             }
             pushedPb.push({ entry, idx });
+            results.push({
+                name: entry.name,
+                type: 'process_builder',
+                guid: entry.guid,
+                checksumBefore: entry.checksum_at_pull,
+                checksumAfter: res.newChecksum,
+                backupPath: join(BACKUP_DIR, backupTs, entry.path, 'upstream.json'),
+                pagesCreated: res.created,
+                pagesUpdated: res.updated,
+                status: res.newStatus || 'draft',
+            });
         } else if (entry.object_type === 'long_running_process') {
             const res = await pushLrpEntry(token, entry, BACKUP_DIR, backupTs);
             log(`  ${entry.name} → saved`);
@@ -198,11 +211,31 @@ async function push(opts = {}) {
             // deployId is the fresh post-save id (re-resolved by name in
             // pushLrpEntry); the pre-save id is dead once the save returns.
             pushedLrp.push({ entry, idx, deployId: res.deployId });
+            results.push({
+                name: entry.name,
+                type: 'long_running_process',
+                checksumBefore: entry.checksum_at_pull,
+                checksumAfter: res.newChecksum,
+                backupPath: join(BACKUP_DIR, backupTs, entry.path, 'upstream.xml'),
+                deployId: res.deployId,
+                version: res.newRow.version,
+                status: res.newRow.status,
+            });
         } else {
             const code = entry.localCode ?? '';
             if (entry.object_type === 'phase') await updatePhase(token, ripUrl, entry.id, code);
             else await updateMfa(token, ripUrl, entry.id, code);
-            if (idx !== -1) config.workspace[idx].checksum_at_pull = computeChecksum(code);
+            const checksumAfter = computeChecksum(code);
+            if (idx !== -1) config.workspace[idx].checksum_at_pull = checksumAfter;
+            results.push({
+                name: entry.name,
+                type: entry.object_type,
+                id: entry.id,
+                checksumBefore: entry.checksum_at_pull,
+                checksumAfter,
+                backupPath:
+                    entry.remoteCode != null ? join(BACKUP_DIR, backupTs, entry.path) : null,
+            });
         }
         pushed++;
     }
@@ -210,18 +243,31 @@ async function push(opts = {}) {
     log(`\nRemote backups written to ${BACKUP_DIR}/${backupTs}/`);
 
     // Publish/deploy step for pushed wizards and LRPs.
+    let published = [];
+    let deployed = [];
     if (pushedPb.length) {
-        await handlePublish(token, pushedPb, config, opts);
+        published = await handlePublish(token, pushedPb, config, opts);
     }
     if (pushedLrp.length) {
-        await handleDeploy(token, pushedLrp, config, opts);
+        deployed = await handleDeploy(token, pushedLrp, config, opts);
     }
 
     writeConfig(config);
     log(`\nPushed ${pushed} record(s).`);
+
+    if (opts.json) {
+        emitJson({
+            ok: true,
+            backupDir: `${BACKUP_DIR}/${backupTs}/`,
+            pushed: results,
+            published,
+            deployed,
+        });
+    }
 }
 
 async function handlePublish(token, pushedPb, config, opts) {
+    const published = [];
     for (const { entry, idx } of pushedPb) {
         let doPublish;
         if (opts.skipPublish) doPublish = false;
@@ -242,11 +288,14 @@ async function handlePublish(token, pushedPb, config, opts) {
             await publish(token, entry.guid);
             if (idx !== -1) config.workspace[idx].status = 'published';
             log(`  published ${entry.name}`);
+            published.push(entry.name);
         }
     }
+    return published;
 }
 
 async function handleDeploy(token, pushedLrp, config, opts) {
+    const deployed = [];
     for (const { entry, idx, deployId } of pushedLrp) {
         let doDeploy;
         if (opts.skipPublish) doDeploy = false;
@@ -267,8 +316,10 @@ async function handleDeploy(token, pushedLrp, config, opts) {
             await deploy(token, deployId);
             if (idx !== -1) config.workspace[idx].status = 'deployed';
             log(`  deployed ${entry.name}`);
+            deployed.push(entry.name);
         }
     }
+    return deployed;
 }
 
 export { push };

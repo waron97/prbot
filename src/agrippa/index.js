@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { createRequire } from 'module';
 import { program } from 'commander';
-import { error } from '../lib/logger.js';
+import { emitJson, error, setJsonMode } from '../lib/logger.js';
 import { clone } from './commands/clone.js';
 import { diff } from './commands/diff.js';
 import { init } from './commands/init.js';
@@ -28,6 +28,17 @@ process.on('unhandledRejection', (err) => {
     error(`Error: ${err.message}`);
     process.exit(1);
 });
+
+// Shared failure handler for commands with a `--json` option: on error, emit
+// a `{ ok: false, error }` payload to stdout (so a --json caller always gets
+// parseable stdout, even on failure) in addition to the usual stderr line.
+function failCommand(opts) {
+    return (err) => {
+        if (opts.json) emitJson({ ok: false, error: err.message });
+        error(`Error: ${err.message}`);
+        process.exit(1);
+    };
+}
 
 program.name('agrippa').version(version);
 
@@ -83,12 +94,14 @@ program
         '--non-interactive',
         'No prompts; auto-select safe (fast-forward) entries and fail if any is in conflict'
     )
-    .action((opts) =>
-        push(opts).catch((err) => {
-            error(`Error: ${err.message}`);
-            process.exit(1);
-        })
-    );
+    .option('--json', 'Emit a single JSON result object to stdout instead of human logs')
+    .action((opts) => {
+        if (opts.json) {
+            setJsonMode(true);
+            opts.nonInteractive = true; // --json can't coexist with interactive prompts
+        }
+        push(opts).catch(failCommand(opts));
+    });
 
 program
     .command('diff [target]')
@@ -96,12 +109,11 @@ program
         'Show differences between local files and remote code. [target] = file, folder, ' +
             'project dir, document_id or name; omit for the whole workspace'
     )
-    .action((path) =>
-        diff(path).catch((err) => {
-            error(`Error: ${err.message}`);
-            process.exit(1);
-        })
-    );
+    .option('--json', 'Emit a single JSON result object to stdout instead of human logs')
+    .action((target, opts) => {
+        if (opts.json) setJsonMode(true);
+        diff(target, opts).catch(failCommand(opts));
+    });
 
 program
     .command('init-phase')

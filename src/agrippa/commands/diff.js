@@ -12,7 +12,7 @@ import {
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { getToken } from '../../lib/auth.js';
-import { error, log } from '../../lib/logger.js';
+import { emitJson, error, log } from '../../lib/logger.js';
 import { computeChecksum } from '../lib/checksum.js';
 import { loadEffectiveEnv, readConfig } from '../lib/config.js';
 import { fetchUpstream } from '../lib/lrpApi.js';
@@ -22,18 +22,20 @@ import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 import { fileExists, readCodeFile } from '../lib/workspace.js';
 import { fetchRemoteCode } from './pull.js';
 
-async function diff(targetArg) {
+async function diff(targetArg, opts = {}) {
     const config = readConfig();
     loadEffectiveEnv(config);
 
     if (!config.workspace.length) {
-        log('No tracked resources. Run `agrippa clone` first.');
+        if (opts.json) emitJson({ ok: true, diffCount: 0, entries: [] });
+        else log('No tracked resources. Run `agrippa clone` first.');
         return;
     }
 
     const entries = filterEntries(config.workspace, targetArg);
     if (!entries.length) {
-        log('No tracked files match the given path.');
+        if (opts.json) emitJson({ ok: true, diffCount: 0, entries: [] });
+        else log('No tracked files match the given path.');
         return;
     }
 
@@ -61,23 +63,32 @@ async function diff(targetArg) {
 
     let diffCount = 0;
     const chunks = [];
+    const diffEntries = [];
 
     if (codeEntries.length) {
         const remoteCodeMap = await fetchRemoteCode(token, process.env.RIP_URL, codeEntries);
-        const { diffCount: c, chunks: cs } = diffCodeEntries(codeEntries, remoteCodeMap);
+        const {
+            diffCount: c,
+            chunks: cs,
+            entries: es,
+        } = diffCodeEntries(codeEntries, remoteCodeMap);
         diffCount += c;
         chunks.push(...cs);
+        diffEntries.push(...es);
     }
 
     for (const entry of projectEntries) {
-        const { hasDiff, chunk } = await diffProjectEntry(token, entry);
+        const { hasDiff, chunk, entry: descriptor } = await diffProjectEntry(token, entry);
         if (hasDiff) {
             diffCount++;
             chunks.push(chunk);
+            diffEntries.push(descriptor);
         }
     }
 
-    if (diffCount === 0) {
+    if (opts.json) {
+        emitJson({ ok: true, diffCount, entries: diffEntries });
+    } else if (diffCount === 0) {
         log('No differences found — all tracked files match the remote.');
     } else {
         const combined = Buffer.concat(chunks);
@@ -95,6 +106,7 @@ async function diff(targetArg) {
 function diffCodeEntries(entries, remoteCodeMap) {
     let diffCount = 0;
     const chunks = [];
+    const descriptors = [];
     const tmpFiles = [];
     try {
         for (const entry of entries) {
@@ -124,6 +136,7 @@ function diffCodeEntries(entries, remoteCodeMap) {
             }
             const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] ===\n`);
             chunks.push(Buffer.concat([header, result.stdout ?? Buffer.alloc(0)]));
+            descriptors.push({ path: entry.path, name: entry.name, type: entry.object_type });
             diffCount++;
         }
     } finally {
@@ -135,7 +148,7 @@ function diffCodeEntries(entries, remoteCodeMap) {
             }
         }
     }
-    return { diffCount, chunks };
+    return { diffCount, chunks, entries: descriptors };
 }
 
 // Decomposed project (process-builder wizard or long-running process): fetch
@@ -194,7 +207,11 @@ async function diffProjectEntry(token, entry) {
         }
         const header = Buffer.from(`\n=== ${entry.path}  [${entry.name}] (${label}) ===\n`);
         const chunk = Buffer.concat([header, result.stdout ?? Buffer.alloc(0)]);
-        return { hasDiff: true, chunk };
+        return {
+            hasDiff: true,
+            chunk,
+            entry: { path: entry.path, name: entry.name, type: entry.object_type },
+        };
     } finally {
         rmSync(tmpRoot, { recursive: true, force: true });
     }
