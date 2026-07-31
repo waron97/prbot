@@ -138,7 +138,12 @@ async function push(opts = {}) {
         return;
     }
 
-    const backupTs = new Date().toISOString().replace(/:/g, '-').replace('T', '_').slice(0, 19);
+    // Keep the trailing Z so the folder name is unambiguously UTC, not read as local time.
+    const backupTs = new Date()
+        .toISOString()
+        .replace(/:/g, '-')
+        .replace('T', '_')
+        .replace(/\.\d+Z$/, 'Z');
 
     // Back up remote code for phase/mfa before overwriting (pb/lrp back up
     // their own full upstream payload inside pushPbEntry/pushLrpEntry).

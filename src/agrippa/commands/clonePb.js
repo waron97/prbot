@@ -47,8 +47,10 @@ async function clonePb(opts) {
         });
     }
 
-    // Destination directory.
-    let dest = opts.path ?? null;
+    // Destination directory: explicit --path wins; otherwise, if --name already
+    // resolved the process, its document_id is what the prompt would default to
+    // anyway, so use it directly instead of prompting for a value already known.
+    let dest = opts.path ?? (opts.name ? chosen.document_id : null);
     if (!dest) {
         const { inputPath } = await inquirer.prompt([
             {

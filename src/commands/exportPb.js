@@ -7,6 +7,7 @@ import { getToken } from '../lib/auth.js';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
 import { log } from '../lib/logger.js';
+import { requireInteractive } from '../lib/tty.js';
 
 async function getProcessList(token) {
     const url = `${process.env.IMPORTEXPORT_URL}/object/process_builder?addLanguageParam=true`;
@@ -126,13 +127,27 @@ async function exportPb(opts) {
         value: { guid: p.guid, document_id: p.document_id },
     }));
 
-    const selected = await search({
-        message: 'Select PB process to export:',
-        source: async (input) => {
-            if (!input) return choices;
-            return choices.filter((c) => fuzzyMatch(c.name, input));
-        },
-    });
+    if (opts.list) {
+        const matches = opts.query ? choices.filter((c) => fuzzyMatch(c.name, opts.query)) : choices;
+        for (const c of matches) log(`${c.value.document_id}\t${c.value.guid}\t${c.name}`);
+        return;
+    }
+
+    let selected;
+    if (opts.id) {
+        const match = choices.find((c) => c.value.document_id === opts.id);
+        if (!match) throw new Error(`No PB process found with document_id "${opts.id}"`);
+        selected = match.value;
+    } else {
+        requireInteractive('use -m/--id <document_id>');
+        selected = await search({
+            message: 'Select PB process to export:',
+            source: async (input) => {
+                if (!input) return choices;
+                return choices.filter((c) => fuzzyMatch(c.name, input));
+            },
+        });
+    }
 
     const { guid, document_id } = selected;
     const filename = `${document_id}.zip`;
@@ -143,6 +158,7 @@ async function exportPb(opts) {
 
     log('Waiting for export to complete...');
     const requestId = await pollExportResult(guid, requestTime, token);
+    log(`Request ID: ${requestId}`);
 
     log(`Downloading ${filename}...`);
     const zipBuffer = await downloadZip(requestId, token);

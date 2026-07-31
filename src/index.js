@@ -92,6 +92,8 @@ function resolveQuiet(opts) {
     return Boolean(opts.quiet || opts.silent);
 }
 
+program.name('prbot').version(currentVersion);
+
 program
     .command('pr <module>')
     .option('-b, --bump <level>')
@@ -137,6 +139,10 @@ program
     .option('-n, --name <text>', 'PR title (default: task name from Odoo)')
     .option('--amend', 'Amend existing PR on current branch with new trident/jira refs')
     .option(
+        '--exact-changelog-section <heading>',
+        'Full CHANGELOG.md section heading to use, e.g. "### CROSS_31.1 - ML" (skips the section prompt)'
+    )
+    .option(
         '--worktree [path]',
         'Create the branch in a new git worktree instead of switching the current checkout; optional path overrides the default sibling directory'
     )
@@ -151,6 +157,7 @@ program.command('commit').action(async (opts) => {
 program
     .command('doc')
     .option('-t, --trident <id>', 'Trident task IDs (repeatable)', collect)
+    .option('-o, --out <dir>', 'Directory to write task doc folders into (default: cwd)')
     .action(async (opts) => {
         await doc(opts);
     });
@@ -174,17 +181,42 @@ withQuiet(
 
 exportCmd.command('rip').action(() => exportRip());
 
-withQuiet(exportCmd.command('pb').option('--no-commit')).action(async (opts) => {
+withQuiet(
+    exportCmd
+        .command('pb')
+        .option('--no-commit')
+        .option('-m, --id <document_id>', 'PB process document_id to export (skips interactive selection)')
+        .option('-l, --list', 'List matching PB processes (document_id + name) instead of exporting')
+        .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+).action(async (opts) => {
     if (resolveQuiet(opts)) setSilent(true);
     await exportPb(opts);
 });
 
-withQuiet(exportCmd.command('imperex').option('--no-commit')).action(async (opts) => {
+withQuiet(
+    exportCmd
+        .command('imperex')
+        .option('--no-commit')
+        .option('--model <name>', 'Imperex model to export (skips model prompt)')
+        .option('--record <id>', 'Record id to export (skips record prompt)')
+        .option(
+            '-l, --list',
+            'List matching models (or, with --model, matching records) instead of exporting'
+        )
+        .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+).action(async (opts) => {
     if (resolveQuiet(opts)) setSilent(true);
     await exportImperex(opts);
 });
 
-withQuiet(exportCmd.command('lrp').option('--no-commit')).action(async (opts) => {
+withQuiet(
+    exportCmd
+        .command('lrp')
+        .option('--no-commit')
+        .option('-m, --id <id>', 'LRP process id to export (skips interactive selection)')
+        .option('-l, --list', 'List matching LRP processes (id + name) instead of exporting')
+        .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+).action(async (opts) => {
     if (resolveQuiet(opts)) setSilent(true);
     await exportLrp(opts);
 });

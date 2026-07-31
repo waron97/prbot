@@ -4,8 +4,10 @@ import search from '@inquirer/search';
 import fetch from 'node-fetch';
 import { resolveAddonsPath } from '../lib/addons.js';
 import { getToken } from '../lib/auth.js';
+import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
 import { log } from '../lib/logger.js';
+import { requireInteractive } from '../lib/tty.js';
 
 function getSymphonyBase() {
     const url = process.env.IMPORTEXPORT_URL;
@@ -104,24 +106,40 @@ async function exportLrp(opts) {
     const initialItems = await fetchProcesses(token, null);
     const initialChoices = initialItems.map((p) => ({ name: p.name, value: p.id }));
 
-    let searchController = null;
+    if (opts.list) {
+        const matches = opts.query
+            ? initialChoices.filter((c) => fuzzyMatch(c.name, opts.query))
+            : initialChoices;
+        for (const c of matches) log(`${c.value}\t${c.name}`);
+        return;
+    }
 
-    const selectedId = await search({
-        message: 'Select LRP process to export:',
-        source: async (input) => {
-            if (!input) return initialChoices;
+    let selectedId;
+    if (opts.id) {
+        const match = initialChoices.find((c) => String(c.value) === String(opts.id));
+        if (!match) throw new Error(`No LRP process found with id "${opts.id}"`);
+        selectedId = match.value;
+    } else {
+        requireInteractive('use -m/--id <id>');
+        let searchController = null;
 
-            if (searchController) searchController.abort();
-            searchController = new AbortController();
+        selectedId = await search({
+            message: 'Select LRP process to export:',
+            source: async (input) => {
+                if (!input) return initialChoices;
 
-            try {
-                const items = await fetchProcesses(token, input, searchController.signal);
-                return items.map((p) => ({ name: p.name, value: p.id }));
-            } catch {
-                return initialChoices;
-            }
-        },
-    });
+                if (searchController) searchController.abort();
+                searchController = new AbortController();
+
+                try {
+                    const items = await fetchProcesses(token, input, searchController.signal);
+                    return items.map((p) => ({ name: p.name, value: p.id }));
+                } catch {
+                    return initialChoices;
+                }
+            },
+        });
+    }
 
     log('Fetching process detail...');
     const jsText = await fetchProcessDetail(selectedId, token);

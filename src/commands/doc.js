@@ -46,9 +46,9 @@ function safeFilename(name, usedNames) {
     return candidate;
 }
 
-async function writeTaskDoc(taskId, { task, attachments }) {
+async function writeTaskDoc(taskId, { task, attachments }, outDir) {
     const dirName = `trident_${taskId}`;
-    const dir = path.join(process.cwd(), dirName);
+    const dir = path.join(outDir ?? process.cwd(), dirName);
     await fs.mkdir(dir, { recursive: true });
 
     const usedNames = new Set();
@@ -85,7 +85,7 @@ async function doc(opts) {
 
     for (const id of ids) {
         const data = await fetchTaskDoc(id);
-        const dir = await writeTaskDoc(id, data);
+        const dir = await writeTaskDoc(id, data, opts.out);
         log(`Wrote ${dir}`);
     }
 }

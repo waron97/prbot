@@ -86,6 +86,8 @@ async function diff(targetArg) {
         spawnSync(pager, pagerArgs, { input: combined, stdio: ['pipe', 'inherit', 'inherit'] });
         log(`\n${diffCount} file(s) differ from remote.`);
     }
+
+    if (diffCount > 0) process.exitCode = 1;
 }
 
 // Single-file phase/mfa code entries: write the remote body to a tmp file and

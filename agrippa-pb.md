@@ -6,9 +6,18 @@ doing fixes or enhancements outside the scope of your instructions.
 
 This workspace is an **agrippa** workspace: a local checkout of Odoo code synced via
 the `agrippa` CLI. **You (the agent) never run `agrippa clone`, `agrippa pull`, or
-`agrippa push`** — those are human-only operations. You edit local files, and for
+`agrippa push`** — those are human-only operations (they overwrite remote state /
+local files with no way back short of `.backup/`). You edit local files, and for
 wizards and LRPs you also drive the `agrippa pb` editing commands (below). A human
 reviews and syncs.
+
+`agrippa` ships alongside a sibling CLI, **`prbot`** — exports, task docs, and PR/release
+automation (see **Using prbot**, at the end of this doc). The same read/write split
+applies there as everywhere else in this doc: **read-only lookups** (`--list`/`--query`,
+`export ... --list`, `doc`) are yours to run freely. **Anything that writes** — an actual
+`export ... -m/--id/--model/--record` (writes files, commits), `autopr` (branch, PR,
+Trident, changelog, git push) — you only run when the human explicitly tells you to for
+that specific invocation. Default to asking, not assuming a prior go-ahead still applies.
 
 ---
 
@@ -445,4 +454,56 @@ not push.
 - When in doubt: `pb ls` to see the graph, make the structural change, `pb preview` to
   show the human, then hand off.
 
+---
+
+## Using prbot
+
+`prbot` is the sibling CLI to `agrippa` — exports, task docs, and PR/release automation
+against Azure DevOps + Odoo/RIP + Trident. Same rule as the rest of this doc: **reads
+are yours to run whenever useful; writes need the human's explicit go-ahead for that
+specific invocation** — a prior "yes" doesn't carry over to the next one.
+
+`prbot --version` / `-V` — sanity-check which version is installed. Always safe.
+
+### Reads — run freely
+
+`export pb/imperex/lrp --list`, optionally with `-Q/--query <text>` (fuzzy-filters by
+name), print candidates without exporting or touching git:
+
+```bash
+prbot export pb --list -Q voltura            # document_id, guid, name
+prbot export imperex --list -Q ticket        # model names (add --model X to list that model's records instead)
+prbot export imperex --model helpdesk.ticket --list -Q foo
+prbot export lrp --list -Q renewal           # id, name
+```
+
+Use these the same way you'd use `agrippa pb ls` — to find the exact `document_id`/
+`model`/`record`/`id` you'll need if the human later asks for an export, or just to
+answer "does X exist / what's it called".
+
+### Writes — human must explicitly ask, every time
+
+These write files (and, unless `--no-commit`, `git commit`) or touch DevOps/Trident/git
+remotes. Do not run them speculatively, and do not treat an earlier approval as covering
+a later, different invocation.
+
+```bash
+prbot export pb -m <document_id>              # writes .cloudbuild/pb/... zip, commits
+prbot export imperex --model <name> --record <id>   # writes sorgenia_imperex_metadata/..., commits
+prbot export lrp -m <id>                      # writes .cloudbuild/symphony/... bpmn, commits
+prbot doc -t <trident_id> [-o <dir>]          # writes a trident_<id>/ folder (local-only, no git — lower stakes, but still ask)
+prbot autopr -t <trident_id> -m "<message>" --exact-changelog-section "### <exact heading>"
+    # creates branch, pushes, opens a DevOps PR, updates the Trident checklist,
+    # appends + commits + pushes a CHANGELOG.md entry — fully non-interactive with
+    # this flag combination, and correspondingly higher-stakes; confirm every field
+    # (task id, message, section) with the human before running it, not just the
+    # fact that autopr should run at all.
+```
+
+`--exact-changelog-section` must be the section's **full heading line including `### `**
+(e.g. `"### CROSS_31.1 - ML"`), not just its text — copy it verbatim from
+`CHANGELOG.md` or from the error message `autopr` prints when it doesn't match (it lists
+every available heading). Prefer `autopr --worktree` when running it yourself: it
+creates the branch in a separate worktree instead of switching the human's current
+checkout out from under them.
 

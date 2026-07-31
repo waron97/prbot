@@ -320,7 +320,18 @@ async function autopr(options) {
             }
         }
 
-        const selectedSection = await selectSection(sections, candidates);
+        let selectedSection;
+        if (options.exactChangelogSection) {
+            selectedSection = sections.find((s) => s.heading === options.exactChangelogSection);
+            if (!selectedSection) {
+                throw new Error(
+                    `No changelog section found matching --exact-changelog-section "${options.exactChangelogSection}". ` +
+                        `Available headings:\n${sections.map((s) => `  ${s.heading}`).join('\n')}`
+                );
+            }
+        } else {
+            selectedSection = await selectSection(sections, candidates);
+        }
         const endLine = findSectionEndLine(lines, selectedSection.startLine);
         const indent = detectIndentation(lines, selectedSection.startLine, endLine);
 
