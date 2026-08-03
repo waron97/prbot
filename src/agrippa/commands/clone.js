@@ -25,6 +25,11 @@ async function clone(opts) {
     // Determine object type (interactive prompt when no flag was passed)
     let objectType = opts.mfa ? 'mfa' : opts.phase ? 'phase' : null;
     if (!objectType) {
+        if (opts.list) {
+            throw new Error(
+                '--list requires --phase, --mfa, --pb, or --lrp to specify what to list.'
+            );
+        }
         objectType = await select({
             message: 'What do you want to clone?',
             choices: [
@@ -58,12 +63,31 @@ async function clone(opts) {
         return;
     }
 
+    const nameOf = (r) => (objectType === 'mfa' ? `${r.model_name} / ${r.name}` : r.name);
+
+    if (opts.list) {
+        const matches = opts.query
+            ? records.filter((r) => fuzzyMatch(nameOf(r), opts.query))
+            : records;
+        for (const r of matches) log(`${r.id}\t${nameOf(r)}`);
+        return;
+    }
+
     // Determine record
     let record;
     if (opts.id) {
         const id = parseInt(opts.id, 10);
         record = records.find((r) => r.id === id);
         if (!record) throw new Error(`No ${objectType} found with id ${opts.id}`);
+    } else if (opts.name) {
+        const matches = records.filter((r) => r.name === opts.name || nameOf(r) === opts.name);
+        if (!matches.length) throw new Error(`No ${objectType} found with name "${opts.name}"`);
+        if (matches.length > 1) {
+            throw new Error(
+                `Multiple ${objectType} records match name "${opts.name}"; use --id instead.`
+            );
+        }
+        record = matches[0];
     } else {
         record = await search({
             message: `Select a ${objectType}:`,

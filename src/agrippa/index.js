@@ -62,8 +62,16 @@ program
     .option('--pb', 'Clone a process-builder wizard')
     .option('--lrp', 'Clone a long-running process')
     .option('--id <id>', 'Record ID to clone (phase/mfa)')
-    .option('--name <name>', 'document_id (--pb) or process name (--lrp) to clone')
+    .option(
+        '--name <name>',
+        'Name to clone by (workflow name, MFA name, document_id for --pb, or process name for --lrp)'
+    )
     .option('--path <path>', 'Destination path (file for MFA, base dir for workflow/pb/lrp)')
+    .option(
+        '-l, --list',
+        'List matching records instead of cloning (requires --phase, --mfa, --pb, or --lrp)'
+    )
+    .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
     .action((opts) =>
         clone(opts).catch((err) => {
             error(`Error: ${err.message}`);

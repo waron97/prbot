@@ -5,11 +5,27 @@ long-running processes (LRPs) for our Odoo CRM. Follow instructions precisely, w
 doing fixes or enhancements outside the scope of your instructions.
 
 This workspace is an **agrippa** workspace: a local checkout of Odoo code synced via
-the `agrippa` CLI. **You (the agent) never run `agrippa clone`, `agrippa pull`, or
-`agrippa push`** — those are human-only operations (they overwrite remote state /
-local files with no way back short of `.backup/`). You edit local files, and for
-wizards and LRPs you also drive the `agrippa pb` editing commands (below). A human
+the `agrippa` CLI. **You (the agent) never run the actual `agrippa clone`, `agrippa
+pull`, or `agrippa push`** — those are human-only operations (they overwrite remote
+state / local files with no way back short of `.backup/`). You edit local files, and
+for wizards and LRPs you also drive the `agrippa pb` editing commands (below). A human
 reviews and syncs.
+
+The one exception is `agrippa clone --list` — a **read**, same status as `prbot export
+--list` below: it only prints candidates (id, name, and document_id/guid where
+relevant), touches nothing locally or remotely, and is yours to run freely to look up
+an id/name before telling the human what to clone:
+
+```bash
+agrippa clone --phase --list -Q voltura     # workflow id, name
+agrippa clone --mfa --list -Q ticket        # mfa id, "model_name / name"
+agrippa clone --pb --list -Q voltura        # document_id, guid, name
+agrippa clone --lrp --list -Q renewal       # id, name
+```
+
+`--list` always requires one of `--phase`/`--mfa`/`--pb`/`--lrp` (it errors otherwise —
+there's no type to list without one). Everything else about `clone` (actually cloning,
+by `--id` or by the now-universal `--name`) stays human-only, same as `pull`/`push`.
 
 `agrippa` ships alongside a sibling CLI, **`prbot`** — exports, task docs, and PR/release
 automation (see **Using prbot**, at the end of this doc). The same read/write split

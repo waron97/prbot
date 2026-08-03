@@ -24,6 +24,18 @@ async function clonePb(opts) {
         return;
     }
 
+    if (opts.list) {
+        const matches = opts.query
+            ? processes.filter(
+                  (p) =>
+                      fuzzyMatch(p.process_name, opts.query) ||
+                      fuzzyMatch(p.document_id, opts.query)
+              )
+            : processes;
+        for (const p of matches) log(`${p.document_id}\t${p.guid}\t${p.process_name}`);
+        return;
+    }
+
     // Select the process: by --name (document_id) or interactive fuzzy search.
     let chosen;
     if (opts.name) {

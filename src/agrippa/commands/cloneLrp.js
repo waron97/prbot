@@ -25,6 +25,12 @@ async function cloneLrp(opts) {
 
     const token = await getToken();
 
+    if (opts.list) {
+        const items = await listLrps(token, opts.query ?? null);
+        for (const p of items) log(`${p.id}\t${p.name}`);
+        return;
+    }
+
     // Selection: by --name (exact) or interactive server-side search (LRPs
     // are searched server-side by name — see listLrps — not fetched-all-then-
     // fuzzy-filtered like PBs).
