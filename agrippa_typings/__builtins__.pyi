@@ -38,7 +38,7 @@ class Response:
 case_id: _HelpdeskTicket
 env: OdooEnvironment
 body: Dict[str, Any]
-args: List[Any]
+args: Dict[str, Any]
 model: Recordset
 logger: logging.Logger
 
