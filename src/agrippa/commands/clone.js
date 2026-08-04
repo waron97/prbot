@@ -105,16 +105,21 @@ async function clone(opts) {
     let basePath = opts.path ?? null;
 
     if (objectType === 'phase') {
+        const defaultPath = toSlug(record.name);
         if (!basePath) {
-            const { inputPath } = await inquirer.prompt([
-                {
-                    type: 'input',
-                    name: 'inputPath',
-                    message: 'Base directory for phases:',
-                    default: toSlug(record.name),
-                },
-            ]);
-            basePath = inputPath;
+            if (!process.stdin.isTTY) {
+                basePath = defaultPath;
+            } else {
+                const { inputPath } = await inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'inputPath',
+                        message: 'Base directory for phases:',
+                        default: defaultPath,
+                    },
+                ]);
+                basePath = inputPath;
+            }
         }
 
         log(`Fetching phases for "${record.name}"...`);
@@ -153,15 +158,19 @@ async function clone(opts) {
     } else {
         const defaultPath = defaultMfaPath(record.model_name, record.name);
         if (!basePath) {
-            const { inputPath } = await inquirer.prompt([
-                {
-                    type: 'input',
-                    name: 'inputPath',
-                    message: 'Path for MFA file:',
-                    default: defaultPath,
-                },
-            ]);
-            basePath = inputPath;
+            if (!process.stdin.isTTY) {
+                basePath = defaultPath;
+            } else {
+                const { inputPath } = await inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'inputPath',
+                        message: 'Path for MFA file:',
+                        default: defaultPath,
+                    },
+                ]);
+                basePath = inputPath;
+            }
         }
 
         writeCodeFile(basePath, record.code);

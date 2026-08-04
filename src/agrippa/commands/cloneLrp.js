@@ -60,15 +60,20 @@ async function cloneLrp(opts) {
     // Destination directory.
     let dest = opts.path ?? null;
     if (!dest) {
-        const { inputPath } = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'inputPath',
-                message: 'Destination directory:',
-                default: chosen.name.replace(/^B2WA_/, ''),
-            },
-        ]);
-        dest = inputPath;
+        const defaultDest = chosen.name.replace(/^B2WA_/, '');
+        if (!process.stdin.isTTY) {
+            dest = defaultDest;
+        } else {
+            const { inputPath } = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'inputPath',
+                    message: 'Destination directory:',
+                    default: defaultDest,
+                },
+            ]);
+            dest = inputPath;
+        }
     }
 
     log(`Fetching "${chosen.name}"...`);

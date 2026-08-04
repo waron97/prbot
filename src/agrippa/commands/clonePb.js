@@ -64,15 +64,19 @@ async function clonePb(opts) {
     // anyway, so use it directly instead of prompting for a value already known.
     let dest = opts.path ?? (opts.name ? chosen.document_id : null);
     if (!dest) {
-        const { inputPath } = await inquirer.prompt([
-            {
-                type: 'input',
-                name: 'inputPath',
-                message: 'Destination directory:',
-                default: chosen.document_id,
-            },
-        ]);
-        dest = inputPath;
+        if (!process.stdin.isTTY) {
+            dest = chosen.document_id;
+        } else {
+            const { inputPath } = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'inputPath',
+                    message: 'Destination directory:',
+                    default: chosen.document_id,
+                },
+            ]);
+            dest = inputPath;
+        }
     }
 
     log(`Fetching "${chosen.process_name}"...`);

@@ -519,6 +519,35 @@ function lintDanglingDefaults(structure) {
     return issues;
 }
 
+// Readability signal, independent of lintIncomingEdges' type-eligibility check:
+// a join-capable gateway with a handful of incoming edges is fine, but one
+// with a lot of them (e.g. every error branch in a diagram routed straight to
+// one distant collector) produces long edges criss-crossing the whole graph.
+// Flag it regardless of node type so hand-drawn task/event violations (already
+// caught above) don't mask this separate convergence warning.
+const CONVERGENCE_WARNING_THRESHOLD = 3;
+
+function lintConvergence(structure) {
+    const inCount = {};
+    eachNode(structure.nodes, null, (n) => {
+        for (const e of n.edges || []) {
+            inCount[e.target] = (inCount[e.target] || 0) + 1;
+        }
+    });
+
+    const issues = [];
+    eachNode(structure.nodes, null, (n) => {
+        const inc = inCount[n.id] || 0;
+        if (inc > CONVERGENCE_WARNING_THRESHOLD) {
+            issues.push(
+                `${n.id} (${n.name || n.type}): ${inc} edges converge here — consider chaining ` +
+                    `through intermediate collectors for readability.`
+            );
+        }
+    });
+    return issues;
+}
+
 // Run all lint rules and return combined issues.
 function lintAll(structure) {
     return [
@@ -526,6 +555,7 @@ function lintAll(structure) {
         ...lintDanglingDefaults(structure),
         ...lintEdgeNames(structure),
         ...lintIncomingEdges(structure),
+        ...lintConvergence(structure),
     ];
 }
 
