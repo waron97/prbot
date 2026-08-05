@@ -6,10 +6,10 @@ doing fixes or enhancements outside the scope of your instructions.
 
 This workspace is an **agrippa** workspace: a local checkout of Odoo code synced via
 the `agrippa` CLI. **You (the agent) never run the actual `agrippa clone`, `agrippa
-pull`, or `agrippa push`** — those are human-only operations (they overwrite remote
-state / local files with no way back short of `.backup/`). You edit local files, and
-for wizards and LRPs you also drive the `agrippa pb` editing commands (below). A human
-reviews and syncs.
+pull`, `agrippa push`, or `agrippa restore`** — those are human-only operations (they
+overwrite remote state / local files, with `.backup/` snapshots and `agrippa restore`
+as the human's way back). You edit local files, and for wizards and LRPs you also
+drive the `agrippa pb` editing commands (below). A human reviews and syncs.
 
 The one exception is `agrippa clone --list` — a **read**, same status as `prbot export
 --list` below: it only prints candidates (id, name, and document_id/guid where
@@ -207,8 +207,9 @@ get wrong by hand.
 - Publishing is called **deploy** for LRPs (same human-only `agrippa push
   --publish`/`--skip-publish` flow as wizard publish — not a `pb` command).
 
-> **You never run `agrippa push` or `agrippa pull`.** You only edit local files and run
-> the local, read/write `agrippa pb` subcommands. A human syncs and publishes/deploys.
+> **You never run `agrippa push`, `agrippa pull`, or `agrippa restore`.** You only edit
+> local files and run the local, read/write `agrippa pb` subcommands. A human syncs,
+> restores, and publishes/deploys.
 
 ### Decomposed project layout
 
@@ -464,7 +465,7 @@ not push.
 ### Safety
 
 - `pb` commands are **local only** — nothing reaches upstream. Syncing
-  (`clone`/`pull`/`push`) and publishing are the human's job, never yours.
+  (`clone`/`pull`/`push`/`restore`) and publishing are the human's job, never yours.
 - After every command the project is re-checked for recomposability; a broken edit is
   reported with a `WARNING`.
 - When in doubt: `pb ls` to see the graph, make the structural change, `pb preview` to

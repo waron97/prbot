@@ -20,6 +20,7 @@ import {
 import { pull } from './commands/pull.js';
 import { push } from './commands/push.js';
 import { repair } from './commands/repair.js';
+import { restore } from './commands/restore.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../../package.json');
@@ -110,6 +111,17 @@ program
         }
         push(opts).catch(failCommand(opts));
     });
+
+program
+    .command('restore')
+    .description('Restore local files from a .backup/ snapshot (phase/mfa code, pb/lrp projects)')
+    .option('--timestamp <ts>', 'Backup snapshot to restore from (skips the snapshot picker)')
+    .action((opts) =>
+        restore(opts).catch((err) => {
+            error(`Error: ${err.message}`);
+            process.exit(1);
+        })
+    );
 
 program
     .command('diff [target]')

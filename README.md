@@ -254,6 +254,8 @@ After pulling, also checks tracked workflows for newly added `from_code` phases 
 
 Tracked **process-builder wizards** and **long-running processes** are also refreshed from upstream: the local project is re-decomposed from the latest payload (orphan script files pruned; PB wizards also prune orphan pages), with the same `fast-forward`/`conflict` classification — a semantic checksum of the recomposed payload (not raw `updated_date`), canonicalized so cosmetic noise never triggers a false conflict: whitespace-only BPMN text nodes, `format`-only `labelPos`, page ordering, and the `updated_date`/`modified_by` audit fields Odoo/Symple bump on any server touch are all excluded from the comparison. The current local state is backed up to `.backup/<timestamp>/<path>/local.json` first.
 
+Plain phase/MFA code is backed up the same way: the current local `.py` content is written to `.backup/<timestamp>/<path>` before it's overwritten with the pulled remote code.
+
 ```bash
 agrippa pull
 agrippa pull --non-interactive  # no prompts: auto-select fast-forward, fail if any conflict
@@ -272,6 +274,31 @@ agrippa push --skip-publish  # never publish/deploy (no prompt)
 agrippa push --non-interactive  # no prompts: auto-select fast-forward, fail if any conflict;
                                  # publish/deploy defaults to skip unless --publish is also passed
 ```
+
+### `agrippa restore`
+
+Restores local workspace files from a `.backup/<timestamp>/` snapshot written by an earlier `push` or `pull`. Local only — it never touches the remote and never modifies `agrippa.yaml`/`checksum_at_pull`; restored content is just local file state, classified against the existing baseline like any other local edit on the next `push`/`pull`/`diff`. No network calls.
+
+Prompts for a snapshot (newest first), then a checkbox of which tracked resources have backup content in it (unchecked by default — this is a deliberate recovery action, not a routine safe one).
+
+What's available to restore, by object type and which command wrote it:
+
+| object_type            | `push` backed up                      | `pull` backed up                     |
+| ---------------------- | ------------------------------------- | ------------------------------------ |
+| `phase` / `mfa`        | remote code (about to be overwritten) | local code (about to be overwritten) |
+| `process_builder`      | full remote payload (`upstream.json`) | full local payload (`local.json`)    |
+| `long_running_process` | remote BPMN only (`upstream.xml`)     | full local payload (`local.json`)    |
+
+```bash
+agrippa restore
+agrippa restore --timestamp 2026-08-05_14-30-00Z   # skip the snapshot picker
+```
+
+Options:
+
+| Flag               | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `--timestamp <ts>` | Backup snapshot to restore from (skips the snapshot picker) |
 
 ### `agrippa diff [target]`
 

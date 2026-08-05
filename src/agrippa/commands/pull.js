@@ -1,4 +1,5 @@
-import { dirname } from 'path';
+import { mkdirSync, writeFileSync } from 'fs';
+import { dirname, join } from 'path';
 import inquirer from 'inquirer';
 import { getToken } from '../../lib/auth.js';
 import { log, warn } from '../../lib/logger.js';
@@ -19,6 +20,8 @@ import {
 } from '../lib/workspace.js';
 import { pullLrpEntry } from './pullLrp.js';
 import { pullPbEntry } from './pullPb.js';
+
+const BACKUP_DIR = '.backup';
 
 async function pull(opts = {}) {
     const config = readConfig();
@@ -98,7 +101,17 @@ async function pull(opts = {}) {
             if (!selected.length) {
                 log('Nothing selected. No changes made.');
             } else {
+                const backupTs = backupTimestamp();
                 for (const entry of selected) {
+                    // Back up the current local code before overwriting it (the
+                    // pull counterpart of push.js's remote-code backup).
+                    const localCode = readCodeFile(entry.path);
+                    if (localCode != null) {
+                        const backupPath = join(BACKUP_DIR, backupTs, entry.path);
+                        mkdirSync(dirname(backupPath), { recursive: true });
+                        writeFileSync(backupPath, localCode.trim() + '\n', 'utf-8');
+                    }
+
                     writeCodeFile(entry.path, entry.remoteCode);
                     if (entry.object_type === 'phase' && entry.workflow_id) {
                         changedWorkflowIds.add(entry.workflow_id);
@@ -111,7 +124,9 @@ async function pull(opts = {}) {
                     }
                 }
                 writeConfig(config);
-                log(`\nPulled ${selected.length} record(s).`);
+                log(
+                    `\nPulled ${selected.length} record(s). Local backups in ${BACKUP_DIR}/${backupTs}/`
+                );
             }
         }
     } else {
