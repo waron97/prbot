@@ -19,21 +19,91 @@ wants: catching `setVariable` calls that only fire on some code paths (e.g. insi
   `ai_tasks/2026-06-18-process-builder-clone/project_output_example_experimental/scripts/`, 43/44 use `var`; zero use
   arrow functions, `const`/`let`, template literals, or `.map`/`.filter`. `scripts/0000_functions.js` hand-rolls ES5
   replacements for those (`arrayMap`, `arrayFilter`, `arrayReduce`, `arrayIncludes`, `formatDateES5`, …) — someone
-  already pays this cost by hand, on every script, forever. Two files even carry hand-written
-  `/* eslint-disable @typescript-eslint/... */` directives, meaning authors have already tried lin­ting these bodies
-  against *some* config.
+  already pays this cost by hand, on every script, forever.
 - **`eslint-plugin-es5@1.5.0` is already an installed `dependency` of `@waron97/prbot` and is completely unused** —
   zero references anywhere in `src/`, present since the initial commit. Its rules
   (`no-es6-methods`, `no-es6-static-methods`, `no-arrow-functions`, `no-block-scoping`, `no-template-literals`, …)
   catch exactly the class of runtime failure `0000_functions.js` works around by hand. This is close to a freebie:
-  wiring it up costs a config file, not new tooling. Caveat: it ships CJS with eslintrc-shaped `configs`, which do
-  not spread into ESLint 9 flat config — the rules must be enumerated individually rather than pulled in as a
-  preset.
+  wiring it up costs a config file, not new tooling.
 - **`agrippa init` already does the equivalent for Python**, and is the right home for this. It writes
   `pyproject.toml` (a ruff config with a `builtins` allowlist for Odoo/Activiti globals like `env`, `log`, `request`),
   `pyrightconfig.json`, and `typings/*.pyi`, each guarded by `existsSync` and an `inquirer` confirm
   (`src/agrippa/commands/init.js`). An `eslint.config.mjs` + `package.json` with a `globals` allowlist
   (`execution`, …) is the direct structural mirror of that `builtins` list.
+
+## Prior art: `example-old-workspace/`
+
+Before agrippa, script edits on a checked-out wizard were done by hand in a throwaway workspace: `bpmn.xml`
+(pretty-printed, for reading) + `packed.xml` (for pasting back into the wizard) decomposed by eye into
+`src/<ScriptTask>.js` files, edited under a real eslint + prettier + TypeScript setup, then hand-copied back in. This
+is very close to what agrippa now automates structurally (`pbProject.js`'s `decompose`/`recompose`), minus the
+lint/format/type layer — which was never carried over. Three things from it directly inform this proposal, and one
+resolves an open question from the earlier feasibility pass rather than just corroborating it:
+
+- **Confirms the eslint-plugin-es5 origin exactly, not just plausibly.** `example-old-workspace/package.json`'s
+  `dependencies`/`devDependencies` (`eslint-plugin-es5@^1.5.0`, `@eslint/js@^9.21.0`,
+  `@typescript-eslint/parser@^8.26.0`, `eslint@^9.21.0`, `typescript@^5.8.2`, `typescript-eslint@^8.26.0`) are
+  **byte-identical version pins** to what's sitting unused in `@waron97/prbot`'s own `package.json` today. This
+  wasn't a vague "someone probably meant to add this" — the versions were copy-pasted from this exact scaffold when
+  the feature was started, then the wiring-up step never happened.
+- **Confirms the flat-config shape** (`example-old-workspace/eslint.config.mjs`): `eslint-plugin-es5`'s rules
+  enumerated individually under `files: ['src/**/*.js']` (its `configs` are eslintrc-shaped and don't spread into
+  flat config — matches the caveat already in this proposal), plus `languageOptions.globals: { execution: true }`
+  for the injected Activiti global. Directly reusable as the base of the generated `eslint.config.mjs`.
+- **Explains the two hand-written `/* eslint-disable @typescript-eslint/no-unused-vars */` directives already
+  sitting in the prbot-checked-in sample corpus**, which the earlier feasibility pass flagged as "authors have
+  already tried linting these bodies against *some* config" without knowing which. `example-old-workspace` runs
+  `typescript-eslint`'s parser over the plain `.js` files (via `ts.config(...)`, with no `parserOptions.project` —
+  so no type-aware checking, just its more thorough syntax-level rules) and turns on
+  `@typescript-eslint/no-unused-vars: 'warn'`. That's the exact rule name in the corpus's disable comments. Worth
+  carrying forward as a lightweight addition: swapping eslint's default parser for `typescript-eslint`'s on plain JS
+  files, without a `tsconfig`/type-aware project, costs nothing and gets a better unused-var/no-shadow pass than
+  core eslint's own.
+- **Corrects a prettier detail the earlier pass got by inference rather than measurement.**
+  `example-old-workspace/.prettierrc.json` has no `printWidth` (prettier default: 80). But the real corpus's longest
+  lines run up to 98 characters — past 80, under the 100 this proposal already recommends (matching prbot's own
+  `.prettierrc.mjs`). So the hand-maintained workspace's own prettier config was apparently never actually the one
+  enforced against these files (or wasn't run consistently) — a concrete reason not to copy `example-old-workspace`'s
+  `.prettierrc.json` verbatim, and a small piece of evidence that `printWidth: 100` is the right choice here, not a
+  guess.
+
+## Feature: auto-generate `types/global.d.ts` instead of hand-maintaining it
+
+`example-old-workspace/types/global.d.ts` types the injected `execution` global against a hand-written `ContextKey`
+union — every process variable name the author remembered to list:
+
+```ts
+type ContextKey = 'template' | 'request' | 'case_id' | 'isAlive' | 'errorCode' | 'token' | 'errorMessage' | ...;
+var execution: {
+    setVariable: (key: ContextKey, value: string | number | boolean) => void;
+    getVariable: (key: ContextKey) => string | number | boolean;
+    getProcessInstanceId: () => any;
+};
+```
+
+Paired with `jsconfig.json` (`typeRoots: ["./types"]`), this gives editor-time autocomplete and typo-catching on
+`setVariable`/`getVariable` calls — a real win, since a misspelled variable name is exactly the kind of error that's
+invisible until the variable is read downstream and comes back `undefined`.
+
+**It had already drifted badly by the time this workspace was captured.** Cross-checking the declared `ContextKey`
+union against every `setVariable`/`getVariable` first-argument literal actually used across this workspace's own
+`src/*.js`: **150 distinct variable names are used; only 21 are declared** — roughly 130 real variables (including
+`errorCode` and `isAlive` themselves) give no autocomplete and no typo protection, because nobody went back to update
+the union as the wizard grew past its first few scripts. Hand-maintaining this file doesn't scale with a process's
+lifetime.
+
+Agrippa can do what manual editing couldn't: **generate this file from the project's actual content**, on `pb pull`
+or as part of the eslint-workspace scaffold, by scanning every `scripts/*.js` in a project for
+`execution.setVariable`/`execution.getVariable` first-argument string literals and regenerating the `ContextKey`
+union from that set (plus statically-known ones like `case_id`). Regenerated, not hand-edited — so it never drifts
+the way the manual version did. This is a genuine feature this proposal adds beyond the two eslint rules, and
+probably the highest-leverage single item here: it doesn't just catch one bug pattern, it prevents an entire class
+(typo'd variable names) directly at the editor, before eslint or a deploy ever runs.
+
+Scope note: this needs its own `pb.js` command or a hook into `pull.js`/`format.js` — it isn't an eslint rule at all,
+and doesn't share the "ship inside `@waron97/prbot`'s exported eslint rules" delivery mechanism below. Flagged here
+as a design element for the same workspace scaffold, to be sequenced against the two lint rules rather than folded
+into their delivery story.
 
 ## Where the workspace lives
 
@@ -210,5 +280,7 @@ top-level `try { ... } catch (err) { ... }`):
 - No `pb lint` changes — this is orthogonal tooling, not a graph-structure check.
 - No decision on the registry-vs-bundled-path question for rule delivery (see above) — flagged for a decision at
   implementation time.
-- No implementation of either rule, the scaffold, or the `package.json`/`eslint.config.mjs` templates. This document
-  is the design and feasibility write-up only.
+- No decision on where the `types/global.d.ts` generator lives (new `pb` subcommand vs. a hook into `pull`/`format`)
+  — flagged above, to be sequenced separately from the two eslint rules.
+- No implementation of either rule, the type generator, the scaffold, or the `package.json`/`eslint.config.mjs`
+  templates. This document is the design and feasibility write-up only.
