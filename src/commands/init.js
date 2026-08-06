@@ -24,7 +24,8 @@ async function init() {
             type: 'input',
             name: 'ADDONS_PATH',
             message:
-                "Addons path ('.' or blank = use the repo in the current directory, e.g. a worktree):",
+                "Addons path ('.' or blank = use the repo in the current directory, e.g. a worktree). " +
+                "Must be a git checkout containing 'config/':",
             default: existing.ADDONS_PATH ?? '~/codebase/sorgenia/addons',
         },
         {

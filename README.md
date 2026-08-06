@@ -22,7 +22,7 @@ Prompts for all required config values and writes them to `~/.config/prbot/confi
 
 | Key                    | Description                                              |
 | ---------------------- | -------------------------------------------------------- |
-| `ADDONS_PATH`          | Path to local Odoo addons repo                           |
+| `ADDONS_PATH`          | Path to local Odoo addons repo. Unset, empty, or `.` uses the current directory instead (e.g. a git worktree). Either way the resolved directory must be a git checkout containing `config/` — commands refuse to run otherwise. |
 | `KC_URL`               | Keycloak token endpoint URL                              |
 | `KC_USER`              | Keycloak username                                        |
 | `KC_PASSWORD`          | Keycloak password                                        |

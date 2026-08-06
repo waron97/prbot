@@ -50,7 +50,7 @@ Key commands and what they touch:
 - **`commit`** (`src/commands/commit.js`) — interactive staged-file selector + commit type picker
 - **`export pb/imperex/email-templates`** (`src/commands/export*.js`) — hit `IMPORTEXPORT_URL` or `RIP_URL` endpoints, write results to paths under `ADDONS_PATH`
 
-`src/lib/addons.js` — `resolveAddonsPath()` expands `~` in the configured path.
+`src/lib/addons.js` — `resolveAddonsPath()` expands a leading `~` in the configured path; an unset, empty, or `.` `ADDONS_PATH` falls back to `process.cwd()` (e.g. a git worktree). Either way, it then requires the resolved directory to contain both `.git` and `config/` — otherwise it throws rather than silently treating an unrelated directory as the addons checkout.
 `src/lib/git.js` — `execGit(args, cwd)` promise wrapper around `execFile('git', ...)`.
 
 ### agrippa
