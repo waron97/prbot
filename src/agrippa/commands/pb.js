@@ -220,6 +220,8 @@ async function pbRemove(opts) {
     );
     for (const c of result.clearedDefaults || [])
         log(`  cleared dangling default ${c.edge} on ${c.node}.`);
+    for (const attachedId of result.removedAttached || [])
+        log(`  cascaded boundary event ${attachedId} (was attached to the removed node).`);
 }
 
 async function pbConnect(opts) {

@@ -191,7 +191,10 @@ pb.command('add')
     .action((opts) => pbAdd(opts).catch(die));
 
 pb.command('rm')
-    .description('Remove a node, its edges, and its script/page files')
+    .description(
+        'Remove a node and its contained nodes, their incoming/outgoing edges, ' +
+            'attached boundary events, and their script/page files and manifest entries'
+    )
     .requiredOption('--id <id>', 'Node id to remove')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
     .action((opts) => pbRemove(opts).catch(die));

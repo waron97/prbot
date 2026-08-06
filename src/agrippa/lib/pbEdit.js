@@ -278,6 +278,13 @@ function addNodeBetween(structure, manifest, opts, ctx = {}) {
 // outgoing edges (they nest under it) AND every edge elsewhere targeting it or a
 // descendant, plus any associations referencing them. Deletes the script/page
 // files and manifest page entries for the removed userTask/scriptTask nodes.
+// Also cascades boundaryEvents attached to any removed activity: a boundaryEvent
+// is a sibling in the tree, not a child, linked only by attachedToRef — left
+// alone it recomposes fine and passes the other lint rules, but Activiti
+// resolves attachedToRef at deploy time, gets null, and the publish fails with
+// the same unattributed `Could not deploy the XML: null. Error: null` as a
+// dangling default (see clearDanglingDefaults). Runs to a fixed point since a
+// boundaryEvent removed this way could itself be attachedToRef'd by another one.
 function removeNode(structure, manifest, { id }) {
     const f = findNode(structure, id);
     if (!f) throw new Error(`node not found: ${id}`);
@@ -289,6 +296,24 @@ function removeNode(structure, manifest, { id }) {
     };
     collect(f.node);
     const victimIds = new Set(victims.map((n) => n.id));
+
+    const attached = [];
+    let grew = true;
+    while (grew) {
+        grew = false;
+        eachNode(structure.nodes, null, (n) => {
+            if (n.type !== 'boundaryEvent' || victimIds.has(n.id)) return;
+            if (!victimIds.has(n.attachedToRef)) return;
+            victims.push(n);
+            victimIds.add(n.id);
+            attached.push(n.id);
+            grew = true;
+        });
+    }
+    for (const attachedId of attached) {
+        const g = findNode(structure, attachedId);
+        if (g) g.list.splice(g.list.indexOf(g.node), 1);
+    }
 
     const deletes = [];
     for (const n of victims) {
@@ -322,7 +347,12 @@ function removeNode(structure, manifest, { id }) {
     return {
         writes: {},
         deletes,
-        result: { removed: [...victimIds], removedEdges, clearedDefaults },
+        result: {
+            removed: [...victimIds],
+            removedEdges,
+            clearedDefaults,
+            removedAttached: attached,
+        },
     };
 }
 
@@ -519,6 +549,31 @@ function lintDanglingDefaults(structure) {
     return issues;
 }
 
+// Flag boundaryEvents whose attachedToRef doesn't name an existing node.
+// boundaryEvents are siblings, not children, of the activity they're attached
+// to — linked only by attachedToRef, which removeNode now cascades on delete.
+// This rule is the net for hand-edited structure.yaml and for projects
+// predating that fix. Same failure mode as a dangling default: recomposes fine
+// and passes the other lint rules, but Activiti resolves the reference at
+// deploy time, gets null, and the publish fails with `Could not deploy the
+// XML: null. Error: null`. It also breaks pb format/preview, which builds the
+// boundaryEvent's diagram edge from its attachedToRef host.
+function lintDanglingAttachments(structure) {
+    const ids = new Set();
+    eachNode(structure.nodes, null, (n) => ids.add(n.id));
+
+    const issues = [];
+    eachNode(structure.nodes, null, (n) => {
+        if (n.type !== 'boundaryEvent' || n.attachedToRef === undefined) return;
+        if (ids.has(n.attachedToRef)) return;
+        issues.push(
+            `${n.id} (${n.name || n.type}): attachedToRef ${n.attachedToRef} does not exist — ` +
+                `Activiti fails the deploy on the dangling reference.`
+        );
+    });
+    return issues;
+}
+
 // Readability signal, independent of lintIncomingEdges' type-eligibility check:
 // a join-capable gateway with a handful of incoming edges is fine, but one
 // with a lot of them (e.g. every error branch in a diagram routed straight to
@@ -553,6 +608,7 @@ function lintAll(structure) {
     return [
         ...lintGateways(structure),
         ...lintDanglingDefaults(structure),
+        ...lintDanglingAttachments(structure),
         ...lintEdgeNames(structure),
         ...lintIncomingEdges(structure),
         ...lintConvergence(structure),
