@@ -145,12 +145,27 @@ async function exportLrp(opts) {
     log('Fetching process detail...');
     const jsText = await fetchProcessDetail(selectedId, token);
     const { xml, filename } = extractBpmnData(jsText);
-    const bpmnFilename = `${filename.replace(/^B2WA_/, '')}.bpmn20.xml`;
+    const bpmnFilename = `${filename}.bpmn20.xml`;
+    // Older exports stripped the tenant prefix, so a few processes are still
+    // tracked under an unprefixed filename. Update those in place rather than
+    // dropping a prefixed duplicate next to them.
+    const legacyFilename = filename.startsWith('B2WA_')
+        ? `${filename.slice('B2WA_'.length)}.bpmn20.xml`
+        : null;
 
     const ADDONS_PATH = resolveAddonsPath(process.env.ADDONS_PATH);
     const processesDir = path.join(ADDONS_PATH, '.cloudbuild', 'symphony', 'B2WA', 'processes');
 
-    const existing = await findExistingFile(processesDir, bpmnFilename);
+    let existing = await findExistingFile(processesDir, bpmnFilename);
+    if (!existing && legacyFilename) {
+        existing = await findExistingFile(processesDir, legacyFilename);
+        if (existing) {
+            log(
+                `Note: updating legacy unprefixed file ${existing} — consider renaming it to ${bpmnFilename}.`
+            );
+        }
+    }
+
     let savePath;
     let action;
     if (existing) {
@@ -179,7 +194,7 @@ async function exportLrp(opts) {
         emitJson({
             ok: true,
             id: selectedId,
-            filename: bpmnFilename,
+            filename: path.basename(savePath),
             savePath,
             action,
             committed: opts.commit !== false,
