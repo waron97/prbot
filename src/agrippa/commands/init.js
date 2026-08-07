@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process';
 import {
     appendFileSync,
     copyFileSync,
@@ -9,7 +10,7 @@ import {
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import inquirer from 'inquirer';
-import { log } from '../../lib/logger.js';
+import { log, warn } from '../../lib/logger.js';
 import { WORKSPACE_FILE } from '../lib/config.js';
 
 const TEMPLATE = `# agrippa workspace configuration
@@ -71,6 +72,63 @@ const TYPING_FILES = [
     'recordset.pyi',
     'b2w_entities.pyi',
 ];
+
+const ESLINT_CONFIG_MJS = `import js from '@eslint/js';
+import ts from 'typescript-eslint';
+import agrippa from '@waron97/prbot/eslint';
+
+export default ts.config(
+    { ignores: ['**/*.ts'] },
+    {
+        languageOptions: {
+            globals: { execution: 'writable' },
+        },
+    },
+    js.configs.recommended,
+    agrippa.configs.pbScripts,
+    ts.configs.recommended,
+    {
+        rules: {
+            '@typescript-eslint/no-unused-vars': 'warn',
+        },
+    }
+);
+`;
+
+const PRETTIERRC_MJS = `export default {
+    tabWidth: 4,
+    printWidth: 100,
+    singleQuote: true,
+    trailingComma: 'es5',
+};
+`;
+
+function jsWorkspacePackageJson(prbotVersion) {
+    return (
+        JSON.stringify(
+            {
+                name: 'pb-scripts',
+                private: true,
+                type: 'module',
+                scripts: {
+                    lint: 'eslint .',
+                    format: "prettier --write '*/scripts/*.js'",
+                    'format:check': "prettier --check '*/scripts/*.js'",
+                },
+                devDependencies: {
+                    '@waron97/prbot': prbotVersion,
+                    '@eslint/js': '^9.21.0',
+                    eslint: '^9.21.0',
+                    'eslint-plugin-es5': '^1.5.0',
+                    prettier: '^3.8.4',
+                    'typescript-eslint': '^8.26.0',
+                },
+            },
+            null,
+            2
+        ) + '\n'
+    );
+}
 
 // The copied guidance is wrapped in these sentinels so a re-run can find the
 // managed block and refresh it in place (when agrippa-pb.md changes) without
@@ -134,6 +192,51 @@ async function init() {
             copyFileSync(join(typingsDir, file), join('typings', file));
         }
         log(`Copied ${TYPING_FILES.length} type stubs to typings/`);
+    }
+
+    const { importEslint } = await inquirer.prompt([
+        {
+            type: 'confirm',
+            name: 'importEslint',
+            message: 'Set up eslint/prettier for pb scriptTask bodies?',
+            default: true,
+        },
+    ]);
+
+    if (importEslint) {
+        const pkgPath = fileURLToPath(new URL('../../../package.json', import.meta.url));
+        const { version } = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+
+        if (!existsSync('package.json')) {
+            writeFileSync('package.json', jsWorkspacePackageJson(version), 'utf-8');
+            log('Created package.json');
+        }
+        if (!existsSync('eslint.config.mjs')) {
+            writeFileSync('eslint.config.mjs', ESLINT_CONFIG_MJS, 'utf-8');
+            log('Created eslint.config.mjs');
+        }
+        if (!existsSync('.prettierrc.mjs')) {
+            writeFileSync('.prettierrc.mjs', PRETTIERRC_MJS, 'utf-8');
+            log('Created .prettierrc.mjs');
+        }
+
+        log('Running `npm install`...');
+        const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+        const result = spawnSync(npmCmd, ['install'], { stdio: 'inherit' });
+        if (result.error || result.status !== 0) {
+            warn(
+                '`npm install` failed — run it yourself before `npm run lint` / `agrippa pb lint` ' +
+                    'will check scripts (until then, `pb lint` silently skips the script-lint step).'
+            );
+        } else {
+            log(
+                'Installed workspace dependencies. `npm run lint` / `agrippa pb lint` will now check scripts.'
+            );
+        }
+        log(
+            'Note: `npm run format` rewrites script bodies byte-for-byte — the next `agrippa pb push` ' +
+                'will send that reformatting upstream as a real diff, not just cosmetic noise.'
+        );
     }
 
     const { importInstructions } = await inquirer.prompt([

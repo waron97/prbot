@@ -374,6 +374,19 @@ every batch of structural edits before handing off to a human. Rules checked:
 
 `pb format` and `pb connect` also surface the same warnings inline.
 
+`pb lint` also runs eslint against every `scripts/*.js` body, using whatever
+`eslint.config.mjs` is scaffolded at the workspace root by `agrippa init` (which imports
+`@waron97/prbot/eslint`). This needs a one-time `npm install` in the workspace root; if
+`node_modules/.bin/eslint` isn't there yet, `pb lint` prints a warning and skips the
+script-lint step instead of failing. Rules enforced:
+
+- ES5-only syntax (`eslint-plugin-es5`) — scripts run on Activiti's plain ES5 engine, not a
+  modern JS runtime; arrow functions, `let`/`const`, template literals, etc. are rejected.
+- `no-empty-error-code` — `execution.setVariable('errorCode', '')` breaks the backend's
+  variable read (`400 ERR-SYM-007`; the page never opens even though the process stays
+  `in progress`). The convention for "no error" is `'0'`, not `''` — also flags a local
+  variable that's assigned `''` on some code path before being passed to `setVariable`.
+
 #### `pb set-default` — change a gateway's default flow
 
 ```bash
@@ -429,6 +442,15 @@ Edit the **files directly** for content within an existing node:
 | Identity/flags | edit `process.yaml` |
 
 Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints`.
+
+### Script formatting — beware push diffs
+
+The workspace scaffold from `agrippa init` also adds an `npm run format` (prettier) script
+for `*/scripts/*.js`. Script bodies are otherwise written byte-exact — running `format`
+rewrites them, and agrippa's checksum-based change detection treats that rewrite as a real
+local change. The next `agrippa pb push` will send the reformatted body upstream as an
+actual diff against the remote process, not just cosmetic noise. Don't run `npm run format`
+on a script you don't also intend to push.
 
 ### Recipes
 

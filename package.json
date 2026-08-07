@@ -3,6 +3,10 @@
     "version": "3.9.0",
     "description": "",
     "main": "index.js",
+    "exports": {
+        "./package.json": "./package.json",
+        "./eslint": "./src/agrippa/eslint/index.js"
+    },
     "engines": {
         "node": ">=20.0.0"
     },

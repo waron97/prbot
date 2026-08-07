@@ -23,7 +23,7 @@ export const SCRIPT_TEMPLATE = `try {
 
 } catch (err) {
     execution.setVariable('isAlive', false);
-    execution.setVariable('errorCode', '');
+    execution.setVariable('errorCode', '0');
     execution.setVariable('errorMessage', err.message);
 }
 `;

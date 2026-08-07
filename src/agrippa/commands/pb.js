@@ -13,8 +13,10 @@
 // project is resolved from the workspace by document_id (--pb), single-entry
 // auto-select, or a fuzzy prompt.
 
+import { execFile } from 'child_process';
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, join, relative } from 'path';
+import { promisify } from 'util';
 import search from '@inquirer/search';
 import { parse as yamlParse } from 'yaml';
 import { fuzzyMatch } from '../../lib/fuzzy.js';
@@ -123,6 +125,72 @@ function validate(dir) {
     } catch (e) {
         warn(`WARNING: project no longer recomposes cleanly: ${e.message}`);
     }
+}
+
+const execFileAsync = promisify(execFile);
+
+// Shells out to the workspace's own eslint (scaffolded by `agrippa init`,
+// installed by a plain `npm install` in the workspace root) rather than
+// linting in-process, so `pb lint` always reflects whatever rules/version
+// are actually configured on disk. `cwd` is the workspace root (agrippa.yaml
+// always lives in process.cwd() — see lib/config.js), so relative paths
+// resolve exactly as `npm run lint` would see them.
+//
+// Never throws: a workspace that hasn't run `npm install` (or scaffolded
+// eslint at all) is a normal, expected state, not a `pb lint` failure — any
+// way script-linting can't run degrades to "no script issues" plus a warning,
+// so the structural checks below still run and still produce a trustworthy
+// exit code.
+async function runScriptEslint(dir) {
+    const scriptsDir = join(dir, 'scripts');
+    if (!existsSync(scriptsDir)) return [];
+
+    const eslintBin = join(
+        'node_modules',
+        '.bin',
+        process.platform === 'win32' ? 'eslint.cmd' : 'eslint'
+    );
+    if (!existsSync(eslintBin)) {
+        warn(
+            '  ! script lint skipped: eslint is not installed in this workspace ' +
+                '(run `agrippa init` then `npm install` at the workspace root).'
+        );
+        return [];
+    }
+
+    let stdout;
+    try {
+        ({ stdout } = await execFileAsync(eslintBin, [scriptsDir, '--format', 'json'], {
+            cwd: process.cwd(),
+            maxBuffer: 10 * 1024 * 1024,
+        }));
+    } catch (e) {
+        // eslint exits 1 when it finds lint errors; the JSON report is still on stdout.
+        if (!e.stdout) {
+            warn(`  ! script lint skipped: eslint failed to run (${e.stderr || e.message}).`);
+            return [];
+        }
+        stdout = e.stdout;
+    }
+
+    let results;
+    try {
+        results = JSON.parse(stdout || '[]');
+    } catch (e) {
+        warn(`  ! script lint skipped: could not parse eslint output (${e.message}).`);
+        return [];
+    }
+
+    const issues = [];
+    for (const file of results) {
+        const rel = relative(process.cwd(), file.filePath);
+        for (const msg of file.messages) {
+            issues.push(
+                `${rel}:${msg.line}:${msg.column}  ${msg.message} (${msg.ruleId || 'parse-error'})`
+            );
+        }
+    }
+    return issues;
 }
 
 // ---------- commands ----------
@@ -308,10 +376,13 @@ async function pbLint(opts) {
     const dir = await resolveProjectPath(opts);
     const { structure } = loadProject(dir);
     const issues = lintAll(structure);
-    if (!issues.length) {
+    const scriptIssues = await runScriptEslint(dir);
+
+    const allIssues = [...issues, ...scriptIssues];
+    if (!allIssues.length) {
         log('No issues.');
     } else {
-        for (const w of issues) warn(`  ! ${w}`);
+        for (const w of allIssues) warn(`  ! ${w}`);
         process.exitCode = 1;
     }
 }
