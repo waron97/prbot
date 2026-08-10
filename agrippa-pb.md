@@ -5,16 +5,18 @@ long-running processes (LRPs) for our Odoo CRM. Follow instructions precisely, w
 doing fixes or enhancements outside the scope of your instructions.
 
 This workspace is an **agrippa** workspace: a local checkout of Odoo code synced via
-the `agrippa` CLI. **You (the agent) never run the actual `agrippa clone`, `agrippa
-pull`, `agrippa push`, or `agrippa restore`** — those are human-only operations (they
-overwrite remote state / local files, with `.backup/` snapshots and `agrippa restore`
-as the human's way back). You edit local files, and for wizards and LRPs you also
-drive the `agrippa pb` editing commands (below). A human reviews and syncs.
+the `agrippa` CLI. **You (the agent) may freely run `agrippa clone` and `agrippa
+pull`** — neither writes to the server, so both are safe to run indiscriminately.
+**You may only run `agrippa push` when a human has explicitly given you permission to
+push for that specific invocation** — pushing writes to the server and is otherwise
+off-limits. `agrippa restore` overwrites local files from a `.backup/` snapshot; that
+stays human-only, since it can clobber local edits. You edit local files, and for
+wizards and LRPs you also drive the `agrippa pb` editing commands (below). A human
+reviews, restores, and pushes — unless they've explicitly told you to push yourself.
 
-The one exception is `agrippa clone --list` — a **read**, same status as `prbot export
---list` below: it only prints candidates (id, name, and document_id/guid where
-relevant), touches nothing locally or remotely, and is yours to run freely to look up
-an id/name before telling the human what to clone:
+For a quick id/name lookup without doing a full clone, `agrippa clone --list` (same
+status as `prbot export --list` below) only prints candidates (id, name, and
+document_id/guid where relevant):
 
 ```bash
 agrippa clone --phase --list -Q voltura     # workflow id, name
@@ -24,8 +26,7 @@ agrippa clone --lrp --list -Q renewal       # id, name
 ```
 
 `--list` always requires one of `--phase`/`--mfa`/`--pb`/`--lrp` (it errors otherwise —
-there's no type to list without one). Everything else about `clone` (actually cloning,
-by `--id` or by the now-universal `--name`) stays human-only, same as `pull`/`push`.
+there's no type to list without one).
 
 `agrippa` ships alongside a sibling CLI, **`prbot`** — exports, task docs, and PR/release
 automation (see **Using prbot**, at the end of this doc). The same read/write split
@@ -53,8 +54,9 @@ automatic phases that have Python code inside. In the directory structure, unles
 current folder is named "mfa", each subdirectory is a workflow, and every Python file
 inside corresponds to a Python phase with code.
 
-For phases and MFAs you simply **edit the `.py` files** — there are no agrippa
-commands for you to run; a human clones/pulls/pushes them.
+For phases and MFAs you simply **edit the `.py` files** — there are no `pb` commands
+for these. You may `agrippa clone`/`agrippa pull` them yourself; pushing requires
+explicit human permission (see Safety above).
 
 ### Workflow structure (`workflow.yml`)
 
@@ -204,12 +206,15 @@ get wrong by hand.
 - **A few extra node types show up more often**: `intermediateCatchEvent`,
   `intermediateThrowEvent`, `callActivity`, `parallelGateway`, `eventBasedGateway` (see
   Node types below) — these exist for PBs too but are common in LRPs.
-- Publishing is called **deploy** for LRPs (same human-only `agrippa push
-  --publish`/`--skip-publish` flow as wizard publish — not a `pb` command).
+- Publishing is called **deploy** for LRPs (same `agrippa push
+  --publish`/`--skip-publish` flow as wizard publish, gated by the same explicit-
+  permission rule — not a `pb` command).
 
-> **You never run `agrippa push`, `agrippa pull`, or `agrippa restore`.** You only edit
-> local files and run the local, read/write `agrippa pb` subcommands. A human syncs,
-> restores, and publishes/deploys.
+> **You only run `agrippa push` with explicit human permission.** `agrippa clone` and
+> `agrippa pull` are fine to run freely — they don't write to the server. `agrippa
+> restore` overwrites local files and stays human-only. Otherwise you edit local files
+> and run the local, read/write `agrippa pb` subcommands. A human restores and
+> publishes/deploys, unless they've told you to push.
 
 ### Decomposed project layout
 
@@ -486,8 +491,11 @@ not push.
 
 ### Safety
 
-- `pb` commands are **local only** — nothing reaches upstream. Syncing
-  (`clone`/`pull`/`push`/`restore`) and publishing are the human's job, never yours.
+- `pb` commands are **local only** — nothing reaches upstream. `agrippa clone`/`pull`
+  are also safe to run freely — read-only against the server. `agrippa restore`
+  overwrites local files from backup and stays human-only. `agrippa push` (and
+  publishing) writes to the server: only run it when a human has explicitly told you
+  to push.
 - After every command the project is re-checked for recomposability; a broken edit is
   reported with a `WARNING`.
 - When in doubt: `pb ls` to see the graph, make the structural change, `pb preview` to
