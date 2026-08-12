@@ -14,6 +14,14 @@ stays human-only, since it can clobber local edits. You edit local files, and fo
 wizards and LRPs you also drive the `agrippa pb` editing commands (below). A human
 reviews, restores, and pushes — unless they've explicitly told you to push yourself.
 
+Credentials (Keycloak/RIP/PB) are never stored in `agrippa.yaml` — it holds only
+workspace inventory (paths/ids/checksums) and is safe to read, edit, or commit.
+`agrippa` resolves credentials from `--secrets-file <path>` (if the human gives you one)
+or the global `~/.config/prbot/config`, in that order. Never write literal credential
+values into `agrippa.yaml` or any other file in this repo. If a command fails with a
+"not configured" error, ask the human for a `--secrets-file` path rather than trying to
+source or guess values yourself.
+
 For a quick id/name lookup without doing a full clone, `agrippa clone --list` (same
 status as `prbot export --list` below) only prints candidates (id, name, and
 document_id/guid where relevant):

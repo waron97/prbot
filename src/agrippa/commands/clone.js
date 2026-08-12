@@ -20,7 +20,7 @@ async function clone(opts) {
     }
 
     const config = readConfig();
-    loadEffectiveEnv(config);
+    loadEffectiveEnv(config, opts.secretsFile);
 
     // Determine object type (interactive prompt when no flag was passed)
     let objectType = opts.mfa ? 'mfa' : opts.phase ? 'phase' : null;
@@ -46,7 +46,7 @@ async function clone(opts) {
 
     const ripUrl = process.env.RIP_URL;
     if (!ripUrl)
-        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('RIP_URL is not configured. Run `prbot init` or pass --secrets-file.');
 
     log('Fetching records...');
     const token = await getToken();

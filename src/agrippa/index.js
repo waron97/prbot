@@ -43,6 +43,12 @@ function failCommand(opts) {
 
 program.name('agrippa').version(version);
 
+program.option(
+    '--secrets-file <path>',
+    'Load KC_*/RIP_URL/PB_URL from this dotenv file (highest priority; falls back to ' +
+        '~/.config/prbot/config per key)'
+);
+
 program
     .command('init')
     .description('Create agrippa.yaml workspace config in the current directory')
@@ -74,7 +80,7 @@ program
     )
     .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
     .action((opts) =>
-        clone(opts).catch((err) => {
+        clone({ ...opts, secretsFile: program.opts().secretsFile }).catch((err) => {
             error(`Error: ${err.message}`);
             process.exit(1);
         })
@@ -88,7 +94,7 @@ program
         'No prompts; auto-select safe (fast-forward) entries and fail if any is in conflict'
     )
     .action((opts) =>
-        pull(opts).catch((err) => {
+        pull({ ...opts, secretsFile: program.opts().secretsFile }).catch((err) => {
             error(`Error: ${err.message}`);
             process.exit(1);
         })
@@ -105,6 +111,7 @@ program
     )
     .option('--json', 'Emit a single JSON result object to stdout instead of human logs')
     .action((opts) => {
+        opts.secretsFile = program.opts().secretsFile;
         if (opts.json) {
             setJsonMode(true);
             opts.nonInteractive = true; // --json can't coexist with interactive prompts
@@ -131,6 +138,7 @@ program
     )
     .option('--json', 'Emit a single JSON result object to stdout instead of human logs')
     .action((target, opts) => {
+        opts.secretsFile = program.opts().secretsFile;
         if (opts.json) setJsonMode(true);
         diff(target, opts).catch(failCommand(opts));
     });
@@ -138,8 +146,8 @@ program
 program
     .command('init-phase')
     .description('Initialize a phase with default code template and result vars')
-    .action(() =>
-        initPhase().catch((err) => {
+    .action((opts) =>
+        initPhase({ ...opts, secretsFile: program.opts().secretsFile }).catch((err) => {
             error(`Error: ${err.message}`);
             process.exit(1);
         })

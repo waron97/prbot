@@ -57,17 +57,16 @@ Key commands and what they touch:
 
 Entry point: `src/agrippa/index.js` — separate Commander program, no shared entry point with prbot.
 
-Config loading (`src/agrippa/lib/config.js`):
+Config loading (`src/agrippa/lib/config.js`), via `loadEffectiveEnv(localConfig, secretsFile)`:
 
-1. Calls `configDotenv({ path: CONFIG_FILE })` to load the global prbot config as base
-2. Overlays any values from the `agrippa:` section of the local `agrippa.yaml`
+1. `--secrets-file <path>` — a global Commander option on `program` (`src/agrippa/index.js`), read via `program.opts().secretsFile` in each subcommand's action callback and threaded into the command function as `opts.secretsFile`. Loaded first via `configDotenv({ path: secretsFile })`; a nonexistent `--secrets-file` path throws rather than being silently ignored.
+2. The global prbot config (`CONFIG_FILE`, `~/.config/prbot/config`) — loaded second via `configDotenv({ path: CONFIG_FILE })`. `configDotenv` never overwrites a key already present in `process.env`, so whichever of the two sources set a given key first wins — i.e. `--secrets-file` takes priority per key, and the global config only fills gaps.
 
-This means agrippa reuses all KC/RIP credentials from `prbot init` by default — `agrippa.yaml` only needs entries when overriding workspace-specific values.
+`agrippa.yaml`'s `agrippa:` block is no longer read for credentials at all — none of `KC_URL/KC_USER/KC_PASSWORD/KC_ID/KC_SECRET/RIP_URL/PB_URL` come from it anymore, so `agrippa.yaml` is pure resource inventory and safe to commit. If an existing file still has one of those keys set, `loadEffectiveEnv` prints a one-time warning (not an error) pointing at `--secrets-file`/the global config.
 
 `agrippa.yaml` (created by `agrippa init` in CWD) tracks the workspace:
 
 ```yaml
-agrippa: {} # optional credential overrides
 workspace:
     - path: 'nuovo-allaccio/a1559-invio-alla-market-comm.py'
       id: 123

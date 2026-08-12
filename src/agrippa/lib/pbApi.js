@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 function pbBase() {
     const base = process.env.PB_URL;
     if (!base) {
-        throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('PB_URL is not configured. Run `prbot init` or pass --secrets-file.');
     }
     return base.replace(/\/+$/, '');
 }

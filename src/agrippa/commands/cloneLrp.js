@@ -15,12 +15,10 @@ import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 // a stable workspace key the way PB's guid is.
 async function cloneLrp(opts) {
     const config = readConfig();
-    loadEffectiveEnv(config);
+    loadEffectiveEnv(config, opts.secretsFile);
 
     if (!process.env.IMPORTEXPORT_URL) {
-        throw new Error(
-            'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
-        );
+        throw new Error('IMPORTEXPORT_URL is not configured. Run `prbot init` or pass --secrets-file.');
     }
 
     const token = await getToken();

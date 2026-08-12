@@ -25,11 +25,11 @@ const BACKUP_DIR = '.backup';
 
 async function pull(opts = {}) {
     const config = readConfig();
-    loadEffectiveEnv(config);
+    loadEffectiveEnv(config, opts.secretsFile);
 
     const ripUrl = process.env.RIP_URL;
     if (!ripUrl)
-        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('RIP_URL is not configured. Run `prbot init` or pass --secrets-file.');
 
     // Stale-file check
     const stale = config.workspace.filter((e) => !fileExists(e.path));
@@ -152,7 +152,7 @@ async function pullPbEntries(token, config, opts = {}) {
     const entries = config.workspace.filter((e) => e.object_type === 'process_builder');
     if (!entries.length) return;
     if (!process.env.PB_URL)
-        throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('PB_URL is not configured. Run `prbot init` or pass --secrets-file.');
 
     log('Checking process-builder wizards...');
     const classified = [];
@@ -214,9 +214,7 @@ async function pullLrpEntries(token, config, opts = {}) {
     const entries = config.workspace.filter((e) => e.object_type === 'long_running_process');
     if (!entries.length) return;
     if (!process.env.IMPORTEXPORT_URL)
-        throw new Error(
-            'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
-        );
+        throw new Error('IMPORTEXPORT_URL is not configured. Run `prbot init` or pass --secrets-file.');
 
     log('Checking long-running processes...');
     const classified = [];

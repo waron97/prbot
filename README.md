@@ -207,7 +207,12 @@ prbot update 3.4.0     # pin an exact version
 
 Syncs Odoo workflow phase Python code, MFA records, process-builder wizards, and long-running processes (LRPs) between the local filesystem and the RIP / Process Builder / Symphony APIs. Tracks changes via checksums and detects conflicts before overwriting.
 
-Credentials are inherited from the global prbot config (`~/.config/prbot/config`). Override per-workspace in `agrippa.yaml`.
+Credentials are resolved in this order, per key: `--secrets-file <path>` (a dotenv file passed on the command line) first, then the global prbot config (`~/.config/prbot/config`) for anything the env file didn't set. `agrippa.yaml`'s `agrippa:` block is no longer read for credentials — it holds only workspace inventory (paths/ids/checksums) and is safe to commit.
+
+```bash
+agrippa pull --secrets-file .env       # use a workspace-local dotenv file for this run
+agrippa push --secrets-file ~/secrets/agrippa.env
+```
 
 ### `agrippa init`
 

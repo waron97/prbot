@@ -68,13 +68,13 @@ function generateCode(results) {
     return lines.join('\n');
 }
 
-async function initPhase() {
+async function initPhase(opts = {}) {
     const config = readConfig();
-    loadEffectiveEnv(config);
+    loadEffectiveEnv(config, opts.secretsFile);
 
     const ripUrl = process.env.RIP_URL;
     if (!ripUrl)
-        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('RIP_URL is not configured. Run `prbot init` or pass --secrets-file.');
 
     log('Fetching workflows...');
     const token = await getToken();

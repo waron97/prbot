@@ -19,7 +19,7 @@ const BACKUP_DIR = '.backup';
 
 async function push(opts = {}) {
     const config = readConfig();
-    loadEffectiveEnv(config);
+    loadEffectiveEnv(config, opts.secretsFile);
 
     // Stale-entry check (a path may be a file for phase/mfa or a dir for pb).
     const stale = config.workspace.filter((e) => !fileExists(e.path));
@@ -58,13 +58,11 @@ async function push(opts = {}) {
     const hasLrp = config.workspace.some((e) => e.object_type === 'long_running_process');
     const ripUrl = process.env.RIP_URL;
     if (hasCode && !ripUrl)
-        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('RIP_URL is not configured. Run `prbot init` or pass --secrets-file.');
     if (hasPb && !process.env.PB_URL)
-        throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('PB_URL is not configured. Run `prbot init` or pass --secrets-file.');
     if (hasLrp && !process.env.IMPORTEXPORT_URL)
-        throw new Error(
-            'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
-        );
+        throw new Error('IMPORTEXPORT_URL is not configured. Run `prbot init` or pass --secrets-file.');
 
     log('Fetching remote state...');
     const token = await getToken();

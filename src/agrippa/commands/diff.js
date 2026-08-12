@@ -24,7 +24,7 @@ import { fetchRemoteCode } from './pull.js';
 
 async function diff(targetArg, opts = {}) {
     const config = readConfig();
-    loadEffectiveEnv(config);
+    loadEffectiveEnv(config, opts.secretsFile);
 
     if (!config.workspace.length) {
         if (opts.json) emitJson({ ok: true, diffCount: 0, entries: [] });
@@ -47,15 +47,15 @@ async function diff(targetArg, opts = {}) {
     const codeEntries = entries.filter((e) => !PROJECT_TYPES.has(e.object_type));
 
     if (codeEntries.length && !process.env.RIP_URL)
-        throw new Error('RIP_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('RIP_URL is not configured. Run `prbot init` or pass --secrets-file.');
     if (projectEntries.some((e) => e.object_type === 'process_builder') && !process.env.PB_URL)
-        throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('PB_URL is not configured. Run `prbot init` or pass --secrets-file.');
     if (
         projectEntries.some((e) => e.object_type === 'long_running_process') &&
         !process.env.IMPORTEXPORT_URL
     )
         throw new Error(
-            'IMPORTEXPORT_URL is not configured. Run `prbot init` or set it in agrippa.yaml.'
+            'IMPORTEXPORT_URL is not configured. Run `prbot init` or pass --secrets-file.'
         );
 
     log('Fetching remote code...');

@@ -13,18 +13,21 @@ import inquirer from 'inquirer';
 import { log, warn } from '../../lib/logger.js';
 import { WORKSPACE_FILE } from '../lib/config.js';
 
-const TEMPLATE = `# agrippa workspace configuration
-# Keycloak and RIP credentials are taken from the global prbot config by default.
-# Uncomment and set values here only to override them for this workspace.
-agrippa: {}
-  # KC_URL: ""
-  # KC_USER: ""
-  # KC_PASSWORD: ""
-  # KC_ID: ""
-  # KC_SECRET: ""
-  # RIP_URL: ""
-
+const TEMPLATE = `# agrippa workspace configuration — tracked resources only (safe to commit).
+# Credentials come from --secrets-file <path> or the global prbot config
+# (~/.config/prbot/config), never from this file. See .env.example.
 workspace: []
+`;
+
+const ENV_EXAMPLE = `# Copy to a real file (e.g. .env) and pass it to agrippa via --secrets-file <path>.
+# Values here take priority over ~/.config/prbot/config, per key.
+KC_URL=
+KC_USER=
+KC_PASSWORD=
+KC_ID=
+KC_SECRET=
+RIP_URL=
+PB_URL=
 `;
 
 const PYPROJECT_TOML = `[tool.ruff]
@@ -157,13 +160,18 @@ async function init() {
             writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
             log(`Created ${WORKSPACE_FILE}`);
             log(`Run 'agrippa clone' to add resources to this workspace.`);
-            log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
+            log(`${WORKSPACE_FILE} contains no credentials — safe to commit.`);
         }
     } else {
         writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
         log(`Created ${WORKSPACE_FILE}`);
         log(`Run 'agrippa clone' to add resources to this workspace.`);
-        log(`Add ${WORKSPACE_FILE} to .gitignore if it contains credentials.`);
+        log(`${WORKSPACE_FILE} contains no credentials — safe to commit.`);
+    }
+
+    if (!existsSync('.env.example')) {
+        writeFileSync('.env.example', ENV_EXAMPLE, 'utf-8');
+        log("Created .env.example — copy it, fill it in, and use with `agrippa --secrets-file <path>`.");
     }
 
     if (!existsSync('pyproject.toml')) {

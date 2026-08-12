@@ -10,10 +10,10 @@ import { projectReader, writeProject } from '../lib/pbWorkspace.js';
 
 async function clonePb(opts) {
     const config = readConfig();
-    loadEffectiveEnv(config);
+    loadEffectiveEnv(config, opts.secretsFile);
 
     if (!process.env.PB_URL) {
-        throw new Error('PB_URL is not configured. Run `prbot init` or set it in agrippa.yaml.');
+        throw new Error('PB_URL is not configured. Run `prbot init` or pass --secrets-file.');
     }
 
     log('Fetching process list...');
