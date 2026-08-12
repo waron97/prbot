@@ -144,7 +144,20 @@ function pbBlock(guide) {
     return `${PB_BEGIN}\n\n${guide.trimEnd()}\n\n${PB_END}\n`;
 }
 
-async function init() {
+async function init(opts = {}) {
+    if (opts.nonInteractive) {
+        // Bare workspace only — no prompts, no typings/eslint/npm-install/CLAUDE.md
+        // side effects. For throwaway/scratch workspaces (e.g. an agent creating one
+        // under /tmp purely to run `agrippa clone`/`pull`/`diff` against).
+        if (existsSync(WORKSPACE_FILE)) {
+            log(`${WORKSPACE_FILE} already exists — leaving it alone.`);
+        } else {
+            writeFileSync(WORKSPACE_FILE, TEMPLATE, 'utf-8');
+            log(`Created ${WORKSPACE_FILE}`);
+        }
+        return;
+    }
+
     if (existsSync(WORKSPACE_FILE)) {
         const { overwrite } = await inquirer.prompt([
             {

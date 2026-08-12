@@ -222,6 +222,12 @@ Creates `agrippa.yaml` in the current directory. Always writes `pyproject.toml` 
 agrippa init
 ```
 
+With `--non-interactive`, skips every prompt and side effect (typings, eslint/prettier + `npm install`, CLAUDE.md guidance) and just writes a bare `agrippa.yaml` — or leaves an existing one alone. Useful for scripts/agents that need a throwaway workspace (e.g. under `/tmp`) purely to run `clone`/`pull`/`diff` against.
+
+```bash
+agrippa init --non-interactive
+```
+
 ### `agrippa clone`
 
 Clones all `from_code` phases for a selected workflow, a single MFA, a **process-builder wizard**, or a **long-running process (LRP)**, into the workspace. Writes files to disk and registers them in `agrippa.yaml`. With no flag, prompts for the object type (MFA / Phase / Process Builder / Long Running Process).

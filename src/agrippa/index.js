@@ -52,8 +52,13 @@ program.option(
 program
     .command('init')
     .description('Create agrippa.yaml workspace config in the current directory')
-    .action(() =>
-        init().catch((err) => {
+    .option(
+        '--non-interactive',
+        'Write a bare agrippa.yaml only (or leave an existing one alone); ' +
+            'skip typings/eslint/npm-install/CLAUDE.md prompts and side effects'
+    )
+    .action((opts) =>
+        init(opts).catch((err) => {
             error(`Error: ${err.message}`);
             process.exit(1);
         })
