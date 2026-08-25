@@ -8,7 +8,7 @@ description: Explore Sorgenia's Odoo process-builder wizards and long-running pr
 ## What this is
 
 This skill folder **is** the `@waron97/prbot` git repo (symlinked into
-`~/.claude/skills/agrippa`), the source of the `agrippa` CLI. Use the
+`~/.claude/skills/<skill-dir>`), the source of the `agrippa` CLI. Use the
 globally-installed `agrippa` binary if it's on PATH — that's the normal case
 on this machine and is kept up to date independently. Only if `agrippa`
 isn't found, fall back to running this checkout directly as a plain Node
@@ -31,7 +31,7 @@ same CRM — phases, MFAs, process-builder wizards, and LRPs tracked by `agrippa
 
 `.env` next to this file is a symlink to `~/.config/prbot/config` — never ask
 Aron for these, never print the token/values. Every invocation passes
-`--secrets-file ~/.claude/skills/agrippa/.env` explicitly, even though on this
+`--secrets-file ~/.claude/skills/<skill-dir>/.env` explicitly, even though on this
 machine it resolves to the same file agrippa would fall back to anyway — this
 keeps the skill self-contained if the fallback path or precedence ever changes.
 
@@ -67,7 +67,7 @@ Writes need Aron's explicit go-ahead **for that specific invocation** — a
 prior yes doesn't carry forward: `agrippa push`, `agrippa restore`, and every
 `agrippa pb` structural-edit subcommand (`add`/`rm`/`connect`/`disconnect`/
 `set-default`/`format`). For the full write/editing workflow, see
-`~/.claude/skills/agrippa/agrippa-pb.md` rather than duplicating it here.
+`~/.claude/skills/<skill-dir>/agrippa-pb.md` rather than duplicating it here.
 
 ## Commands for exploring wizard/LRP data
 
