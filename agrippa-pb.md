@@ -454,7 +454,7 @@ Edit the **files directly** for content within an existing node:
 | A node's `name`, a flow's `condition`/`name`, serviceTask `fields`/`class` | edit `structure.yaml` for that node/edge |
 | Identity/flags | edit `process.yaml` |
 
-Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints`.
+Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints` (unless explicity instructed to do so).
 
 ### Script formatting — beware push diffs
 
