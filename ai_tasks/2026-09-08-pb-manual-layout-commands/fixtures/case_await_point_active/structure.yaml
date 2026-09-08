@@ -1,0 +1,677 @@
+process:
+  id: B2WA_case_await_point_active
+  name: B2WA_case_await_point_active
+  isExecutable: 'true'
+  documentation: null
+messages: []
+errors: []
+signals: []
+extraDefs:
+- '#text': "\n  "
+- '#text': "\n  "
+- '#text': '
+
+    '
+nodes:
+- id: StartEvent_1
+  type: startEvent
+  name: START
+  layout:
+    x: 40
+    y: 202
+    width: 36
+    height: 36
+  edges:
+  - id: SequenceFlow_0o8w0m7
+    target: ScriptTask_61uwk8o
+    waypoints:
+    - - 76
+      - 220
+    - - 120
+      - 220
+- id: EndEvent_04exmes
+  type: endEvent
+  name: END error
+  layout:
+    x: 587
+    y: 20
+    width: 36
+    height: 36
+- id: ScriptTask_61uwk8o
+  type: scriptTask
+  name: Parse request
+  layout:
+    x: 120
+    y: 178
+    width: 84
+    height: 84
+  script: scripts/0010_parse-request.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_8fpiytf
+    target: ExclusiveGateway_t4ms0fy
+    waypoints:
+    - - 204
+      - 220
+    - - 250
+      - 220
+- id: ExclusiveGateway_t4ms0fy
+  type: exclusiveGateway
+  name: EG parse ok?
+  layout:
+    x: 250
+    y: 195
+    width: 50
+    height: 50
+  edges:
+  - id: SequenceFlow_m59wwhn
+    target: ServiceTask_9igvnpe
+    waypoints:
+    - - 300
+      - 220
+    - - 340
+      - 220
+  - id: SequenceFlow_bcdmcef
+    target: ExclusiveGateway_mwmkcsd
+    name: errore
+    condition: ${!isAlive}
+    conditionType: tFormalExpression
+    waypoints:
+    - - 275
+      - 195
+    - - 275
+      - 125
+    - - 580
+      - 125
+    labelPos:
+      x: 275
+      y: 110
+      width: 50
+      height: 14
+  attrs:
+    default: SequenceFlow_m59wwhn
+- id: ServiceTask_9igvnpe
+  type: serviceTask
+  name: Get template
+  class: com.symphony.action.TemplateDelegate
+  fields:
+  - name: method
+    parts:
+    - kind: string
+      value: GET
+  - name: name
+    parts:
+    - kind: string
+      value: symple.cloud_genericTemplate
+  - name: resultKey
+    parts:
+    - kind: string
+      value: template
+  - name: processKey
+    parts:
+    - kind: string
+      value: symple.cloud_genericTemplate
+  - name: tenantId
+    parts:
+    - kind: string
+      value: 5beb0566-d4da-11eb-8583-8032532c9c06
+  layout:
+    x: 340
+    y: 178
+    width: 84
+    height: 84
+  attrs:
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+  edges:
+  - id: SequenceFlow_w13h2yg
+    target: ScriptTask_8fmofbq
+    waypoints:
+    - - 424
+      - 220
+    - - 460
+      - 220
+- id: ScriptTask_8fmofbq
+  type: scriptTask
+  name: Check template
+  layout:
+    x: 460
+    y: 178
+    width: 84
+    height: 84
+  script: scripts/0020_check-template.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_2mruuos
+    target: ExclusiveGateway_8cev0x8
+    waypoints:
+    - - 544
+      - 220
+    - - 580
+      - 220
+- id: ExclusiveGateway_8cev0x8
+  type: exclusiveGateway
+  name: EG template ok?
+  layout:
+    x: 580
+    y: 195
+    width: 50
+    height: 50
+  edges:
+  - id: SequenceFlow_dikyo18
+    target: ServiceTask_hoosbat
+    waypoints:
+    - - 630
+      - 220
+    - - 670
+      - 220
+  - id: SequenceFlow_qwmpq6q
+    target: ExclusiveGateway_mwmkcsd
+    name: errore
+    condition: ${!isAlive}
+    conditionType: tFormalExpression
+    waypoints:
+    - - 605
+      - 195
+    - - 605
+      - 150
+    labelPos:
+      x: 605
+      y: 135
+      width: 50
+      height: 14
+  attrs:
+    default: SequenceFlow_dikyo18
+- id: ServiceTask_hoosbat
+  type: serviceTask
+  name: Call KC
+  class: com.symphony.action.CallDelegate
+  fields:
+  - name: endpoint
+    parts:
+    - kind: expression
+      value: ${keyCloakEndpoint}
+  - name: method
+    parts:
+    - kind: string
+      value: POST
+  - name: headers
+    parts:
+    - kind: expression
+      value: ${keyCloakHeaders}
+  - name: body
+    parts:
+    - kind: expression
+      value: ${keyCloakBody}
+  - name: resultKey
+    parts:
+    - kind: string
+      value: keyCloakResult
+  layout:
+    x: 670
+    y: 178
+    width: 84
+    height: 84
+  attrs:
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+  edges:
+  - id: SequenceFlow_qd92brq
+    target: ScriptTask_fnx376e
+    waypoints:
+    - - 754
+      - 220
+    - - 790
+      - 220
+- id: ScriptTask_fnx376e
+  type: scriptTask
+  name: Check KC
+  layout:
+    x: 790
+    y: 178
+    width: 84
+    height: 84
+  script: scripts/0030_check-kc.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_agvw9t6
+    target: ExclusiveGateway_2i89vth
+    waypoints:
+    - - 874
+      - 220
+    - - 910
+      - 220
+- id: ExclusiveGateway_2i89vth
+  type: exclusiveGateway
+  name: EG auth ok?
+  layout:
+    x: 910
+    y: 195
+    width: 50
+    height: 50
+  edges:
+  - id: SequenceFlow_dwvvnz1
+    target: ExclusiveGateway_n7bdbhl
+    waypoints:
+    - - 960
+      - 220
+    - - 1000
+      - 220
+  - id: SequenceFlow_uvps2hp
+    target: ExclusiveGateway_mwmkcsd
+    name: errore
+    condition: ${!isAlive}
+    conditionType: tFormalExpression
+    waypoints:
+    - - 935
+      - 195
+    - - 935
+      - 125
+    - - 630
+      - 125
+    labelPos:
+      x: 935
+      y: 110
+      width: 50
+      height: 14
+  attrs:
+    default: SequenceFlow_dwvvnz1
+- id: ExclusiveGateway_n7bdbhl
+  type: exclusiveGateway
+  name: EG loop
+  layout:
+    x: 1000
+    y: 195
+    width: 50
+    height: 50
+  edges:
+  - id: SequenceFlow_5znmmai
+    target: ServiceTask_ksy8g14
+    waypoints:
+    - - 1050
+      - 220
+    - - 1090
+      - 220
+- id: ServiceTask_ksy8g14
+  type: serviceTask
+  name: Check service point
+  class: com.symphony.action.CallDelegate
+  fields:
+  - name: endpoint
+    parts:
+    - kind: expression
+      value: ${odooEndpoint}service.point/${servicePointId}
+  - name: method
+    parts:
+    - kind: string
+      value: GET
+  - name: headers
+    parts:
+    - kind: expression
+      value: '[{''Authorization'': ''Bearer ${token}''}]'
+  - name: body
+    parts:
+    - kind: string
+      value: '{}'
+  - name: resultKey
+    parts:
+    - kind: string
+      value: spResult
+  layout:
+    x: 1090
+    y: 178
+    width: 84
+    height: 84
+  attrs:
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+  edges:
+  - id: SequenceFlow_bdlons4
+    target: ScriptTask_efma59m
+    waypoints:
+    - - 1174
+      - 220
+    - - 1210
+      - 220
+- id: ScriptTask_efma59m
+  type: scriptTask
+  name: Evaluate SP state
+  layout:
+    x: 1210
+    y: 178
+    width: 84
+    height: 84
+  script: scripts/0040_evaluate-sp-state.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_2kbrq14
+    target: ExclusiveGateway_y8oecwu
+    waypoints:
+    - - 1294
+      - 220
+    - - 1330
+      - 220
+- id: ExclusiveGateway_y8oecwu
+  type: exclusiveGateway
+  name: EG active?
+  layout:
+    x: 1330
+    y: 195
+    width: 50
+    height: 50
+  edges:
+  - id: SequenceFlow_rxs7u4n
+    target: ExclusiveGateway_2jhs7uf
+    name: non attivo
+    condition: ${!pointActive}
+    conditionType: tFormalExpression
+    waypoints:
+    - - 1355
+      - 245
+    - - 1355
+      - 395
+  - id: SequenceFlow_rm8p0w1
+    target: ScriptTask_0ib690k
+    name: attivo
+    waypoints:
+    - - 1380
+      - 220
+    - - 1420
+      - 220
+    labelPos:
+      x: 1420
+      y: 205
+      width: 50
+      height: 14
+  attrs:
+    default: SequenceFlow_rm8p0w1
+- id: ExclusiveGateway_2jhs7uf
+  type: exclusiveGateway
+  name: EG attempts exhausted?
+  layout:
+    x: 1330
+    y: 395
+    width: 50
+    height: 50
+  edges:
+  - id: SequenceFlow_q9lhgx8
+    target: IntermediateCatchEvent_or3jqzg
+    name: in attesa
+    condition: ${attempt < maxAttempts}
+    conditionType: tFormalExpression
+    waypoints:
+    - - 1330
+      - 420
+    - - 1043
+      - 420
+  - id: SequenceFlow_tyitplt
+    target: ScriptTask_kx1e8dq
+    name: esauriti
+    waypoints:
+    - - 1380
+      - 420
+    - - 1420
+      - 420
+    labelPos:
+      x: 1420
+      y: 405
+      width: 50
+      height: 14
+  attrs:
+    default: SequenceFlow_tyitplt
+- id: IntermediateCatchEvent_or3jqzg
+  type: intermediateCatchEvent
+  name: Wait 30s
+  eventDefinitions:
+  - type: timerEventDefinition
+    attrs: {}
+    timer:
+    - tag: timeDuration
+      attrs: {}
+      value: PT30S
+  layout:
+    x: 1007
+    y: 402
+    width: 36
+    height: 36
+  edges:
+  - id: SequenceFlow_0pj1gfk
+    target: ExclusiveGateway_n7bdbhl
+    waypoints:
+    - - 1025
+      - 402
+    - - 1025
+      - 245
+- id: ScriptTask_kx1e8dq
+  type: scriptTask
+  name: Prep timeout write
+  layout:
+    x: 1420
+    y: 378
+    width: 84
+    height: 84
+  script: scripts/0050_prep-timeout-write.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_bajb10r
+    target: ServiceTask_7t95f64
+    waypoints:
+    - - 1504
+      - 420
+    - - 1540
+      - 420
+- id: ServiceTask_7t95f64
+  type: serviceTask
+  name: Write error to case
+  class: com.symphony.action.CallDelegate
+  fields:
+  - name: endpoint
+    parts:
+    - kind: expression
+      value: ${writeErrUrl}
+  - name: method
+    parts:
+    - kind: string
+      value: PUT
+  - name: headers
+    parts:
+    - kind: expression
+      value: ${odooHeaders}
+  - name: body
+    parts:
+    - kind: expression
+      value: ${writeErrBody}
+  - name: resultKey
+    parts:
+    - kind: string
+      value: writeErrResult
+  layout:
+    x: 1540
+    y: 378
+    width: 84
+    height: 84
+  attrs:
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+  edges:
+  - id: SequenceFlow_4yyc036
+    target: ScriptTask_vtai0ca
+    waypoints:
+    - - 1624
+      - 420
+    - - 1660
+      - 420
+- id: ScriptTask_vtai0ca
+  type: scriptTask
+  name: Check write result
+  layout:
+    x: 1660
+    y: 378
+    width: 84
+    height: 84
+  script: scripts/0060_check-write-result.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_qt7fn4n
+    target: EndEvent_ossce9o
+    waypoints:
+    - - 1744
+      - 420
+    - - 1780
+      - 420
+- id: EndEvent_ossce9o
+  type: endEvent
+  name: END timeout
+  layout:
+    x: 1780
+    y: 402
+    width: 36
+    height: 36
+- id: ScriptTask_0ib690k
+  type: scriptTask
+  name: Prep run_code_and_set_result
+  layout:
+    x: 1420
+    y: 178
+    width: 84
+    height: 84
+  script: scripts/0070_prep-runcodeandsetresult.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_sctlxx9
+    target: ServiceTask_mw6qlng
+    waypoints:
+    - - 1504
+      - 220
+    - - 1540
+      - 220
+- id: ServiceTask_mw6qlng
+  type: serviceTask
+  name: Call run_code_and_set_result
+  class: com.symphony.action.CallDelegate
+  fields:
+  - name: endpoint
+    parts:
+    - kind: expression
+      value: ${runPhaseUrl}
+  - name: method
+    parts:
+    - kind: string
+      value: POST
+  - name: headers
+    parts:
+    - kind: expression
+      value: ${odooHeaders}
+  - name: body
+    parts:
+    - kind: expression
+      value: ${runPhaseBody}
+  - name: resultKey
+    parts:
+    - kind: string
+      value: runPhaseResult
+  - name: retries
+    parts:
+    - kind: string
+      value: '5'
+  - name: retryCodes
+    parts:
+    - kind: string
+      value: '502'
+  - name: retryInterval
+    parts:
+    - kind: string
+      value: '10000'
+  layout:
+    x: 1540
+    y: 178
+    width: 84
+    height: 84
+  attrs:
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+  edges:
+  - id: SequenceFlow_0hux1ts
+    target: ScriptTask_e9guycn
+    waypoints:
+    - - 1624
+      - 220
+    - - 1660
+      - 220
+- id: ScriptTask_e9guycn
+  type: scriptTask
+  name: Check run result
+  layout:
+    x: 1660
+    y: 178
+    width: 84
+    height: 84
+  script: scripts/0080_check-run-result.js
+  attrs:
+    scriptFormat: javascript
+    activiti:async: 'true'
+    activiti:exclusive: 'false'
+    activiti:autoStoreVariables: 'false'
+  edges:
+  - id: SequenceFlow_vk5lmh4
+    target: EndEvent_3ttyvmh
+    waypoints:
+    - - 1744
+      - 220
+    - - 1780
+      - 220
+- id: EndEvent_3ttyvmh
+  type: endEvent
+  name: END success
+  layout:
+    x: 1780
+    y: 202
+    width: 36
+    height: 36
+- id: ExclusiveGateway_mwmkcsd
+  type: exclusiveGateway
+  name: EG err join
+  layout:
+    x: 580
+    y: 100
+    width: 50
+    height: 50
+  edges:
+  - id: SequenceFlow_44lw0ca
+    target: EndEvent_04exmes
+    waypoints:
+    - - 605
+      - 100
+    - - 605
+      - 56
+annotations: []
+associations: []
+groups: []

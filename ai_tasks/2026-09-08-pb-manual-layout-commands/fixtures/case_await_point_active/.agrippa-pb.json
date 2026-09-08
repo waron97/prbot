@@ -1,0 +1,15 @@
+{
+  "scalars": {},
+  "ns": {
+    "@_xmlns:activiti": "http://activiti.org/bpmn",
+    "@_xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+    "@_xmlns": "http://www.omg.org/spec/BPMN/20100524/MODEL",
+    "@_xmlns:bpmndi": "http://www.omg.org/spec/BPMN/20100524/DI",
+    "@_xmlns:omgdc": "http://www.omg.org/spec/DD/20100524/DC",
+    "@_xmlns:omgdi": "http://www.omg.org/spec/DD/20100524/DI",
+    "@_xmlns:xsd": "http://www.w3.org/2001/XMLSchema",
+    "@_targetNamespace": "http://www.activiti.org/processdef"
+  },
+  "scripts": {},
+  "pages": {}
+}
