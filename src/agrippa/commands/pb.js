@@ -8,13 +8,20 @@
 //   disconnect  remove a sequenceFlow
 //   set-default mark an existing flow as the source gateway's default
 //   ls          list nodes/edges (so an agent can discover ids without the YAML)
+//   map         text render of the current geometry (rows, positions, gaps)
+//   route       recompute a flow's waypoints without moving any node
+//   place       position a node relative to another, on a row
+//   space       open (or close) a gap across a row or the whole diagram
+//   compact     pull a row's over-wide gaps back in
+//   layout      dump/apply a whole-diagram layout spec
 //
-// Mutations stub geometry; run `pb format` afterwards to finalize layout. The
-// project is resolved from the workspace by document_id (--pb), single-entry
-// auto-select, or a fuzzy prompt.
+// Structural mutations stub geometry; either place the new node with the layout
+// commands above, or run `pb format` to re-lay-out everything. The project is
+// resolved from the workspace by document_id (--pb), an explicit --path, a
+// single-entry auto-select, or a fuzzy prompt.
 
 import { execFile } from 'child_process';
-import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { dirname, join, relative } from 'path';
 import { promisify } from 'util';
 import search from '@inquirer/search';
@@ -34,8 +41,11 @@ import {
     setDefault,
 } from '../lib/pbEdit.js';
 import { autoLayout } from '../lib/pbLayout.js';
+import { lintLayout } from '../lib/pbLayoutLint.js';
+import { applyLayout, compact, dumpLayout, place, route, space } from '../lib/pbLayoutOps.js';
 import { toSvg } from '../lib/pbPreview.js';
 import { MANIFEST_FILE, recompose, stringifyStructure, STRUCTURE_FILE } from '../lib/pbProject.js';
+import { toTextMap } from '../lib/pbTextMap.js';
 import { projectReader } from '../lib/pbWorkspace.js';
 
 // ---------- project resolution ----------
@@ -45,6 +55,15 @@ import { projectReader } from '../lib/pbWorkspace.js';
 // select by --pb/--name matched against document_id; LRPs have no document_id
 // so the same flag matches against name instead.
 async function resolveProjectEntry(opts) {
+    // An explicit directory bypasses the workspace entirely: `structure.yaml`
+    // editing needs nothing from agrippa.yaml, so a project that was never
+    // cloned into a workspace (a fixture, a copy under review) is still a valid
+    // target for every local command.
+    if (opts.path) {
+        if (!existsSync(join(opts.path, STRUCTURE_FILE)))
+            throw new Error(`no ${STRUCTURE_FILE} in ${opts.path}`);
+        return { path: opts.path, name: opts.path, object_type: null };
+    }
     const config = readConfig();
     const entries = (config.workspace || []).filter(
         (e) => e.object_type === 'process_builder' || e.object_type === 'long_running_process'
@@ -195,10 +214,37 @@ async function runScriptEslint(dir) {
 
 // ---------- commands ----------
 
+// `--elk key=value` (repeatable) passes raw ELK layout options through to the
+// engine, so trying one is a flag rather than an edit to pbLayout.js and a
+// `git checkout` to undo it.
+function parseElkOptions(pairs) {
+    const opts = {};
+    for (const pair of pairs || []) {
+        const at = pair.indexOf('=');
+        if (at < 1)
+            throw new Error(
+                `--elk expects key=value, got "${pair}" (e.g. --elk elk.direction=DOWN)`
+            );
+        opts[pair.slice(0, at).trim()] = pair.slice(at + 1).trim();
+    }
+    return opts;
+}
+
+function parseIdList(value) {
+    return String(value || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
 async function pbFormat(opts) {
     const dir = await resolveProjectPath(opts);
     const { structure } = loadProject(dir);
-    await autoLayout(structure);
+    await autoLayout(structure, {
+        elkOptions: parseElkOptions(opts.elk),
+        happy: opts.happy ? parseIdList(opts.happy) : undefined,
+        noHappy: opts.happy === false || opts.noHappy === true,
+    });
     saveStructure(dir, structure);
 
     let nodes = 0;
@@ -372,13 +418,177 @@ async function pbPreview(opts) {
     log(`Wrote ${out} (${svg.length} bytes).`);
 }
 
+// ---------- layout commands ----------
+//
+// These are the middle ground between `pb connect` (stub geometry, defer
+// everything) and `pb format` (rebuild every coordinate). They only ever write
+// layout/waypoints/labelPos, they re-route what they touch, and they leave the
+// rest of the diagram exactly as it was — so unlike `format` they are safe on a
+// hand-tuned project.
+
+function reportRouting(result) {
+    const { rerouted = [], unchanged = [], skipped = [] } = result;
+    log(
+        `Re-routed ${rerouted.length} flow(s)` +
+            (unchanged.length ? `, ${unchanged.length} already correct` : '') +
+            '.'
+    );
+    for (const s of skipped) warn(`  ! skipped ${s.id}: ${s.why}`);
+}
+
+async function pbMap(opts) {
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    log(
+        toTextMap(structure, {
+            ids: !!opts.ids,
+            lane: opts.lane === undefined ? undefined : Number(opts.lane),
+        })
+    );
+    const issues = lintLayout(structure);
+    if (issues.length) {
+        warn('');
+        warn('Layout issues:');
+        for (const w of issues) warn(`  ! ${w}`);
+    }
+    if (!opts.ids) log('\n(names shown; pass --ids for node ids)');
+}
+
+function parseVia(value) {
+    if (!value) return undefined;
+    const [x, y] = String(value).split(',').map(Number);
+    if (Number.isNaN(x) || Number.isNaN(y))
+        throw new Error('--via expects x,y (e.g. --via 640,120)');
+    return [x, y];
+}
+
+async function pbRoute(opts) {
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const result = route(structure, {
+        id: opts.id,
+        from: opts.from,
+        to: opts.to,
+        all: !!opts.all,
+        touching: opts.touching ? parseIdList(opts.touching) : undefined,
+        via: parseVia(opts.via),
+    });
+    saveStructure(dir, structure);
+    validate(dir);
+    reportRouting(result);
+}
+
+async function pbPlace(opts) {
+    if (!opts.id) throw new Error('--id is required');
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const result = place(structure, {
+        id: opts.id,
+        lane: opts.lane,
+        after: opts.after,
+        before: opts.before,
+        at: opts.at,
+        gap: opts.gap === undefined ? undefined : Number(opts.gap),
+        push: !!opts.push,
+    });
+    saveStructure(dir, structure);
+    validate(dir);
+    log(`Placed ${result.id} at x=${result.x}, y=${result.y} (row y=${result.cy}).`);
+    if (result.pushed.length) log(`  pushed ${result.pushed.length} node(s) right to make room.`);
+    log(`  re-routed ${result.rerouted.length} attached flow(s).`);
+}
+
+async function pbSpace(opts) {
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const result = space(structure, {
+        after: opts.after,
+        atX: opts.atX,
+        by: opts.by === undefined ? undefined : Number(opts.by),
+        lane: opts.lane,
+    });
+    saveStructure(dir, structure);
+    validate(dir);
+    log(
+        `Shifted ${result.moved.length} node(s) by ${result.by}px from x=${result.fromX} ` +
+            `(width ${result.widthBefore} -> ${result.widthAfter}).`
+    );
+    log(`  re-routed ${result.rerouted.length} flow(s).`);
+}
+
+async function pbCompact(opts) {
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const result = compact(structure, {
+        lane: opts.lane,
+        all: !!opts.all,
+        after: opts.after,
+        from: opts.from,
+        to: opts.to,
+        gap: opts.gap === undefined ? undefined : Number(opts.gap),
+        uniform: !!opts.uniform,
+    });
+    saveStructure(dir, structure);
+    validate(dir);
+    log(`Closed ${result.closed.length} gap(s), moved ${result.moved.length} node(s).`);
+    for (const c of result.closed) log(`  ${c.before} -> ${c.after}: ${c.from}px -> ${c.to}px`);
+    log(`  re-routed ${result.rerouted.length} flow(s).`);
+}
+
+async function pbLayoutDump(opts) {
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const spec = dumpLayout(structure, {
+        gap: opts.gap === undefined ? undefined : Number(opts.gap),
+    });
+    if (opts.out) {
+        writeFileSync(opts.out, spec, 'utf-8');
+        log(`Wrote ${opts.out}.`);
+    } else {
+        log(spec);
+    }
+}
+
+async function pbLayoutApply(file, opts) {
+    if (!file) throw new Error('provide the spec file (from `pb layout dump`)');
+    if (!existsSync(file)) throw new Error(`no such spec file: ${file}`);
+    const dir = await resolveProjectPath(opts);
+    const { structure } = loadProject(dir);
+    const result = applyLayout(structure, readFileSync(file, 'utf-8'), {
+        gap: opts.gap === undefined ? undefined : Number(opts.gap),
+    });
+    saveStructure(dir, structure);
+    validate(dir);
+    log(
+        `Placed ${result.placed} node(s) across ${result.rows} row(s)` +
+            `${result.untouched ? `, left ${result.untouched} untouched` : ''} ` +
+            `(width ${result.widthBefore} -> ${result.widthAfter}).`
+    );
+    log(`  re-routed ${result.rerouted.length} flow(s).`);
+    for (const s of result.skipped) warn(`  ! skipped ${s.id}: ${s.why}`);
+    const issues = lintLayout(structure);
+    if (issues.length) {
+        warn('Layout issues:');
+        for (const w of issues) warn(`  ! ${w}`);
+    }
+}
+
 async function pbLint(opts) {
     const dir = await resolveProjectPath(opts);
     const { structure } = loadProject(dir);
     const issues = lintAll(structure);
+    // Geometry rules are opt-in: `pb add`/`pb connect` deliberately leave a
+    // placeholder position and a stub waypoint, so running these by default
+    // would report the expected intermediate state as a failure.
+    const layoutIssues = opts.layout
+        ? lintLayout(structure, {
+              happy: opts.happy ? new Set(parseIdList(opts.happy)) : undefined,
+              all: !!opts.allIssues,
+          })
+        : [];
     const scriptIssues = await runScriptEslint(dir);
 
-    const allIssues = [...issues, ...scriptIssues];
+    const allIssues = [...issues, ...layoutIssues, ...scriptIssues];
     if (!allIssues.length) {
         log('No issues.');
     } else {
@@ -397,4 +607,11 @@ export {
     pbList,
     pbPreview,
     pbLint,
+    pbMap,
+    pbRoute,
+    pbPlace,
+    pbSpace,
+    pbCompact,
+    pbLayoutDump,
+    pbLayoutApply,
 };

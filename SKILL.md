@@ -1,6 +1,6 @@
 ---
 name: agrippa
-description: Explore Sorgenia's Odoo process-builder wizards and long-running processes (LRPs) — the BPMN-based guided flows and background processes that live alongside the helpdesk.ticket cases the crm-navigation skill covers — via the `agrippa` CLI, for Aron. Use when Aron asks to "look at this wizard/LRP", "what does process X do", "show me the nodes/flow of wizard Y", "clone this process-builder wizard/LRP", "diff/pull this workflow phase or MFA", "find a phase/MFA/wizard/LRP by name", or similar exploration of agrippa-tracked Odoo resources (workflow phases, Model Function Access records, process-builder wizards, LRPs). Unlike crm-navigation (which reads/writes live case, contract, and Bit2win REST data), this skill is read/explore-only by design: it runs `agrippa clone`, `agrippa pull`, `agrippa diff`, and `agrippa pb ls`/`pb preview` freely, but NEVER runs `agrippa push`, `agrippa restore`, or any `agrippa pb` structural-edit command (add/rm/connect/disconnect/set-default/format) without Aron's explicit, per-invocation go-ahead — those write to the server or can discard local edits.
+description: Explore Sorgenia's Odoo process-builder wizards and long-running processes (LRPs) — the BPMN-based guided flows and background processes that live alongside the helpdesk.ticket cases the crm-navigation skill covers — via the `agrippa` CLI, for Aron. Use when Aron asks to "look at this wizard/LRP", "what does process X do", "show me the nodes/flow of wizard Y", "clone this process-builder wizard/LRP", "diff/pull this workflow phase or MFA", "find a phase/MFA/wizard/LRP by name", or similar exploration of agrippa-tracked Odoo resources (workflow phases, Model Function Access records, process-builder wizards, LRPs). Unlike crm-navigation (which reads/writes live case, contract, and Bit2win REST data), this skill is read/explore-only by design: it runs `agrippa clone`, `agrippa pull`, `agrippa diff`, and `agrippa pb ls`/`pb map`/`pb preview` freely, but NEVER runs `agrippa push`, `agrippa restore`, or any `agrippa pb` structural-edit command (add/rm/connect/disconnect/set-default/format) without Aron's explicit, per-invocation go-ahead — those write to the server or can discard local edits.
 ---
 
 # agrippa
@@ -61,7 +61,8 @@ instead for that request.
 ## Safety posture — reads vs writes
 
 Reads never touch the server and run freely: `agrippa clone` (including
-`--list`), `agrippa pull`, `agrippa diff`, `agrippa pb ls`, `agrippa pb preview`.
+`--list`), `agrippa pull`, `agrippa diff`, `agrippa pb ls`, `agrippa pb map`, `agrippa pb
+preview`, `agrippa pb lint`.
 
 Writes need Aron's explicit go-ahead **for that specific invocation** — a
 prior yes doesn't carry forward: `agrippa push`, `agrippa restore`, and every
@@ -94,6 +95,7 @@ $AGRIPPA clone --secrets-file $ENV --lrp   --name <name>
 # Explore a cloned wizard/LRP's structure
 $AGRIPPA pb ls      --secrets-file $ENV --pb <document_id_or_name>
 $AGRIPPA pb preview --secrets-file $ENV --pb <document_id_or_name> --out /tmp/preview.svg
+$AGRIPPA pb map --secrets-file $ENV --pb <document_id_or_name>   # text layout, readable here
 
 # Check for upstream changes / re-sync
 $AGRIPPA pull --secrets-file $ENV --non-interactive

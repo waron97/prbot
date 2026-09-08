@@ -121,7 +121,66 @@ function computeHappyEdges(structure) {
     return acc;
 }
 
-async function autoLayout(structure) {
+// Explicit happy path: the edges joining an ordered list of node ids, used to
+// override the `default`-following heuristic above. The heuristic is a good
+// guess but has no escape hatch — when a gateway's `default` legitimately
+// points into a retry loop (a polling/wait pattern), it prioritises the loop
+// over the real spine and the only previous workaround was to rewrite which
+// flow is `default` in the BPMN itself, i.e. changing process semantics to
+// steer a layout heuristic. This steers it directly instead.
+function happyEdgesFromPath(structure, path) {
+    const byId = new Map();
+    eachNode(structure.nodes, null, (n) => byId.set(n.id, n));
+    const acc = new Set();
+    for (let i = 1; i < path.length; i++) {
+        const from = byId.get(path[i - 1]);
+        if (!from) throw new Error(`--happy: no such node: ${path[i - 1]}`);
+        if (!byId.has(path[i])) throw new Error(`--happy: no such node: ${path[i]}`);
+        const edge = (from.edges || []).find((e) => e.target === path[i]);
+        if (!edge)
+            throw new Error(
+                `--happy: no flow ${path[i - 1]} → ${path[i]} — the path is not connected.`
+            );
+        acc.add(edge.id);
+    }
+    return acc;
+}
+
+// ELK silently ignores an option key it doesn't recognise, so a typo in --elk
+// would otherwise look like a successful experiment that changed nothing. The
+// engine can list what it accepts, so check against that and suggest the near
+// misses (ELK's own docs use the short `elk.*` spelling; the engine reports the
+// fully-qualified `org.eclipse.elk.*` one, and both are accepted here).
+async function validateElkOptions(elkOptions) {
+    const keys = Object.keys(elkOptions || {});
+    if (!keys.length) return;
+
+    const known = await elk.knownLayoutOptions();
+    const ids = new Set(known.map((o) => o.id).filter(Boolean));
+    const unknown = keys.filter((k) => !ids.has(k) && !ids.has(`org.eclipse.${k}`));
+    if (!unknown.length) return;
+
+    const leaf = (k) => k.split('.').pop().toLowerCase();
+    const lines = unknown.map((k) => {
+        const near = [...ids]
+            .filter((i) => leaf(i) === leaf(k))
+            .map((i) => i.replace(/^org\.eclipse\./, ''));
+        return `  ${k}${near.length ? ` - did you mean ${near.join(' or ')}?` : ''}`;
+    });
+    throw new Error(
+        `unknown --elk option(s):\n${lines.join('\n')}\n` +
+            'Names are case-sensitive; see https://eclipse.dev/elk/reference/options.html'
+    );
+}
+
+// `opts.elkOptions` are raw ELK layout options merged over ROOT_OPTS, so an
+// experiment ("does feedbackEdges help this graph?") is a flag rather than an
+// edit to this file and a `git checkout` to undo. `opts.happy` is an ordered
+// node-id path that replaces the happy-flow heuristic; `opts.noHappy` disables
+// the priority boost entirely.
+async function autoLayout(structure, opts = {}) {
+    await validateElkOptions(opts.elkOptions);
+
     // ----- build the elk graph (all edges declared at root) -----
     // boundaryEvents are removed from the node set and surfaced as ports on
     // their attachedToRef node, so ELK routes their outgoing edges from the
@@ -137,7 +196,11 @@ async function autoLayout(structure) {
         children.push({ id: a.id, width: a.layout?.width || 100, height: a.layout?.height || 30 });
     }
 
-    const happyEdges = computeHappyEdges(structure);
+    const happyEdges = opts.noHappy
+        ? new Set()
+        : opts.happy?.length
+          ? happyEdgesFromPath(structure, opts.happy)
+          : computeHappyEdges(structure);
     const edges = [];
     eachNode(structure.nodes, null, (n) => {
         for (const e of n.edges || []) {
@@ -175,8 +238,27 @@ async function autoLayout(structure) {
         edges.push({ id: a.id, sources: [a.sourceRef], targets: [a.targetRef] });
     }
 
-    const graph = { id: 'root', layoutOptions: ROOT_OPTS, children, edges };
-    const res = await elk.layout(graph);
+    const graph = {
+        id: 'root',
+        layoutOptions: { ...ROOT_OPTS, ...(opts.elkOptions || {}) },
+        children,
+        edges,
+    };
+    // Some ELK options interact badly enough to throw or hang. When the caller
+    // supplied any, say so — a raw elkjs stack trace gives no hint that the
+    // flag they just passed is the cause.
+    let res;
+    try {
+        res = await elk.layout(graph);
+    } catch (e) {
+        const passed = Object.keys(opts.elkOptions || {});
+        if (!passed.length) throw e;
+        throw new Error(
+            `elk failed with your --elk options (${passed.join(', ')}): ${e.message}\n` +
+                'Drop or correct them and retry; option names are case-sensitive ' +
+                '(see https://eclipse.dev/elk/reference/options.html).'
+        );
+    }
 
     // ----- node absolute positions (accumulate parent-relative coords) -----
     const pos = {};
@@ -308,4 +390,4 @@ async function autoLayout(structure) {
     return structure;
 }
 
-export { autoLayout };
+export { autoLayout, computeHappyEdges, validateElkOptions };

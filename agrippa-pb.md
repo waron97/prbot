@@ -263,9 +263,15 @@ Node types: `startEvent`, `endEvent`, `boundaryEvent`, `exclusiveGateway`,
 ```
 agrippa pb ls            # discover node/edge ids
 agrippa pb add / rm / connect / disconnect / set-default   # change the graph
-agrippa pb lint          # check for structural issues before handing off
+agrippa pb map           # see where things sit (rows, positions, gaps)
+agrippa pb place / space / compact / route   # position the new blocks
+agrippa pb lint --layout # check structure AND the drawing
 # STOP. Do NOT format. Do NOT push. Report back to the human (see Formatting below).
 ```
+
+`pb format` is still human-only (see Formatting below). The layout commands are
+not: they move only what you name and leave the rest of the diagram alone, so
+they are safe on a hand-tuned project in a way a full re-layout is not.
 
 Every `pb` command targets **one** wizard or LRP. **Always pass
 `--pb <document_id_or_name>`** (a wizard's `document_id`, or an LRP's `name`) so you
@@ -421,7 +427,124 @@ agrippa pb preview --pb <document_id_or_name> --out /tmp/wizard.svg
 ```
 
 Renders the current geometry to an SVG so a human can eyeball the result. Safe to run.
-Not byte-faithful to the real renderer — a sanity check only.
+Not byte-faithful to the real renderer — a sanity check only. You cannot read an SVG:
+use `pb map` for your own check and `pb preview` when a human wants to look.
+
+#### `pb map` — see the layout (this is your `pb preview`)
+
+```bash
+agrippa pb map --pb <document_id_or_name>
+agrippa pb map --ids --pb <document_id_or_name>     # node ids instead of names
+```
+
+Text render of the current geometry: one row per horizontal band, nodes left to right
+with the x each sits at, `->` where a flow directly connects two neighbours, `..NNNpx..`
+where there is a hole, then every flow that crosses between rows. Ends with any layout
+issues. Run it before and after every layout change — it is the only way you can see
+what you did.
+
+```
+B2WA_case_await_point_active - 25 node(s), 4 row(s), 1776x442, spacing 36px
+
+  y=38   (END error)@587
+  y=125  <EG err join>@580
+  y=220  (START)@40 -> [Parse request]@120 -> <EG parse ok?>@250 -> ...
+  y=420  (Wait 30s)@1007 -> ..287px.. <EG attempts exhausted?>@1330 -> ...
+```
+
+`(round)` = event, `<diamond>` = gateway, `[box]` = task, `{brace}` = container. Rows
+are **inferred from the coordinates** on each run — they are not stored in the project
+and are not a thing you can declare.
+
+#### Layout commands — position blocks without touching coordinates
+
+Between `pb connect` (which leaves a new node at a placeholder position) and `pb format`
+(which re-lays-out everything), these move only what you name and re-route the flows they
+touch. None of them re-lay-out the diagram, so a hand-tuned arrangement survives.
+
+```bash
+# put a new node into a row, shoving the rest of the diagram right to make room
+agrippa pb place --id ScriptTask_new --after ScriptTask_prev --push --pb W
+
+# put it on another row (rows are named by their centre-y, from `pb map`)
+agrippa pb place --id EndEvent_err --lane 125 --at ExclusiveGateway_g --pb W
+
+# take the space back after removing a node
+agrippa pb compact --after ScriptTask_prev --pb W
+
+# open/close space by hand
+agrippa pb space --after ScriptTask_prev --by 120 --pb W
+agrippa pb compact --lane 220 --pb W
+
+# fix the arrows after moving something by hand
+agrippa pb route --id SequenceFlow_xyz --pb W
+agrippa pb route --all --pb W
+agrippa pb route --from A --to B --via 640,120 --pb W    # force a bend point
+```
+
+Notes that matter:
+
+- **`--push` and `compact --after` shift the whole diagram**, not just the row. These
+  diagrams are read by column as much as by row (a loop-control gateway sits under the
+  gateway it belongs to), and moving one row alone silently breaks those alignments.
+- **`compact --lane` / `--all` re-flow one row's spacing and so *will* break columns.**
+  Use them to tidy a row's rhythm, not to close a hole — `compact --after` is the one
+  that closes a hole without disturbing columns. `pb lint --layout` catches the damage
+  (`column-jitter`), and each finding names the `pb place --at` that repairs it.
+- **Do not chase lint findings one at a time on an already-broken diagram.** Each `--at`
+  fix is local and can push a node into its neighbour or shift the near-miss one column
+  over. If more than a couple of findings appear, re-flow the affected rows wholesale
+  with `pb layout dump`/`apply` instead.
+- **Spacing is inferred** from the diagram's own rhythm — the gap it already uses between
+  most neighbours. Override with `--gap`.
+- **Every layout command re-routes what it touched**, so you never have to remember to.
+  An edge whose path does not change is left untouched, so re-running is free.
+- Root-scope nodes only. A node inside a `subProcess`/`transaction` is refused — those
+  are laid out by `pb format`.
+
+#### `pb layout dump` / `pb layout apply` — a sweeping re-arrangement
+
+For a whole-diagram reformat, dump the layout as an editable spec, rewrite it, apply it:
+
+```bash
+agrippa pb layout dump --pb W --out /tmp/layout.txt
+# edit /tmp/layout.txt — reorder ids, move them between rows, add/remove rows
+agrippa pb layout apply /tmp/layout.txt --pb W
+```
+
+```
+lane 125:
+    ExclusiveGateway_mwmkcsd@ExclusiveGateway_8cev0x8
+lane 220:
+    StartEvent_1@40 ScriptTask_61uwk8o@120 ExclusiveGateway_t4ms0fy@250 ...
+```
+
+- `lane <y>:` starts a row at that centre-y. A new number creates a row.
+- Ids run left to right; each follows the previous one at the default spacing.
+- `id@<other-id>` puts a node in the same column as another node — use this to keep a
+  branch under the step it belongs to. `id@<number>` pins an absolute x. `+120` inserts
+  extra space.
+- **Nodes you leave out keep their current position**, so a partial spec re-flows only
+  the rows you list.
+- The spec file is scratch input you pass by path. It is **not** part of the project,
+  never written into the project directory, and nothing about it is stored in
+  `structure.yaml`.
+
+#### `pb format --elk` / `--happy` — steering the automatic layout
+
+Only relevant when a human has asked for a `pb format`:
+
+```bash
+agrippa pb format --elk elk.layered.feedbackEdges=true --pb W
+agrippa pb format --happy StartEvent_1,ScriptTask_a,...,EndEvent_ok --pb W
+```
+
+`--elk key=value` (repeatable) passes a raw ELK option through; unknown keys are rejected
+with a suggestion rather than silently ignored. `--happy <ids>` names the flow path to
+straighten, overriding the heuristic that follows each gateway's `default` — which guesses
+wrong when a `default` legitimately points into a retry loop. `--no-happy` turns the
+prioritisation off. These steer ELK; they do not make it produce flat rows — the layout
+commands above are what does that.
 
 ### Formatting — a human decision, do NOT run it yourself
 
@@ -431,16 +554,25 @@ drastically different diagram. That may or may not be acceptable — **only the 
 decides.**
 
 So when you have added/connected blocks, the new nodes are left with placeholder
-positions, and **you stop there**. Report to the human what you changed and that the
-new blocks need positioning, then let them choose one of:
+positions. You have three options, and **only the third is off-limits to you**:
 
-1. **Run `agrippa pb format`** themselves — accepts a full automatic re-layout of the
-   whole project (existing arrangement is lost), or
-2. **Position the new blocks by hand in the UI** after a human pushes/deploys the
-   change — preserving the existing layout.
+1. **Position the new blocks yourself** with `pb place`/`space`/`compact`/`route`, then
+   check with `pb map` and `pb lint --layout`. This preserves the existing layout — it
+   moves only what you name — and is the normal thing to do. Prefer it.
+2. **Leave them placed by hand in the UI** by a human after push/deploy — also preserves
+   the existing layout.
+3. **`agrippa pb format`** — a full automatic re-layout of the whole project, existing
+   arrangement lost. **Never run this unless the human explicitly tells you to**, with
+   that trade-off understood.
 
-Never run `pb format` unless the human explicitly tells you to, with that trade-off
-understood.
+The distinction is not "geometry is dangerous" — it is that `format` is the only one that
+throws away work someone already did. Everything under Layout commands above is
+incremental and reversible.
+
+**Layout is a real change.** Node positions and waypoints are part of what gets pushed —
+agrippa's change detection counts them, so a layout edit makes the project dirty and will
+go upstream on the next push, exactly like a script edit. It is not free, and it is not
+cosmetic-only. (Flow *label* positions are the one exception; they are excluded.)
 
 ### What to edit by hand (vs. commands)
 
@@ -454,7 +586,11 @@ Edit the **files directly** for content within an existing node:
 | A node's `name`, a flow's `condition`/`name`, serviceTask `fields`/`class` | edit `structure.yaml` for that node/edge |
 | Identity/flags | edit `process.yaml` |
 
-Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints` (unless explicity instructed to do so).
+Never hand-edit `.agrippa-pb.json`, and never hand-assign `layout`/`waypoints` by editing
+the YAML. That prohibition now has a proper alternative: use the layout commands
+(`pb place`, `pb space`, `pb compact`, `pb route`, `pb layout apply`), which do the
+arithmetic, keep the arrows attached, and can be checked with `pb map`/`pb lint --layout`.
+Hand-computed coordinates have none of that.
 
 ### Script formatting — beware push diffs
 
@@ -506,8 +642,10 @@ not push.
   to push.
 - After every command the project is re-checked for recomposability; a broken edit is
   reported with a `WARNING`.
-- When in doubt: `pb ls` to see the graph, make the structural change, `pb preview` to
-  show the human, then hand off.
+- When in doubt: `pb ls` to see the graph, make the structural change, `pb map` to check
+  the result yourself, `pb preview` to show the human, then hand off.
+- The layout commands are local and incremental — run them freely. `pb format` is the
+  exception and stays human-only.
 
 ---
 

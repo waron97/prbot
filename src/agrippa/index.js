@@ -8,14 +8,21 @@ import { init } from './commands/init.js';
 import { initPhase } from './commands/initPhase.js';
 import {
     pbAdd,
+    pbCompact,
     pbConnect,
     pbDisconnect,
     pbFormat,
+    pbLayoutApply,
+    pbLayoutDump,
     pbLint,
     pbList,
+    pbMap,
+    pbPlace,
     pbPreview,
     pbRemove,
+    pbRoute,
     pbSetDefault,
+    pbSpace,
 } from './commands/pb.js';
 import { pull } from './commands/pull.js';
 import { push } from './commands/push.js';
@@ -181,7 +188,19 @@ const pb = program
 
 pb.command('format')
     .description('Auto-lay-out the diagram (left→right) and rewrite geometry')
+    .option(
+        '--elk <key=value>',
+        'Raw ELK layout option, repeatable (e.g. --elk elk.layered.feedbackEdges=true)',
+        (v, acc) => [...(acc || []), v],
+        []
+    )
+    .option(
+        '--happy <ids>',
+        'Comma-separated node path to treat as the happy flow, instead of following gateway defaults'
+    )
+    .option('--no-happy', 'Do not prioritise any happy flow')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP (else single-entry / fuzzy prompt)')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbFormat(opts).catch(die));
 
 pb.command('add')
@@ -201,6 +220,7 @@ pb.command('add')
     )
     .option('--to <id>', 'Insert between two already-connected nodes: target id (requires --from)')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbAdd(opts).catch(die));
 
 pb.command('rm')
@@ -210,6 +230,7 @@ pb.command('rm')
     )
     .requiredOption('--id <id>', 'Node id to remove')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbRemove(opts).catch(die));
 
 pb.command('connect')
@@ -221,6 +242,7 @@ pb.command('connect')
     .option('--condition-type <type>', 'xsi:type for the condition (default tFormalExpression)')
     .option('--default', 'Mark this as the source gateway default flow')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbConnect(opts).catch(die));
 
 pb.command('disconnect')
@@ -229,6 +251,7 @@ pb.command('disconnect')
     .option('--from <id>', 'Source node id')
     .option('--to <id>', 'Target node id')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbDisconnect(opts).catch(die));
 
 pb.command('set-default')
@@ -237,24 +260,123 @@ pb.command('set-default')
     .option('--from <id>', 'Source gateway id')
     .option('--to <id>', 'Target node id')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbSetDefault(opts).catch(die));
 
 pb.command('lint')
     .description(
         'Check diagram for structural issues (edge names, incoming-edge rules, gateway rules)'
     )
+    .option(
+        '--layout',
+        'Also check the drawing: overlaps, stale/diagonal waypoints, off-row nodes, backward flows'
+    )
+    .option('--happy <ids>', 'Node path to judge backward flows against (with --layout)')
+    .option('--all-issues', 'List every layout finding instead of capping each rule')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbLint(opts).catch(die));
 
 pb.command('ls')
     .description('List nodes and edges (discover ids without reading the YAML)')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbList(opts).catch(die));
 
 pb.command('preview')
     .description('Render the diagram to an SVG (dev check of format output)')
     .option('--out <file>', 'Output path (default <project>/preview.svg)')
     .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+    .option('--path <dir>', 'Target a project directory directly (skips the workspace)')
     .action((opts) => pbPreview(opts).catch(die));
+
+// ---- pb layout: incremental geometry, between `connect` and `format` ----
+//
+// Unlike `format`, none of these re-lay-out the diagram: they move only what
+// they are told to and re-route the flows they touch, so a hand-tuned
+// arrangement survives. Rows ("lanes") are inferred from the current geometry
+// on each call and never stored in the project.
+
+const projectTarget = (cmd) =>
+    cmd
+        .option('--pb <document_id_or_name>', 'Target wizard/LRP')
+        .option('--path <dir>', 'Target a project directory directly (skips the workspace)');
+
+projectTarget(
+    pb
+        .command('map')
+        .description('Text render of the current layout (rows, positions, gaps) + layout lint')
+        .option('--ids', 'Show node ids instead of names')
+        .option('--lane <y>', 'Show only the row at this centre-y')
+).action((opts) => pbMap(opts).catch(die));
+
+projectTarget(
+    pb
+        .command('route')
+        .description("Recompute a flow's waypoints from the nodes' current positions")
+        .option('--id <id>', 'Edge id to route')
+        .option('--from <id>', 'Source node id')
+        .option('--to <id>', 'Target node id')
+        .option('--all', 'Re-route every flow in the diagram')
+        .option('--touching <ids>', 'Re-route every flow attached to these comma-separated nodes')
+        .option('--via <x,y>', 'Force the bend point')
+).action((opts) => pbRoute(opts).catch(die));
+
+projectTarget(
+    pb
+        .command('place')
+        .description('Position a node on a row, relative to another node')
+        .requiredOption('--id <id>', 'Node to position')
+        .option('--after <id>', 'Put it to the right of this node')
+        .option('--before <id>', 'Put it to the left of this node')
+        .option('--lane <y>', "Row centre-y (default: the anchor's row)")
+        .option('--at <x_or_id>', 'Explicit x, or another node to share a column with')
+        .option('--gap <px>', "Spacing to leave (default: the diagram's own)")
+        .option('--push', 'First shift the rest of the row right to make room')
+).action((opts) => pbPlace(opts).catch(die));
+
+projectTarget(
+    pb
+        .command('space')
+        .description('Open a gap (or close one, with a negative --by) across a row or the diagram')
+        .option('--after <id>', 'Shift everything to the right of this node')
+        .option('--at-x <x>', 'Shift everything at or right of this x')
+        .option('--by <px>', "How far to shift (default: the diagram's own spacing)")
+        .option('--lane <y>', 'Restrict to one row (default: every row, keeping columns aligned)')
+).action((opts) => pbSpace(opts).catch(die));
+
+projectTarget(
+    pb
+        .command('compact')
+        .description('Pull over-wide gaps back in (e.g. the hole a removed node left)')
+        .option('--after <id>', 'Close the single hole right of this node, diagram-wide')
+        .option('--lane <y>', 'Row to compact (see `pb map`)')
+        .option('--all', 'Compact every row')
+        .option('--from <id>', 'Start from this node')
+        .option('--to <id>', 'Stop at this node')
+        .option('--gap <px>', "Target spacing (default: the diagram's own)")
+        .option('--uniform', 'Re-flow every gap to the target, not just the over-wide ones')
+).action((opts) => pbCompact(opts).catch(die));
+
+const pbLayout = pb
+    .command('layout')
+    .description('Dump/apply a whole-diagram layout spec (for a sweeping re-arrangement)');
+
+projectTarget(
+    pbLayout
+        .command('dump')
+        .description(
+            'Print the current layout as an editable spec (scratch input, not a project file)'
+        )
+        .option('--out <file>', 'Write to a file instead of stdout')
+        .option('--gap <px>', "Spacing the spec assumes (default: the diagram's own)")
+).action((opts) => pbLayoutDump(opts).catch(die));
+
+projectTarget(
+    pbLayout
+        .command('apply <file>')
+        .description('Compile a layout spec back into node positions and waypoints')
+        .option('--gap <px>', "Spacing to lay rows out at (default: the diagram's own)")
+).action((file, opts) => pbLayoutApply(file, opts).catch(die));
 
 program.parse();
