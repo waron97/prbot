@@ -526,6 +526,13 @@ lane 220:
   extra space.
 - **Nodes you leave out keep their current position**, so a partial spec re-flows only
   the rows you list.
+- **Applying is not a read-back of the dump.** A row in the spec *is* a row: every node
+  listed is pulled onto that centreline and its flows are re-routed. On a diagram already
+  laid out this way nothing moves; on one that is not, this is exactly what flattens the
+  rows — and the command reports how many nodes it pulled into line.
+- An `@<other-id>` anchor is only emitted when the shared column looks deliberate (the two
+  rows are neighbours, or the nodes are connected). Unrelated nodes that happen to share an
+  x get a plain number, so editing the spec never drags a stranger along.
 - The spec file is scratch input you pass by path. It is **not** part of the project,
   never written into the project directory, and nothing about it is stored in
   `structure.yaml`.

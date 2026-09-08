@@ -564,6 +564,7 @@ async function pbLayoutApply(file, opts) {
             `${result.untouched ? `, left ${result.untouched} untouched` : ''} ` +
             `(width ${result.widthBefore} -> ${result.widthAfter}).`
     );
+    if (result.snapped) log(`  pulled ${result.snapped} node(s) onto their row's centreline.`);
     log(`  re-routed ${result.rerouted.length} flow(s).`);
     for (const s of result.skipped) warn(`  ! skipped ${s.id}: ${s.why}`);
     const issues = lintLayout(structure);

@@ -289,12 +289,36 @@ function dumpLayout(structure, { gap } = {}) {
     const step = gap ?? inferGap(structure);
     const lanes = inferLanes(structure);
 
+    // Which nodes are joined by a flow — one of the two signals that a shared
+    // column is deliberate rather than a coincidence of the current geometry.
+    const linked = new Set();
+    eachNode(structure.nodes, null, (n) => {
+        for (const e of n.edges || []) {
+            linked.add(`${n.id} ${e.target}`);
+            linked.add(`${e.target} ${n.id}`);
+        }
+    });
+
     // A cross-row anchor reads better than a bare number ("same column as that
-    // gateway" survives a later shift, a literal x does not). Only ever point
-    // at an *earlier* row, so a spec can never contain a resolution cycle.
+    // gateway" survives a later shift, a literal x does not) — but only when
+    // the two nodes really do belong in one column. Sharing an x is not enough
+    // on its own: in an automatically laid-out diagram, unrelated nodes collide
+    // on the same x all the time, and anchoring to one of those silently
+    // couples them, so editing the spec drags a stranger along. Require the
+    // alignment to look intentional: the rows are neighbours (a branch dropping
+    // to the row below, parallel branches sharing a column), or the two nodes
+    // are directly connected. Anything else gets a plain number, which pins the
+    // same position without implying a relationship.
+    //
+    // Anchors only ever point at an *earlier* row, so a spec can never contain
+    // a resolution cycle.
     const emitted = [];
-    const anchorFor = (x) => {
-        const hit = emitted.find((e) => e.x === x);
+    const anchorFor = (node, x, laneIdx) => {
+        const hit = emitted.find(
+            (e) =>
+                e.x === x &&
+                (Math.abs(e.laneIdx - laneIdx) === 1 || linked.has(`${e.id} ${node.id}`))
+        );
         return hit ? hit.id : String(x);
     };
 
@@ -304,16 +328,19 @@ function dumpLayout(structure, { gap } = {}) {
         '# the project. Reorder ids, move them between rows, add or remove `lane <y>:`',
         '# rows, then `pb layout apply`. An id with no @anchor follows the previous one',
         '# at the default spacing. Nodes left out of the spec keep their position.',
+        "# Applying is NOT a no-op: every node listed is pulled onto its row's",
+        '# centreline and its flows are re-routed. On a diagram already laid out this',
+        '# way nothing moves; on one that is not, this is what flattens the rows.',
         '',
     ];
 
-    for (const lane of lanes) {
+    for (const [laneIdx, lane] of lanes.entries()) {
         const parts = [];
         let prevRight = null;
         for (const n of lane.members) {
             const b = boxOf(n);
             const predicted = prevRight === null ? null : prevRight + step;
-            parts.push(predicted === b.x ? n.id : `${n.id}@${anchorFor(b.x)}`);
+            parts.push(predicted === b.x ? n.id : `${n.id}@${anchorFor(n, b.x, laneIdx)}`);
             prevRight = b.right;
         }
         out.push(`lane ${lane.cy}:`);
@@ -327,7 +354,7 @@ function dumpLayout(structure, { gap } = {}) {
             line += ` ${p}`;
         }
         if (line.trim()) out.push(line);
-        for (const n of lane.members) emitted.push({ id: n.id, x: boxOf(n).x });
+        for (const n of lane.members) emitted.push({ id: n.id, x: boxOf(n).x, laneIdx });
     }
     return out.join('\n') + '\n';
 }
@@ -427,7 +454,18 @@ function applyLayout(structure, text, { gap } = {}) {
 
     const widthBefore = extentOf(structure).width;
     for (const entry of entries) xOf(entry);
-    for (const entry of entries) setPos(entry.node, entry.x, entry.cy);
+
+    // Applying a spec is not a read-back of the dump: a row in the spec is a
+    // row, so every node in it is pulled onto that centreline. On a diagram
+    // already in the house style nothing moves (the fixture round-trips
+    // byte-identically); on an automatically laid-out one, this is what
+    // flattens the rows — and it is worth reporting rather than doing silently.
+    let snapped = 0;
+    for (const entry of entries) {
+        const before = boxOf(entry.node);
+        setPos(entry.node, entry.x, entry.cy);
+        if (boxOf(entry.node).y !== before.y) snapped++;
+    }
 
     const { rerouted, skipped } = rerouteTouching(structure, [...byNodeId.keys()]);
 
@@ -440,6 +478,7 @@ function applyLayout(structure, text, { gap } = {}) {
         placed: entries.length,
         rows: spec.length,
         untouched,
+        snapped,
         rerouted,
         skipped,
         widthBefore,
