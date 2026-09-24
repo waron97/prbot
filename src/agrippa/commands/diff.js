@@ -240,4 +240,4 @@ function filterEntries(workspace, targetArg) {
     return workspace.filter((e) => e.document_id === target || e.name === target);
 }
 
-export { diff };
+export { diff, filterEntries };

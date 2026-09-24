@@ -24,6 +24,7 @@ import {
     pbSetDefault,
     pbSpace,
 } from './commands/pb.js';
+import { publish } from './commands/publish.js';
 import { pull } from './commands/pull.js';
 import { push } from './commands/push.js';
 import { repair } from './commands/repair.js';
@@ -129,6 +130,27 @@ program
             opts.nonInteractive = true; // --json can't coexist with interactive prompts
         }
         push(opts).catch(failCommand(opts));
+    });
+
+program
+    .command('publish [target]')
+    .description(
+        'Publish process-builder wizards / deploy long-running processes for tracked ' +
+            'workspace entries (no push required)'
+    )
+    .option('--all', 'Publish/deploy every matched entry, no prompt')
+    .option(
+        '--non-interactive',
+        'No prompt; requires [target] or --all (nothing to publish otherwise)'
+    )
+    .option('--json', 'Emit a single JSON result object to stdout instead of human logs')
+    .action((target, opts) => {
+        opts.secretsFile = program.opts().secretsFile;
+        if (opts.json) {
+            setJsonMode(true);
+            opts.nonInteractive = true;
+        }
+        publish(target, opts).catch(failCommand(opts));
     });
 
 program

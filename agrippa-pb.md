@@ -214,15 +214,35 @@ get wrong by hand.
 - **A few extra node types show up more often**: `intermediateCatchEvent`,
   `intermediateThrowEvent`, `callActivity`, `parallelGateway`, `eventBasedGateway` (see
   Node types below) — these exist for PBs too but are common in LRPs.
-- Publishing is called **deploy** for LRPs (same `agrippa push
-  --publish`/`--skip-publish` flow as wizard publish, gated by the same explicit-
-  permission rule — not a `pb` command).
+- Publishing is called **deploy** for LRPs — same explicit-permission rule as wizard
+  publish, whether it happens via `agrippa push --publish`/`--skip-publish` right after
+  a push, or standalone via `agrippa publish` (below) — not a `pb` command either way.
 
-> **You only run `agrippa push` with explicit human permission.** `agrippa clone` and
-> `agrippa pull` are fine to run freely — they don't write to the server. `agrippa
-> restore` overwrites local files and stays human-only. Otherwise you edit local files
-> and run the local, read/write `agrippa pb` subcommands. A human restores and
-> publishes/deploys, unless they've told you to push.
+> **You only run `agrippa push` or `agrippa publish` with explicit human permission.**
+> `agrippa clone` and `agrippa pull` are fine to run freely — they don't write to the
+> server. `agrippa restore` overwrites local files and stays human-only. Otherwise you
+> edit local files and run the local, read/write `agrippa pb` subcommands. A human
+> restores and publishes/deploys, unless they've told you to push or publish.
+
+#### `agrippa publish` — publish/deploy already-tracked entries, without pushing
+
+`agrippa push` only offers to publish/deploy what it just pushed in that same run.
+`agrippa publish [target]` is the standalone equivalent: it publishes process-builder
+wizards and deploys LRPs straight from the tracked `agrippa.yaml` entries, with no push
+step first (useful to re-publish after someone else fixed something upstream, or to
+deploy a version that was pushed earlier without publishing).
+
+```bash
+agrippa publish                      # interactive checkbox over every tracked wizard/LRP
+agrippa publish <name-or-path>       # narrow to one entry first (same target resolution as `agrippa diff`)
+agrippa publish --all                # publish/deploy every matched entry, no prompt
+agrippa publish --non-interactive --all --json   # scriptable form
+```
+
+`[target]` resolves the same way as `agrippa diff [target]` (directory prefix, exact
+path, `document_id`, or `name`); phase/mfa entries are never publishable and are
+silently excluded from the result. This writes to the server exactly like
+`agrippa push --publish` does — same explicit-permission rule applies.
 
 ### Decomposed project layout
 
@@ -644,9 +664,9 @@ not push.
 
 - `pb` commands are **local only** — nothing reaches upstream. `agrippa clone`/`pull`
   are also safe to run freely — read-only against the server. `agrippa restore`
-  overwrites local files from backup and stays human-only. `agrippa push` (and
-  publishing) writes to the server: only run it when a human has explicitly told you
-  to push.
+  overwrites local files from backup and stays human-only. `agrippa push` and
+  `agrippa publish` (publish/deploy, whether inline during push or standalone) write to
+  the server: only run either when a human has explicitly told you to.
 - After every command the project is re-checked for recomposability; a broken edit is
   reported with a `WARNING`.
 - When in doubt: `pb ls` to see the graph, make the structural change, `pb map` to check
