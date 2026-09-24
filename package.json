@@ -1,6 +1,6 @@
 {
     "name": "@waron97/prbot",
-    "version": "3.10.1",
+    "version": "3.10.2",
     "description": "",
     "main": "index.js",
     "exports": {
