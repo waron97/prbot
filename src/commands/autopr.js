@@ -9,6 +9,7 @@ import { fuzzyMatch } from '../lib/fuzzy.js';
 import { execGit } from '../lib/git.js';
 import { log } from '../lib/logger.js';
 import { tridentRpc } from '../lib/trident.js';
+import { requireInteractive } from '../lib/tty.js';
 import {
     appendPrToLine,
     appendRefsToLine,
@@ -242,15 +243,22 @@ async function autopr(options) {
     let appendMode = false;
     if (duplicate) {
         log(`\nExisting entry (line ${duplicate.lineNumber + 1}):\n  ${duplicate.line}`);
-        const { confirm } = await inquirer.prompt([
-            {
-                type: 'confirm',
-                name: 'confirm',
-                message: 'Append PR ref to existing entry?',
-                default: true,
-            },
-        ]);
-        appendMode = confirm;
+        if (options.append !== undefined) {
+            appendMode = options.append;
+        } else {
+            requireInteractive(
+                'a changelog entry for this PR already exists; pass --append to append the PR ref to it, or --message (and optionally --exact-changelog-section) to create a new entry instead'
+            );
+            const { confirm } = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'confirm',
+                    message: 'Append PR ref to existing entry?',
+                    default: true,
+                },
+            ]);
+            appendMode = confirm;
+        }
     }
 
     const branch =
@@ -262,6 +270,7 @@ async function autopr(options) {
     if (!appendMode) {
         message = options.message;
         if (!message) {
+            requireInteractive('use -m/--message <text>');
             const answer = await inquirer.prompt([
                 { type: 'input', name: 'message', message: 'Changelog entry message:' },
             ]);
@@ -330,6 +339,7 @@ async function autopr(options) {
                 );
             }
         } else {
+            requireInteractive('use --exact-changelog-section <heading>');
             selectedSection = await selectSection(sections, candidates);
         }
         const endLine = findSectionEndLine(lines, selectedSection.startLine);

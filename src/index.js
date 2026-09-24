@@ -151,6 +151,10 @@ program
         'Full CHANGELOG.md section heading to use, e.g. "### CROSS_31.1 - ML" (skips the section prompt)'
     )
     .option(
+        '--append',
+        'Append the PR ref to an existing changelog entry without prompting (required in non-interactive mode when a duplicate entry is found)'
+    )
+    .option(
         '--worktree [path]',
         'Create the branch in a new git worktree instead of switching the current checkout; optional path overrides the default sibling directory'
     )
