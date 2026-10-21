@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { configDotenv } from 'dotenv';
 import { parse, stringify } from 'yaml';
-import { CONFIG_FILE } from '../../config.js';
+import { loadConfigFiles } from '../../lib/env.js';
 import { warn } from '../../lib/logger.js';
 
 const WORKSPACE_FILE = 'agrippa.yaml';
@@ -9,7 +8,15 @@ const WORKSPACE_FILE = 'agrippa.yaml';
 // Keys that used to be readable from agrippa.yaml's `agrippa:` block. Kept only
 // so loadEffectiveEnv can warn about stale overrides left over from before
 // --secrets-file existed.
-const LEGACY_OVERRIDE_KEYS = ['KC_URL', 'KC_USER', 'KC_PASSWORD', 'KC_ID', 'KC_SECRET', 'RIP_URL', 'PB_URL'];
+const LEGACY_OVERRIDE_KEYS = [
+    'KC_URL',
+    'KC_USER',
+    'KC_PASSWORD',
+    'KC_ID',
+    'KC_SECRET',
+    'RIP_URL',
+    'PB_URL',
+];
 
 function readConfig() {
     if (!existsSync(WORKSPACE_FILE)) {
@@ -52,17 +59,7 @@ function assertKeycloakConfigured() {
 // loading secretsFile first and CONFIG_FILE second gives per-key priority to
 // whichever source set that key first.
 function loadEffectiveEnv(localConfig, secretsFile) {
-    if (secretsFile) {
-        if (!existsSync(secretsFile)) {
-            throw new Error(`--secrets-file not found: ${secretsFile}`);
-        }
-        configDotenv({ path: secretsFile, quiet: true });
-    }
-
-    if (existsSync(CONFIG_FILE)) {
-        configDotenv({ path: CONFIG_FILE, quiet: true });
-    }
-
+    loadConfigFiles(secretsFile);
     warnLegacyOverrides(localConfig);
     assertKeycloakConfigured();
 }

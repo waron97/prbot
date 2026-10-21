@@ -32,7 +32,7 @@ npx prettier --write src/
 
 ### Shared config and auth
 
-`src/config.js` exports `CONFIG_FILE` — the path to `~/.config/prbot/config` (dotenv KEY=VALUE format). This file is loaded by `src/index.js` via `configDotenv()` before any prbot command runs.
+`src/config.js` exports `CONFIG_FILE` — the path to `~/.config/prbot/config` (dotenv KEY=VALUE format), which always targets test-02. `src/lib/env.js` `loadConfigFiles(secretsFile, { isolateEnvKeys })` is the one loader both tools use: secrets file first, then the global config filling gaps (`configDotenv` never overwrites a set key, and the process env beats both). With `isolateEnvKeys` (prbot only), the environment-identifying keys (`ENV_SPECIFIC_KEYS`: `KC_*`, `RIP_URL`, `IMPORTEXPORT_URL`, `PB_URL`) are never taken from the global config when a secrets file is given, so a test-01 file can't half-target test-02; other keys (`ADDONS_PATH`, `TRIDENT_*`, `DEVOPS_*`) still fall back. `getToken()` fails with a clear message when any `KC_*` key is missing.
 
 `src/lib/auth.js` exports `getToken()`, which does a Keycloak password-grant flow using `KC_*` env vars and returns a Bearer token. Both prbot and agrippa commands share this function directly.
 
@@ -40,7 +40,7 @@ npx prettier --write src/
 
 ### prbot
 
-Entry point: `src/index.js` — registers Commander subcommands, calls `configDotenv` once at startup.
+Entry point: `src/index.js` — registers Commander subcommands and loads config once at startup. The global `--secrets-file <path>` option (e.g. `~/.config/prbot/config.test-01`) is read straight from argv by `secretsFileFromArgv()`, because config must be in `process.env` before Commander parses; it works before or after the subcommand, and a stderr banner shows the RIP/ImportExport/PB hosts in use.
 
 Key commands and what they touch:
 
@@ -49,6 +49,11 @@ Key commands and what they touch:
 - **`changelog`** (`src/commands/changelog.js`) — parses `CHANGELOG.md` by `### ` headings, scores sections against Trident task metadata, appends entries preserving indentation
 - **`commit`** (`src/commands/commit.js`) — interactive staged-file selector + commit type picker
 - **`export pb/imperex/email-templates`** (`src/commands/export*.js`) — hit `IMPORTEXPORT_URL` or `RIP_URL` endpoints, write results to paths under `ADDONS_PATH`
+- **`import pb`** (`src/commands/importPb.js`) — POSTs a PB zip as base64 to `IMPORTEXPORT_URL/symphony/import`, polls `export/info/processKey=Import&...` by the returned `requestId` (WARNING = success + printed message; FAILED/hasError = error), then publishes the resulting draft wizard
+- **`publish pb`** (`src/commands/publishPb.js`) — publishes a wizard via agrippa's `pbApi.js` (`PB_URL/builder/process/publish/<guid>`); `publishWizard` is shared with `import pb`
+- **`import imperex`** (`src/commands/importImperex.js`) — POSTs the selected `sorgenia_imperex_metadata/migrations/0.0.0/imperex/<model>/*.yaml` as `{files: [{name, content}], dry_run}` to the custom MFA `RIP_URL/helpdesk.ticket/prbot_imperex_import`, which merges them and runs `imperex.import.do()` with no manifest (the environment's system manifest applies). The built-in `imperex.import/upload` is unusable: it passes a `clean_before` kwarg `do()` no longer accepts
+
+Every selecting command must work both ways: CLI flags select records non-interactively (agents, no TTY — `requireInteractive()` from `src/lib/tty.js` fails fast naming the flag), and with no selector on a TTY it falls back to fuzzy search (`@inquirer/search`, or `fuzzyMultiSelect` from `src/lib/prompt.js` for multi-select). `--list`/`-Q` lets agents discover valid selector values.
 
 `src/lib/addons.js` — `resolveAddonsPath()` expands a leading `~` in the configured path; an unset, empty, or `.` `ADDONS_PATH` falls back to `process.cwd()` (e.g. a git worktree). Either way, it then requires the resolved directory to contain both `.git` and `config/` — otherwise it throws rather than silently treating an unrelated directory as the addons checkout.
 `src/lib/git.js` — `execGit(args, cwd)` promise wrapper around `execFile('git', ...)`.
@@ -59,7 +64,7 @@ Entry point: `src/agrippa/index.js` — separate Commander program, no shared en
 
 Config loading (`src/agrippa/lib/config.js`), via `loadEffectiveEnv(localConfig, secretsFile)`:
 
-1. `--secrets-file <path>` — a global Commander option on `program` (`src/agrippa/index.js`), read via `program.opts().secretsFile` in each subcommand's action callback and threaded into the command function as `opts.secretsFile`. Loaded first via `configDotenv({ path: secretsFile })`; a nonexistent `--secrets-file` path throws rather than being silently ignored.
+1. `--secrets-file <path>` — a global Commander option on `program` (`src/agrippa/index.js`), read via `program.opts().secretsFile` in each subcommand's action callback and threaded into the command function as `opts.secretsFile`. Loaded first via the shared `loadConfigFiles()` (`src/lib/env.js`, without `isolateEnvKeys`); a nonexistent `--secrets-file` path throws rather than being silently ignored.
 2. The global prbot config (`CONFIG_FILE`, `~/.config/prbot/config`) — loaded second via `configDotenv({ path: CONFIG_FILE })`. `configDotenv` never overwrites a key already present in `process.env`, so whichever of the two sources set a given key first wins — i.e. `--secrets-file` takes priority per key, and the global config only fills gaps.
 
 `agrippa.yaml`'s `agrippa:` block is no longer read for credentials at all — none of `KC_URL/KC_USER/KC_PASSWORD/KC_ID/KC_SECRET/RIP_URL/PB_URL` come from it anymore, so `agrippa.yaml` is pure resource inventory and safe to commit. If an existing file still has one of those keys set, `loadEffectiveEnv` prints a one-time warning (not an error) pointing at `--secrets-file`/the global config.

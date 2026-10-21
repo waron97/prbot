@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { execFile } from 'child_process';
 import { program } from 'commander';
-import { configDotenv } from 'dotenv';
 import { autopr } from './commands/autopr.js';
 import { changelog } from './commands/changelog.js';
 import { commit } from './commands/commit.js';
@@ -14,11 +13,14 @@ import {
     exportRip,
     exportWorkflow,
 } from './commands/export.js';
+import { importImperex } from './commands/importImperex.js';
+import { importPb } from './commands/importPb.js';
 import { init } from './commands/init.js';
 import { main as prMain } from './commands/pr.js';
+import { publishPb } from './commands/publishPb.js';
 import { routine } from './commands/routine.js';
 import { verbot } from './commands/ver.js';
-import { CONFIG_FILE } from './config.js';
+import { loadConfigFiles, secretsFileFromArgv } from './lib/env.js';
 import { emitJson, error, isJsonMode, log, setJsonMode, setSilent } from './lib/logger.js';
 import { checkForUpdate, currentVersion } from './lib/updateCheck.js';
 
@@ -38,9 +40,28 @@ const SECRET_ENV_KEYS = [
 ];
 const OFFLINE = process.env.PRBOT_OFFLINE === '1' || process.argv.includes('--offline');
 
-configDotenv({ path: CONFIG_FILE, quiet: true });
+// --secrets-file (e.g. ~/.config/prbot/config.test-01) retargets every command
+// at another environment. Its environment-specific keys (KC_*, *_URL) never
+// fall back to the global config, which always points at test-02.
+const SECRETS_FILE = secretsFileFromArgv(process.argv.slice(2));
+try {
+    loadConfigFiles(SECRETS_FILE, { isolateEnvKeys: true });
+} catch (err) {
+    error(`Error: ${err.message}`);
+    process.exit(1);
+}
+if (SECRETS_FILE) {
+    const host = (url) => (url ? new URL(url).host : 'unset');
+    error(
+        `Using --secrets-file ${SECRETS_FILE} (RIP ${host(process.env.RIP_URL)}, ` +
+            `ImportExport ${host(process.env.IMPORTEXPORT_URL)}, PB ${host(process.env.PB_URL)})`
+    );
+}
 
-const invokedCommand = process.argv[2];
+// First positional argument, skipping options and the --secrets-file value.
+const invokedCommand = process.argv
+    .slice(2)
+    .find((arg, i, args) => !arg.startsWith('-') && args[i - 1] !== '--secrets-file');
 if (LOCAL_COMMANDS.has(invokedCommand)) {
     for (const key of SECRET_ENV_KEYS) delete process.env[key];
 }
@@ -101,6 +122,14 @@ function withJson(cmd) {
 }
 
 program.name('prbot').version(currentVersion);
+
+// Read from argv at startup (see SECRETS_FILE above); declared here so
+// Commander accepts it and lists it in --help.
+program.option(
+    '--secrets-file <path>',
+    'Load config from this dotenv file first (e.g. ~/.config/prbot/config.test-01); ' +
+        'its KC_*/RIP_URL/IMPORTEXPORT_URL/PB_URL never fall back to the global config'
+);
 
 program
     .command('pr <module>')
@@ -275,6 +304,66 @@ withJson(
     if (opts.json) setJsonMode(true);
     else if (resolveQuiet(opts)) setSilent(true);
     await exportEmailTemplates(opts);
+});
+
+const importCmd = program.command('import');
+
+withJson(
+    withQuiet(
+        importCmd
+            .command('pb')
+            .description('Upload a PB wizard zip to ImportExport, wait for it, then publish it')
+            .option('-f, --file <path>', 'Zip file to import (any path)')
+            .option(
+                '-m, --id <document_id>',
+                'Import <document_id>.zip from the addons .cloudbuild PB processes folder'
+            )
+            .option('--no-publish', 'Leave the imported wizard in draft')
+            .option('-l, --list', 'List repo PB zips (document_id + path) instead of importing')
+            .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+    )
+).action(async (opts) => {
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
+    await importPb(opts);
+});
+
+withJson(
+    withQuiet(
+        importCmd
+            .command('imperex')
+            .description('Import Imperex YAML files from sorgenia_imperex_metadata via RIP')
+            .option('--model <name>', 'Imperex model folder to import from (skips model prompt)')
+            .option('--file <name>', 'File in the model folder to import (repeatable)', collect)
+            .option('--all', 'Import every file in the model folder')
+            .option('--dry-run', 'Run the import server-side, then roll it back')
+            .option(
+                '-l, --list',
+                'List models (or, with --model, files in that model) instead of importing'
+            )
+            .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+    )
+).action(async (opts) => {
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
+    await importImperex(opts);
+});
+
+const publishCmd = program.command('publish');
+
+withJson(
+    withQuiet(
+        publishCmd
+            .command('pb')
+            .description('Publish a Process Builder wizard')
+            .option('-m, --id <document_id>', 'PB process document_id to publish (skips prompt)')
+            .option('-l, --list', 'List PB processes (document_id, status, name) instead')
+            .option('-Q, --query <text>', 'Fuzzy-filter the list (used with --list)')
+    )
+).action(async (opts) => {
+    if (opts.json) setJsonMode(true);
+    else if (resolveQuiet(opts)) setSilent(true);
+    await publishPb(opts);
 });
 
 program.command('routine').action(async () => {

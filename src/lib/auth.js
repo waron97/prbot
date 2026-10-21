@@ -1,6 +1,15 @@
 import fetch from 'node-fetch';
 
+const KC_KEYS = ['KC_URL', 'KC_USER', 'KC_PASSWORD', 'KC_ID', 'KC_SECRET'];
+
 async function getToken() {
+    const missing = KC_KEYS.filter((key) => !process.env[key]);
+    if (missing.length) {
+        throw new Error(
+            `Missing Keycloak config: ${missing.join(', ')}. Set them in --secrets-file ` +
+                '(they never fall back to the global config there) or run `prbot init`.'
+        );
+    }
     const url = process.env.KC_URL;
     const payload = new URLSearchParams();
 

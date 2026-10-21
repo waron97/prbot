@@ -140,4 +140,4 @@ async function exportImperex(opts) {
     }
 }
 
-export { exportImperex };
+export { exportImperex, getModels, IMPEREX_REL };
